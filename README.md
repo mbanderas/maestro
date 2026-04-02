@@ -141,6 +141,10 @@ Every rule in the CLAUDE.md traces to specific findings:
 - The Staff Engineer review is only as good as its prompt and the project's tooling. Projects without type-checkers or linters get weaker verification.
 - Very small tasks (quick fixes, single-file edits) will feel slower if the Decision Gate incorrectly routes to multi-agent. The gate is biased toward single-agent to prevent this.
 
+## See Also
+
+**[Govyn](https://github.com/govynai/govyn)** — Governance proxy for AI agents. Maestro spawns multiple agents, each making LLM API calls. Govyn sits between those agents and the API, enforcing per-agent budgets, cost tracking, loop detection, and policy rules. Agents never hold real API keys — the proxy is the only path to the provider. Maestro handles orchestration; Govyn handles cost control and governance. [govynai.com](https://www.govynai.com)
+
 ## License
 
 MIT
