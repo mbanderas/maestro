@@ -1,12 +1,12 @@
 # Maestro
 
-Multi-agent orchestrator directives for Claude Code. One file. One `curl` command.
+Research-grounded multi-agent orchestrator directives for AI coding agents. One file drop-in.
 
 ## What This Does
 
-Claude Code defaults to single-agent sequential execution. One context window does everything — planning, coding, reviewing — which means context decay on long tasks, no parallelism, and self-review instead of adversarial review.
+AI coding agents default to single-agent sequential execution. One context window does everything — planning, coding, reviewing — which means context decay on long tasks, no parallelism, and self-review instead of adversarial review.
 
-This CLAUDE.md rewires that default. It turns the main Claude Code instance into a **switchboard operator** that:
+Maestro rewires that default. It turns the main agent instance into a **switchboard operator** that:
 
 1. **Evaluates** every task through a decision gate (single-agent vs multi-agent)
 2. **Spawns a Planner** to decompose complex tasks into parallel and sequential work
@@ -18,18 +18,44 @@ Simple tasks still run single-agent. The system only decomposes when decompositi
 
 ## Install
 
+Pick the file that matches your tool:
+
+### Claude Code
+
 ```bash
 curl -o CLAUDE.md https://raw.githubusercontent.com/mbanderas/maestro/main/CLAUDE.md
 ```
 
-Or clone and copy:
+Drop `CLAUDE.md` in your project root. Claude Code reads it automatically.
+
+### Codex (CLI + Desktop)
 
 ```bash
-git clone https://github.com/mbanderas/maestro.git
-cp maestro/CLAUDE.md /path/to/your/project/
+curl -o AGENTS.md https://raw.githubusercontent.com/mbanderas/maestro/main/AGENTS.md
 ```
 
-Claude Code reads `CLAUDE.md` from the project root automatically. No other configuration needed.
+Drop `AGENTS.md` in your repo root. Codex reads it automatically on session start. For global defaults across all repos:
+
+```bash
+curl -o ~/.codex/AGENTS.md https://raw.githubusercontent.com/mbanderas/maestro/main/AGENTS.md
+```
+
+### Cursor
+
+Paste the contents of `CLAUDE.md` into your `.cursorrules` file.
+
+### Other Tools
+
+`AGENTS.md` is an [open standard](https://agents.md) under the Linux Foundation, supported by Codex, Cursor, Amp, Jules (Google), and Factory. If your tool reads `AGENTS.md`, use that file. Otherwise, paste the contents into whatever rules or system prompt file your tool supports.
+
+## Two Files, Same Architecture
+
+| File | Optimized For | Key Differences |
+|---|---|---|
+| `CLAUDE.md` | Claude Code | Claude-specific context management (167K window, 2,000-line file read cap, 50K char tool result truncation, Task tool sub-agents) |
+| `AGENTS.md` | Codex + AGENTS.md-compatible tools | Tool-agnostic language, Codex context management (192K window), no tool-specific references |
+
+Both files implement the identical orchestrator architecture: Decision Gate → Planner → Specialists → Cross-Talk → Staff Engineer. The rules and research basis are the same. Only the implementation-specific details differ.
 
 ## How It Works
 
@@ -52,7 +78,7 @@ User Task
     │
     ▼
 ┌──────────────┐
-│ ORCHESTRATOR  │ ← Main Claude Code instance. Routes only.
+│ ORCHESTRATOR  │ ← Main agent instance. Routes only.
 │ (this file)   │    Zero planning. Zero execution. Zero review.
 └──────┬───────┘
        │
@@ -87,7 +113,7 @@ Route messages between agents. Detect when Agent A's output impacts Agent B. Fac
 
 ## What's Included
 
-The CLAUDE.md contains everything:
+Both files contain the full system:
 
 - **Decision Gate** — when to multi-agent vs single-agent
 - **Planner protocol** — how to decompose tasks
@@ -96,25 +122,15 @@ The CLAUDE.md contains everything:
 - **Staff Engineer gate** — adversarial final review
 - **Universal Rules** — production-grade patterns for all agents:
   - Context decay prevention
-  - File read budget awareness
-  - Tool result truncation handling
+  - File read and tool result truncation awareness
   - Forced verification (type-check + lint before claiming "Done!")
   - Edit integrity (re-read before/after every edit)
-  - Semantic search limitations (grep ≠ AST)
+  - Semantic search limitations (text search ≠ AST)
   - Senior dev code quality standard
-
-## Compatibility
-
-| Tool | Status |
-|---|---|
-| Claude Code (desktop) | Native — reads CLAUDE.md from project root |
-| Claude Code (Codex) | Native — reads CLAUDE.md from repo |
-| Cursor | Paste contents into `.cursorrules` |
-| Other agents | Paste into your tool's system prompt or rules file |
 
 ## Research Basis
 
-Every rule in the CLAUDE.md traces to specific findings:
+Every rule traces to specific findings:
 
 | Finding | Source | Rule It Produced |
 |---|---|---|
@@ -124,22 +140,23 @@ Every rule in the CLAUDE.md traces to specific findings:
 | Sequential reasoning degrades 39–70% with multi-agent | DeepMind Scaling Study (2025) | Decision gate: sequential tasks stay single-agent |
 | Tool-heavy tasks (16+ tools) suffer multi-agent overhead | DeepMind Scaling Study (2025) | Planner can flag single-agent-recommended subtasks |
 | Agents self-organize communication with lateral channels | SELFORG (2025) | Peer model, not hierarchy — orchestrator is switchboard, not boss |
-| Context compaction, file read caps, tool result truncation | fakeguru/claude-md | Universal Rules section: context integrity patterns |
+| Context compaction, file read caps, tool result truncation | fakeguru/claude-md | Universal Rules: context integrity patterns (CLAUDE.md version) |
 
 ## Token Efficiency: Desktop vs Cloud
 
-**Desktop (Claude Code):** Sub-agents run in parallel. Wall-clock time savings are significant for independent tasks. Token cost = N agents × per-agent context, but each agent's context is smaller and more focused than the single-agent alternative. Net: faster and often cheaper because focused context = fewer wasted tokens and less rework from context decay.
+**Desktop (Claude Code / Codex CLI):** Sub-agents run in parallel. Wall-clock time savings are significant for independent tasks. Token cost = N agents × per-agent context, but each agent's context is smaller and more focused than the single-agent alternative. Net: faster and often cheaper because focused context = fewer wasted tokens and less rework from context decay.
 
-**Cloud (Codex):** Same parallel execution model. Token cost is the same. The tradeoff: multi-agent uses more total tokens but produces better output on complex tasks because each agent operates within its competence window. For simple tasks, multi-agent in cloud is pure overhead — which is why the Decision Gate exists.
+**Cloud (Codex Cloud):** Same parallel execution model. Token cost is the same. Multi-agent uses more total tokens but produces better output on complex tasks because each agent operates within its competence window. For simple tasks, multi-agent in cloud is pure overhead — which is why the Decision Gate exists.
 
 **Rule of thumb:** If the task would take a single agent 15+ messages with growing context, multi-agent is more token-efficient even in cloud because it avoids the rework spiral that context decay causes.
 
 ## Known Limitations
 
-- Sub-agents cannot spawn their own sub-agents (Claude Code constraint). The architecture is flat: Orchestrator → Specialists. This is actually a feature — it prevents hierarchy chains that the research shows degrade performance.
+- Sub-agents are flat (one level deep in Claude Code; Codex spawns on explicit request). No hierarchy chains — which is a feature, not a bug.
 - Cross-talk detection relies on the Orchestrator reading specialist outputs and inferring impact. It is not real-time monitoring. Cross-talk is checked between parallel groups, not during execution.
 - The Staff Engineer review is only as good as its prompt and the project's tooling. Projects without type-checkers or linters get weaker verification.
 - Very small tasks (quick fixes, single-file edits) will feel slower if the Decision Gate incorrectly routes to multi-agent. The gate is biased toward single-agent to prevent this.
+- Codex enforces a 32 KiB cap on AGENTS.md by default. The Maestro AGENTS.md is well under this limit. If you extend it, monitor file size or use nested directory AGENTS.md files to split instructions.
 
 ## See Also
 
