@@ -1,180 +1,174 @@
-# Maestro
+<p align="center">
+  <strong>Maestro</strong><br>
+  Research-grounded multi-agent orchestrator for AI coding agents
+</p>
 
-Research-grounded multi-agent orchestrator directives for AI coding agents. One file drop-in.
+<p align="center">
+  <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="MIT License"></a>
+  <img src="https://img.shields.io/badge/dependencies-zero-brightgreen" alt="Zero Dependencies">
+  <img src="https://img.shields.io/badge/agents-Claude%20Code%20%7C%20Codex%20%7C%20Cursor-5b82d6" alt="Claude Code | Codex | Cursor">
+</p>
 
-**Full research writeup:** [Why Your Multi-Agent AI System Keeps Failing (And What the Research Actually Says)](https://marklaursen.com/blog/why-your-multi-agent-ai-system-keeps-failing/)
+---
 
-## What This Does
-
-AI coding agents default to single-agent sequential execution. One context window does everything — planning, coding, reviewing — which means context decay on long tasks, no parallelism, and self-review instead of adversarial review.
-
-Maestro rewires that default. It turns the main agent instance into a **switchboard operator** that:
-
-1. **Evaluates** every task through a decision gate (single-agent vs multi-agent)
-2. **Spawns a Planner** to decompose complex tasks into parallel and sequential work
-3. **Launches specialist agents** with scoped context and clear acceptance criteria
-4. **Routes cross-talk** between specialists when one agent's output affects another
-5. **Gates delivery** through a Staff Engineer agent performing adversarial review
-
-Simple tasks still run single-agent. The system only decomposes when decomposition helps.
-
-## Install
-
-Pick the file that matches your tool:
-
-### Claude Code
+Drop a single file into Claude Code, Codex, or Cursor and transform sequential single-agent execution into a coordinated multi-agent pipeline. No dependencies. No config. No SDK.
 
 ```bash
 curl -o CLAUDE.md https://raw.githubusercontent.com/mbanderas/maestro/main/CLAUDE.md
 ```
 
-Drop `CLAUDE.md` in your project root. Claude Code reads it automatically.
+Maestro is built on [peer-reviewed research](https://marklaursen.com/blog/why-your-multi-agent-ai-system-keeps-failing) showing that **79% of multi-agent failures come from coordination breakdowns, not model capability** — and that **three optimized agents outperform seven**.
 
-### Codex (CLI + Desktop)
+## Why Maestro Exists
+
+Most multi-agent frameworks add agents to make things faster. The research says the opposite: adding agents usually makes things worse.
+
+| Finding | Source |
+|---|---|
+| Multi-agent systems fail 41-87% of the time | [MAST](https://arxiv.org/abs/2503.13657), NeurIPS 2025 |
+| 79% of failures come from coordination, not capability | [MAST](https://arxiv.org/abs/2503.13657), NeurIPS 2025 |
+| 3 optimized agents outperform 7 (53-68% cost reduction) | [DyLAN](https://arxiv.org/abs/2310.02170), COLM 2024 |
+| Sequential reasoning degrades 39-70% under multi-agent | [DeepMind](https://arxiv.org/abs/2502.14546), 2025 |
+| Coordination gains plateau at 3-4 agents | [DeepMind](https://arxiv.org/abs/2502.14546), 2025 |
+
+Maestro implements the architecture this research points to — not a framework that wraps agents in boilerplate, but a routing layer that only activates multi-agent coordination when the task actually demands it.
+
+## Architecture
+
+```
+                          +------------------+
+                          |   Decision Gate  |
+                          | (single vs multi)|
+                          +--------+---------+
+                                   |
+                    +--------------+--------------+
+                    |                             |
+             Single Agent                  +-----+------+
+             (most tasks)                  |   Planner  |
+                                           +-----+------+
+                                                 |
+                                    +------------+------------+
+                                    |            |            |
+                              +-----------+ +-----------+ +-----------+
+                              |Specialist | |Specialist | |Specialist |
+                              |    A      | |    B      | |    C      |
+                              +-----------+ +-----------+ +-----------+
+                                    |            |            |
+                                    +---Cross-Talk Routing----+
+                                                 |
+                                    +------------+------------+
+                                    | Staff Engineer Review   |
+                                    | (adversarial verify)    |
+                                    +-------------------------+
+```
+
+**Decision Gate** — Evaluates whether a task actually needs multiple agents. Biased toward single-agent to prevent unnecessary coordination overhead. Most tasks stay single-agent.
+
+**Planner** — Decomposes complex tasks into parallel and sequential work when the Decision Gate approves multi-agent execution.
+
+**Specialists** — Execute focused subtasks with scoped context. Hard-capped at 4 per parallel group based on the DyLAN and DeepMind findings on coordination plateaus.
+
+**Cross-Talk Routing** — Manages structured communication between specialists when outputs affect one another. Uses a shared context bus, not message relay through a boss agent.
+
+**Staff Engineer Review** — Performs adversarial final verification. A separate agent with a different role (reviewer vs. builder) catches issues a single perspective misses.
+
+## Quick Start
+
+### Claude Code
+
+Copy `CLAUDE.md` into your project root. That's it.
+
+```bash
+curl -o CLAUDE.md https://raw.githubusercontent.com/mbanderas/maestro/main/CLAUDE.md
+```
+
+Claude Code reads `CLAUDE.md` automatically on startup. Your next task will route through Maestro's Decision Gate.
+
+### Codex
 
 ```bash
 curl -o AGENTS.md https://raw.githubusercontent.com/mbanderas/maestro/main/AGENTS.md
 ```
 
-Drop `AGENTS.md` in your repo root. Codex reads it automatically on session start. For global defaults across all repos:
-
-```bash
-curl -o ~/.codex/AGENTS.md https://raw.githubusercontent.com/mbanderas/maestro/main/AGENTS.md
-```
-
 ### Cursor
 
-Paste the contents of `CLAUDE.md` into your `.cursorrules` file.
-
-### Other Tools
-
-`AGENTS.md` is an [open standard](https://agents.md) under the Linux Foundation, supported by Codex, Cursor, Amp, Jules (Google), and Factory. If your tool reads `AGENTS.md`, use that file. Otherwise, paste the contents into whatever rules or system prompt file your tool supports.
-
-## Two Files, Same Architecture
-
-| File | Optimized For | Key Differences |
-|---|---|---|
-| `CLAUDE.md` | Claude Code | Claude-specific context management (167K window, 2,000-line file read cap, 50K char tool result truncation, Task tool sub-agents) |
-| `AGENTS.md` | Codex + AGENTS.md-compatible tools | Tool-agnostic language, Codex context management (192K window), no tool-specific references |
-
-Both files implement the identical orchestrator architecture: Decision Gate → Planner → Specialists → Cross-Talk → Staff Engineer. The rules and research basis are the same. Only the implementation-specific details differ.
+```bash
+curl -o .cursorrules https://raw.githubusercontent.com/mbanderas/maestro/main/.cursorrules
+```
 
 ## How It Works
 
-### The Decision Gate
+1. You give your AI coding agent a task as normal
+2. The **Decision Gate** evaluates complexity. Simple tasks run single-agent (no overhead)
+3. For complex tasks, the **Planner** decomposes work into parallel and sequential subtasks
+4. **Specialists** execute subtasks with scoped context, communicating through structured handoffs
+5. The **Staff Engineer** reviews the combined output adversarially
+6. You get the result — faster for complex tasks, identical for simple ones
 
-Every task hits a binary gate before any work starts:
+## When to Use Maestro
 
-| Condition | Mode |
-|---|---|
-| ≤3 coupled files, <10 tool calls, sequential logic | Single-agent |
-| 5+ files, independent subtasks, 15+ messages estimated, multi-domain | Multi-agent |
-| User says "just do it yourself" | Single-agent (override) |
-| User says "parallelize this" | Multi-agent (override) |
-| Uncertain | Single-agent (safe default) |
+Maestro helps most on tasks that are:
 
-### Multi-Agent Flow
+- **Genuinely too complex for one pass** — large refactors, multi-file features, cross-cutting concerns
+- **Parallelizable** — independent subtasks that don't need sequential reasoning
+- **Benefiting from adversarial review** — where a second perspective catches issues
 
-```
-User Task
-    │
-    ▼
-┌──────────────┐
-│ ORCHESTRATOR  │ ← Main agent instance. Routes only.
-│ (this file)   │    Zero planning. Zero execution. Zero review.
-└──────┬───────┘
-       │
-       ▼ Step 1: Always first
-┌──────────────┐
-│   PLANNER    │ → Execution graph, dependencies, parallel groups
-└──────┬───────┘
-       │
-       ▼ Step 2: Per the plan
-┌──────────── Parallel Group ────────────┐
-│ Specialist A   Specialist B   Spec. C  │ ← Scoped context only
-└──────────────────┬─────────────────────┘
-                   │
-       ▼ Step 3: Cross-talk check + sequential groups
-                   │
-       ▼ Step 4: Final gate
-┌──────────────┐
-│STAFF ENGINEER│ → Adversarial review. PASS or FAIL + issues.
-└──────┬───────┘
-       │
-       ▼
-   Delivery
-```
+Maestro does **not** help (and intentionally avoids) tasks where:
 
-### Agent Count Ceiling
+- A single agent already handles it well (the Decision Gate blocks unnecessary multi-agent)
+- The work is purely sequential reasoning (planning, step-by-step proofs)
+- The task involves fewer than ~10 files
 
-Maximum 4 specialists per parallel group. This is a hard limit derived from research showing coordination effectiveness plateaus at 3–4 agents and degrades beyond that.
+This is by design. The research shows coordination overhead makes simple tasks worse, not better.
 
-### The Orchestrator's Only Job
+## Why Not CrewAI / LangGraph / AutoGen?
 
-Route messages between agents. Detect when Agent A's output impacts Agent B. Facilitate cross-talk with minimum viable context. That's it. The Orchestrator does not plan (Planner does that), does not execute (Specialists do that), and does not review (Staff Engineer does that).
-
-## What's Included
-
-Both files contain the full system:
-
-- **Decision Gate** — when to multi-agent vs single-agent
-- **Planner protocol** — how to decompose tasks
-- **Specialist management** — scoped spawning, context isolation
-- **Cross-talk detection** — the switchboard routing logic
-- **Staff Engineer gate** — adversarial final review
-- **Universal Rules** — production-grade patterns for all agents:
-  - Context decay prevention
-  - File read and tool result truncation awareness
-  - Forced verification (type-check + lint before claiming "Done!")
-  - Edit integrity (re-read before/after every edit)
-  - Semantic search limitations (text search ≠ AST)
-  - Senior dev code quality standard
-
-## Research Basis
-
-Every rule traces to specific research findings. For the full analysis with visualizations and detailed breakdowns, read the companion blog post: **[Why Your Multi-Agent AI System Keeps Failing](https://marklaursen.com/blog/why-your-multi-agent-ai-system-keeps-failing/)**.
-
-Summary table:
-
-| Finding | Source | Rule It Produced |
+| | Maestro | CrewAI / LangGraph / AutoGen |
 |---|---|---|
-| 79% of multi-agent failures are coordination, not capability | MAST (NeurIPS 2025) | Orchestrator does routing only — no execution mixing |
-| 3 optimized agents outperform 7; pruning cuts cost 53–68% | DyLAN (COLM 2024) | Agent count ceiling of 4; decompose into fewer broader tasks |
-| Coordination plateaus at 3–4 agents | DeepMind Scaling Study (2025) | Hard maximum per parallel group |
-| Sequential reasoning degrades 39–70% with multi-agent | DeepMind Scaling Study (2025) | Decision gate: sequential tasks stay single-agent |
-| Tool-heavy tasks (16+ tools) suffer multi-agent overhead | DeepMind Scaling Study (2025) | Planner can flag single-agent-recommended subtasks |
-| Agents self-organize communication with lateral channels | SELFORG (2025) | Peer model, not hierarchy — orchestrator is switchboard, not boss |
-| Context compaction, file read caps, tool result truncation | fakeguru/claude-md | Universal Rules: context integrity patterns (CLAUDE.md version) |
+| **Setup** | Drop one file, done | Install packages, write Python/TS, configure agents |
+| **Dependencies** | Zero | Framework + SDK + runtime |
+| **Where it runs** | Inside your existing AI coding agent | Standalone process you build and deploy |
+| **Agent count** | Hard cap at 4 parallel (research-backed) | Unlimited (user decides) |
+| **Default behavior** | Single-agent unless complexity warrants multi | Always multi-agent |
+| **Design philosophy** | Fewer agents, structured coordination | More agents, flexible topologies |
 
-## Token Efficiency: Desktop vs Cloud
+Maestro is not a framework. It's an orchestration layer for AI coding agents that already exist. You don't write agent code — you drop a file and your existing agent gains multi-agent capabilities.
 
-**Desktop (Claude Code / Codex CLI):** Sub-agents run in parallel. Wall-clock time savings are significant for independent tasks. Token cost = N agents × per-agent context, but each agent's context is smaller and more focused than the single-agent alternative. Net: faster and often cheaper because focused context = fewer wasted tokens and less rework from context decay.
+If you need a standalone multi-agent application with custom tools, APIs, and deployment pipelines, use a framework. If you want your AI coding agent to handle complex tasks better without changing your workflow, use Maestro.
 
-**Cloud (Codex Cloud):** Same parallel execution model. Token cost is the same. Multi-agent uses more total tokens but produces better output on complex tasks because each agent operates within its competence window. For simple tasks, multi-agent in cloud is pure overhead — which is why the Decision Gate exists.
+## Research Foundation
 
-**Rule of thumb:** If the task would take a single agent 15+ messages with growing context, multi-agent is more token-efficient even in cloud because it avoids the rework spiral that context decay causes.
+Maestro's architecture is grounded in 700+ sources across computer science, library science, safety engineering, and knowledge theory. The key papers:
 
-## Known Limitations
+| Paper | Year | Venue | Key Finding |
+|---|---|---|---|
+| [MAST](https://arxiv.org/abs/2503.13657) | 2025 | NeurIPS Spotlight | 41-87% failure rates; 79% from coordination |
+| [DyLAN](https://arxiv.org/abs/2310.02170) | 2024 | COLM | 3 agents outperform 7; dynamic topology selection |
+| [DeepMind Scaling Study](https://arxiv.org/abs/2502.14546) | 2025 | arXiv | 3 scaling laws for multi-agent systems |
+| [MetaGPT](https://arxiv.org/abs/2308.00352) | 2023 | — | Structured handoffs score 3.9/4 vs unstructured 2.1/4 |
+| [Voyager](https://arxiv.org/abs/2305.16291) | 2023 | NeurIPS | Skill library pattern for capability organization |
+| [GTD](https://arxiv.org/abs/2504.05767) | 2025 | arXiv | 0.3% degradation under failure with redundant topologies |
+| [SELFORG](https://arxiv.org/abs/2502.11811) | 2025 | arXiv | Shapley-based contribution estimation |
 
-- Sub-agents are flat (one level deep in Claude Code; Codex spawns on explicit request). No hierarchy chains — which is a feature, not a bug.
-- Cross-talk detection relies on the Orchestrator reading specialist outputs and inferring impact. It is not real-time monitoring. Cross-talk is checked between parallel groups, not during execution.
-- The Staff Engineer review is only as good as its prompt and the project's tooling. Projects without type-checkers or linters get weaker verification.
-- Very small tasks (quick fixes, single-file edits) will feel slower if the Decision Gate incorrectly routes to multi-agent. The gate is biased toward single-agent to prevent this.
-- Codex enforces a 32 KiB cap on AGENTS.md by default. The Maestro AGENTS.md is well under this limit. If you extend it, monitor file size or use nested directory AGENTS.md files to split instructions.
+For the full analysis, read [Why Your Multi-Agent AI System Keeps Failing](https://marklaursen.com/blog/why-your-multi-agent-ai-system-keeps-failing).
 
-## Rules File vs Prompt — When to Use Which
+## Contributing
 
-Maestro is designed as a drop-in file for projects that don't already have agent rules. If your project has no existing CLAUDE.md or AGENTS.md, drop Maestro in and it works.
+Contributions are welcome. Before opening a PR:
 
-If you already have a mature rules file with project-specific guardrails (test commands, directory conventions, dependency policies, deployment rules), Maestro's orchestration logic may not belong in that same file. Rules files work best as guardrails and navigation — "always this, never that, go here for this." Orchestration directives are behavioral — they change *how the agent operates*, not what the project expects.
+1. Read the research foundation — Maestro's constraints (4-agent cap, Decision Gate bias toward single-agent) are intentional and research-backed
+2. Keep it zero-dependency — no npm packages, no external imports
+3. Test with real tasks across Claude Code, Codex, and Cursor
 
-In that case, use Maestro's content as a **prompt template** instead of a rules file replacement. Dispatch the orchestrator behavior through your prompt workflow (per-task or via a wrapper/skill) and keep your rules file focused on project constraints. This gives you per-task control over when orchestration kicks in, and avoids diluting your existing rules with 300 lines of behavioral overrides.
+If you have benchmarks, case studies, or research that challenges or extends the current architecture, open an issue. The design should evolve with evidence.
 
-Both approaches use the same content. The difference is where it lives — always-on in the rules file, or dispatched per-task through the prompt.
+## Related Projects
 
-## See Also
+- **[Govyn](https://github.com/govynAI/govyn)** — Open-source AI agent governance proxy. Maestro orchestrates your agents; Govyn ensures they never hold real API keys, stay within budget, and follow policy. They are designed to work together.
 
-**[Govyn](https://github.com/govynai/govyn)** — Governance proxy for AI agents. Maestro spawns multiple agents, each making LLM API calls. Govyn sits between those agents and the API, enforcing per-agent budgets, cost tracking, loop detection, and policy rules. Agents never hold real API keys — the proxy is the only path to the provider. Maestro handles orchestration; Govyn handles cost control and governance. [govynai.com](https://www.govynai.com)
+## Community
+
+Questions, ideas, or war stories about multi-agent coordination? [Open a discussion](https://github.com/mbanderas/maestro/discussions) or [file an issue](https://github.com/mbanderas/maestro/issues).
 
 ## License
 
