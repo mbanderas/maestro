@@ -158,6 +158,16 @@ Every rule traces to specific findings:
 - Very small tasks (quick fixes, single-file edits) will feel slower if the Decision Gate incorrectly routes to multi-agent. The gate is biased toward single-agent to prevent this.
 - Codex enforces a 32 KiB cap on AGENTS.md by default. The Maestro AGENTS.md is well under this limit. If you extend it, monitor file size or use nested directory AGENTS.md files to split instructions.
 
+## Rules File vs Prompt — When to Use Which
+
+Maestro is designed as a drop-in file for projects that don't already have agent rules. If your project has no existing CLAUDE.md or AGENTS.md, drop Maestro in and it works.
+
+If you already have a mature rules file with project-specific guardrails (test commands, directory conventions, dependency policies, deployment rules), Maestro's orchestration logic may not belong in that same file. Rules files work best as guardrails and navigation — "always this, never that, go here for this." Orchestration directives are behavioral — they change *how the agent operates*, not what the project expects.
+
+In that case, use Maestro's content as a **prompt template** instead of a rules file replacement. Dispatch the orchestrator behavior through your prompt workflow (per-task or via a wrapper/skill) and keep your rules file focused on project constraints. This gives you per-task control over when orchestration kicks in, and avoids diluting your existing rules with 300 lines of behavioral overrides.
+
+Both approaches use the same content. The difference is where it lives — always-on in the rules file, or dispatched per-task through the prompt.
+
 ## See Also
 
 **[Govyn](https://github.com/govynai/govyn)** — Governance proxy for AI agents. Maestro spawns multiple agents, each making LLM API calls. Govyn sits between those agents and the API, enforcing per-agent budgets, cost tracking, loop detection, and policy rules. Agents never hold real API keys — the proxy is the only path to the provider. Maestro handles orchestration; Govyn handles cost control and governance. [govynai.com](https://www.govynai.com)
