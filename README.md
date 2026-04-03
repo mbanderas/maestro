@@ -2,6 +2,8 @@
 
 Research-grounded multi-agent orchestrator directives for AI coding agents. One file drop-in.
 
+**Full research writeup:** [Why Your Multi-Agent AI System Keeps Failing (And What the Research Actually Says)](https://marklaursen.com/blog/why-your-multi-agent-ai-system-keeps-failing/)
+
 ## What This Does
 
 AI coding agents default to single-agent sequential execution. One context window does everything — planning, coding, reviewing — which means context decay on long tasks, no parallelism, and self-review instead of adversarial review.
@@ -130,7 +132,9 @@ Both files contain the full system:
 
 ## Research Basis
 
-Every rule traces to specific findings:
+Every rule traces to specific research findings. For the full analysis with visualizations and detailed breakdowns, read the companion blog post: **[Why Your Multi-Agent AI System Keeps Failing](https://marklaursen.com/blog/why-your-multi-agent-ai-system-keeps-failing/)**.
+
+Summary table:
 
 | Finding | Source | Rule It Produced |
 |---|---|---|
