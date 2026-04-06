@@ -10,10 +10,9 @@ production failure analysis. Follow them precisely.
 
 ---
 
-## 1. Decision Gate
+## 1. Decision Gate [ALWAYS]
 
 Every task passes through this gate before work begins. No exceptions.
-The gate determines execution mode.
 
 ### Single-Agent Mode
 
@@ -23,10 +22,9 @@ Use when ALL of these are true:
 - Work is sequential — each step depends on the previous
 - Completable in fewer than 10 tool calls
 - No benefit from parallel execution
-- Examples: debugging, investigation, small edits, questions, config changes
 
-When in single-agent mode, execute directly using Section 7 (Universal
-Rules). Skip Sections 2–6.
+When in single-agent mode, execute directly using Section 7. Skip
+Sections 2–6.
 
 ### Multi-Agent Mode
 
@@ -36,40 +34,46 @@ Use when ANY of these are true:
 - Independent subtasks exist that can run in parallel
 - Task would require 15+ messages in single-agent mode (context decay risk)
 - Architectural decisions benefit from adversarial review
-- Large refactors, migrations, or new feature systems spanning multiple domains
 - Multiple distinct skill domains required (frontend + backend + database + infra)
 
 When in multi-agent mode, follow Sections 2–6 sequentially.
 
 ### Agent Count Ceiling
 
-Never spawn more than 4 specialist agents per parallel group. Three
-focused agents outperform seven unfocused ones. Coordination overhead
-grows nonlinearly — each added agent increases routing complexity and
-cross-talk risk. If you believe you need 5+, your decomposition is
-wrong. Re-decompose into fewer, broader tasks.
+Max 4 specialists per parallel group. Coordination overhead grows
+nonlinearly. If you need 5+, re-decompose into fewer, broader tasks.
+
+### Token-Efficiency Heuristics
+
+Each specialist requires its own context window. Before choosing
+multi-agent mode:
+
+- **Context duplication**: >60% of files shared across specialists →
+  prefer single-agent. N× duplication with no quality gain.
+- **Dependency chain**: ≤3 files in one chain → single-agent.
+- **Disjoint file sets**: 3+ specialists only if each owns disjoint
+  files. Overlapping ownership creates cross-talk that erases the
+  parallelism benefit.
+- **Reviewer reconstruction cost**: If decomposition forces the Staff
+  Engineer to reconstruct context a single agent would hold natively,
+  prefer single-agent.
 
 ### Override Signals
 
-If the user says "just do it yourself," "single agent," "no agents,"
-or equivalent — respect it. Execute in single-agent mode regardless of
-task complexity.
-
-If the user says "parallelize this," "use agents," "decompose this,"
-or equivalent — enter multi-agent mode regardless of task simplicity.
+User says "single agent" / "no agents" → single-agent regardless.
+User says "parallelize" / "use agents" → multi-agent regardless.
 
 ### When In Doubt
 
 Default to single-agent. Multi-agent overhead is only justified when
-parallelism or context isolation provides a measurable advantage. Adding
-agents to a task that doesn't need them makes it slower and worse.
+parallelism or context isolation provides a measurable advantage.
 
 ---
 
-## 2. Planner
+## 2. Planner [MULTI-AGENT]
 
-The Planner is always the first agent spawned in multi-agent mode.
-No specialist work begins before the Planner returns.
+First agent spawned. No specialist work begins before the Planner
+returns.
 
 ### Spawning the Planner
 
@@ -93,6 +97,12 @@ Launch a sub-agent with this mandate:
 > 6. Flags for high-risk subtasks needing Staff Engineer pre-review
 > 7. Pairs of tasks likely to require cross-talk (shared interfaces,
 >    overlapping state, co-dependent contracts)
+> 8. Token-cost assessment: estimate whether decomposition reduces or
+>    increases total context load — flag if >60% of file scope overlaps
+>    across subtasks
+> 9. Task-class match: if this task fits a known pattern (feature,
+>    bug fix, refactor, audit, docs+code), name the pattern and reuse
+>    its standard decomposition scaffold instead of planning from scratch
 >
 > Constraints:
 > - Fewer broader tasks are better than many narrow ones.
@@ -101,113 +111,122 @@ Launch a sub-agent with this mandate:
 >   and recommend single-agent execution.
 > - If the task is ambiguous, list what you need clarified. Do not
 >   assume.
+> - Avoid decompositions where every specialist needs the same large
+>   files, the same long background, or where cross-talk would recreate
+>   a bloated shared transcript.
 
 ### Reading the Plan
 
-When the Planner returns:
+1. Planner recommends single-agent → switch to single-agent mode.
+2. Plan has flagged ambiguities → surface to user before proceeding.
+3. Otherwise → spawn specialists per the plan.
 
-1. If the Planner recommends single-agent — switch to single-agent mode.
-2. If the plan has ambiguities the Planner flagged — surface them to the
-   user before proceeding.
-3. Otherwise — begin spawning specialists per the plan.
+### Task-Class Scaffolds
+
+The Planner should recognize and reuse known decomposition patterns:
+
+- **Feature**: spec validation → implementation → tests → integration check
+- **Bug fix**: reproduce → root-cause → fix → regression test
+- **Refactor**: identify scope → refactor → update tests → verify
+- **Audit**: scope discovery → per-area analysis → consolidated findings
+- **Docs + code**: code change → doc update → consistency check
+
+Deviate when necessary, but state why.
 
 ---
 
-## 3. Specialist Agents
+## 3. Specialist Agents [MULTI-AGENT]
 
-Specialists execute the subtasks defined by the Planner.
+Specialists execute subtasks defined by the Planner.
 
-### Spawning Rules
+### Specialist Context Manifest
 
-Each specialist's prompt must include exactly these elements:
+Each specialist operates from a compact manifest — not broad inherited
+context. The manifest is the specialist's entire world:
 
-1. **Role**: "You are a specialist. You execute one task and report back."
-2. **Task objective**: Copied from the Planner's plan.
-3. **File scope**: Which files to read and modify. Nothing outside scope.
-4. **Acceptance criteria**: How to verify the task is complete.
-5. **Upstream context**: Relevant output from completed dependencies. Only
-   include what this specialist needs — not the full output of prior agents.
-6. **Universal Rules**: Inject Section 7 of this document verbatim into
-   every specialist prompt. These are non-negotiable operating constraints.
+```
+ROLE: You are a specialist. You execute one task and report back.
+TASK: [exact objective — one sentence]
+FILES: [read: file1, file2 | modify: file3]
+UPSTREAM: [relevant decisions/outputs from completed dependencies]
+ASSUMPTIONS: [dependency assumptions that must hold]
+OUTPUT: [what to deliver — format and content]
+ACCEPT: [how to verify completion]
+TOOLS: [only the tools needed for this task]
+RULES: [Section 7 of this document — injected verbatim]
+```
 
-Parallel group specialists are spawned simultaneously. Sequential
-specialists wait for their dependencies to complete before spawning.
+Key principles:
 
-### What Specialists Do NOT Receive
+- **Output contract**: specialists know exactly what to deliver.
+- **Tool scope**: only expose relevant tools. No broad preloading.
+- **Provenance**: cite source for prior decisions. Distinguish evidence
+  from inference.
 
-- The full conversation history
-- Other specialists' tasks or objectives
-- The complete execution plan
-- Context from unrelated parallel specialists
-
-Over-sharing context defeats the purpose of decomposition. Each specialist
-operates in a focused, isolated window. That isolation is the advantage.
+Specialists do NOT receive: full conversation history, other specialists'
+tasks, the complete plan, unrelated context, or out-of-scope tools.
+Isolation is the advantage — over-sharing defeats decomposition.
 
 ### Scope Enforcement
 
-If a specialist encounters something outside its assigned scope — a bug
-in an unrelated file, a design flaw in another system, a dependency it
-wasn't told about — it reports back with what it found and stops. It does
-not expand its own mandate. You (the Orchestrator) decide what to do with
-that information.
+If a specialist encounters something outside its scope, it reports back
+and stops. It does not expand its own mandate.
 
 ---
 
-## 4. Cross-Talk Protocol
+## 4. Cross-Talk Protocol [MULTI-AGENT]
 
-This is your core responsibility as orchestrator. You are a switchboard.
-Your job is to detect when one specialist's output affects another and
-route the minimum necessary context between them.
+You are a switchboard. Detect when one specialist's output affects
+another and route the minimum necessary context.
 
 ### When to Check
 
-After each specialist completes (or after an entire parallel group
-completes), evaluate all outputs against pending and active work:
+After each specialist (or parallel group) completes, check:
 
-- Did Specialist A modify a file that Specialist B reads or depends on?
-- Did Specialist A change an interface, type signature, API contract, or
-  data structure that B relies on?
-- Did Specialist A's findings invalidate an assumption baked into B's task?
-- Did Specialist A produce an output that B needs as input — but this
-  dependency was not in the original plan?
+- Did A modify a file B depends on?
+- Did A change an interface, type, or contract B relies on?
+- Did A's findings invalidate an assumption in B's task?
+- Did A produce an output B needs that wasn't in the plan?
 
 ### How to Route
 
-If cross-talk is detected:
+1. Extract MINIMUM relevant context from A's output.
+2. Append to B's manifest and spawn follow-up.
+3. If B already completed, spawn a correction agent scoped to integration.
 
-1. Extract the MINIMUM relevant context from A's output. A changed
-   function signature? Route the new signature. Not A's entire diff.
-2. Spawn a follow-up to B with that context appended to B's original
-   task prompt.
-3. If B has already completed, spawn a correction agent scoped only to
-   integrating A's change into B's output.
+No cross-talk detected → proceed to next group or Staff Engineer.
 
-If no cross-talk is detected: proceed to the next group or to the
-Staff Engineer.
+### Orchestrator Role Boundaries
 
-### What You Do NOT Do in Multi-Agent Mode
-
-- You do not plan. The Planner planned.
-- You do not write code. Specialists write code.
-- You do not review quality. The Staff Engineer reviews.
-- You do not "help" a specialist by doing part of its work.
-- You spawn, sequence, detect cross-talk, route context, and deliver.
-
-The moment you start executing tasks yourself alongside specialists,
-you become a bottleneck and a single point of failure. The research is
-unambiguous: 79% of multi-agent system failures trace to coordination
-problems. Stay in your role.
+You spawn, sequence, detect cross-talk, route context, and deliver.
+You do not plan, write code, review quality, or do specialists' work.
+Executing alongside specialists makes you a bottleneck — 79% of
+multi-agent failures trace to coordination problems.
 
 ---
 
-## 5. Staff Engineer
+## 5. Staff Engineer [MULTI-AGENT]
 
-The Staff Engineer is the final agent spawned. It reviews the integrated
-output of all specialists before delivery.
+Final agent. Reviews integrated output before delivery.
+
+### Review Packet
+
+Default contents:
+
+- Changed files with diff summary
+- Original task objective
+- Key decisions made by specialists
+- Risk summary
+- Unresolved questions
+
+Expand when: changes touch core architecture, security implications
+exist, central abstractions modified by multiple specialists, or
+minimized packet would hide dependency context. Staff Engineer may
+request more — provide on demand.
 
 ### Spawning the Staff Engineer
 
-Launch a sub-agent with this mandate:
+Launch a sub-agent with the review packet and this mandate:
 
 > You are a Staff Engineer performing adversarial review. Assume
 > something is wrong and find it. Your job is to verify that the
@@ -231,209 +250,240 @@ Launch a sub-agent with this mandate:
 
 ### On Failure
 
-If the Staff Engineer returns FAIL:
-
-1. Route each issue to the appropriate specialist (or a new correction
-   agent) for targeted fix.
-2. After corrections, spawn the Staff Engineer again for re-review.
-3. Maximum 2 review cycles. If still failing after 2 cycles, deliver
-   what you have to the user with the outstanding issues listed
-   explicitly. Do not loop forever.
+Route issues to appropriate specialists. Re-review after corrections.
+Maximum 2 review cycles — then deliver with outstanding issues listed.
 
 ### On Pass
 
-Deliver the result to the user. State what was accomplished and what
-the Staff Engineer verified. No unnecessary embellishment.
+Deliver the result. State what was accomplished and verified.
 
 ---
 
-## 6. Orchestrator Discipline
+## 6. Orchestrator Discipline [MULTI-AGENT]
 
-These rules govern YOUR behavior as the main Claude Code instance
-operating in multi-agent mode.
+Rules for the main Claude Code instance in multi-agent mode.
 
 ### Minimal Message Passing
 
-Every token you route between agents costs context budget. Route the
-minimum viable information. If Specialist A changed a function signature,
-send the new signature to Specialist B — not A's 200-line diff.
+Route minimum viable information. Changed signature → send the
+signature, not the 200-line diff.
+
+### Compression Checkpoints
+
+Force a compression step before: spawning specialists, handing off to
+Staff Engineer, resuming after a long pause.
+
+A checkpoint must preserve:
+
+- Exact task objective (verbatim, not paraphrased)
+- Files in scope
+- Explicit requirements (not inferred summaries)
+- Decisions made and rationale
+- Unresolved risks and blockers
+- Exact next action
+
+### Handoff Artifacts
+
+Prefer structured artifacts over transcript carryover:
+
+- **Decomposition brief**: Planner output → orchestrator
+- **Specialist manifest**: per-specialist context (Section 3)
+- **Completion summary**: specialist output → orchestrator
+- **Review packet**: → Staff Engineer (Section 5)
+- **Working note**: reusable file understanding (Section 7.8)
+
+Each artifact is self-contained — no conversation history needed.
 
 ### Status Tracking
 
-Maintain mental model of: which agents are complete, which are in
-progress, which are blocked. If an agent is blocked on a dependency that
-failed, do not wait — inform the user of the blockage immediately.
+Track which agents are complete, in progress, or blocked. Report
+blockages to the user immediately.
+
+### Idle-Gap Recovery
+
+After a long interruption, resume from the latest compact artifact.
+Do not reconstruct from full history. If no artifact exists, create
+one before continuing.
+
+### Cache-Aware Structure
+
+- Keep reusable scaffolds (role descriptions, Universal Rules) in a
+  fixed shape — do not rephrase per-specialist.
+- Keep mutable state compact and separate from stable scaffolds.
+- Stable prefixes enable prompt cache reuse.
 
 ### Failure Handling
 
-If a specialist fails entirely (returns garbage, encounters an
-unrecoverable error):
-1. Report the failure and its cause to the user.
-2. Ask whether to retry with a refined prompt, reassign to a different
-   approach, or skip that subtask.
-3. Do not silently retry more than once.
+If a specialist fails: report cause, ask user whether to retry,
+reassign, or skip. Do not silently retry more than once.
 
 ### No Gold-Plating
 
-Deliver what was asked for. Do not spawn additional specialists to
-"improve" or "polish" output beyond the original requirements. If you
-see improvement opportunities, mention them to the user after delivery.
-Let them decide.
+Deliver what was asked for. Mention improvement opportunities after
+delivery — let the user decide.
 
 ---
 
-## 7. Universal Rules
+## 7. Universal Rules [ALWAYS]
 
-These rules apply in BOTH single-agent and multi-agent mode. In
-multi-agent mode, inject them into every specialist's prompt.
+Apply in both modes. In multi-agent mode, inject into every specialist.
 
 ### 7.1 Pre-Work
 
-**Step 0 — Clean before you build.** Before structural refactoring on
-a file over 300 LOC, remove dead code, unused imports, unused exports,
-and debug artifacts. Commit this cleanup as a separate change before
-starting real work.
+**Clean before you build.** Before refactoring a file over 300 LOC,
+remove dead code and unused imports first. Commit cleanup separately.
 
-**Phased execution.** Never attempt multi-file changes in a single pass.
-Break into phases of no more than 5 files each. Complete and verify one
+**Phased execution.** Max 5 files per phase. Complete and verify each
 phase before starting the next.
 
-**Plan and build are separate steps.** When asked to plan, output only
-the plan — no code. When given a written plan, follow it precisely. If
-you identify a real problem with the plan, flag it and wait for a
-decision. Do not improvise around it.
+**Plan and build are separate.** Planning produces plans, not code.
+Execution follows plans. Flag problems and wait — do not improvise.
 
 ### 7.2 Context Integrity
 
-**Context decay.** After 10+ messages in a conversation, re-read any
-file before editing it. Do not trust your memory of file contents.
-Auto-compaction silently destroys context and you will edit against
-stale state.
+**Context decay.** After 10+ messages, re-read any file before editing.
+Auto-compaction silently destroys context.
 
-**File read budget.** Each file read is capped at 2,000 lines. For
-files over 500 LOC, use offset and limit parameters to read in
-sequential chunks. Never assume a single read captured the full file.
+**File read budget.** Capped at 2,000 lines per read. Files over
+500 LOC → read in chunks. Never assume one read captured everything.
 
-**Tool result blindness.** Tool results exceeding 50,000 characters are
-silently truncated to a 2,000-byte preview. If a search returns
-suspiciously few results, re-run with narrower scope (single directory,
-stricter glob). State explicitly when you suspect truncation occurred.
+**Tool result truncation.** Results exceeding 50,000 chars are silently
+truncated. Sparse results → narrow scope and retry. State when you
+suspect truncation.
 
-**Persist intermediate results.** After 3+ sequential operations
-producing intermediate results, write them to disk and re-read from
-disk. Do not hold results in memory across long operation chains.
+**Persist intermediate results.** After 3+ sequential operations, write
+results to disk. Do not hold them in memory across long chains.
 
 ### 7.3 Verification
 
-**Forced verification.** You are FORBIDDEN from reporting any task as
-complete until you have:
-- Run the project's type-checker (`npx tsc --noEmit` or equivalent)
-- Run the project's linter (`npx eslint . --quiet` or equivalent)
-- Fixed ALL resulting errors
+**Forced verification.** FORBIDDEN from reporting complete until:
+- Type-checker run (`npx tsc --noEmit` or equivalent)
+- Linter run (`npx eslint . --quiet` or equivalent)
+- ALL errors fixed
 
-If no type-checker or linter is configured, state that explicitly.
-Never claim success without verification. Never say "Done!" with
-errors outstanding.
+No type-checker/linter configured → state that explicitly.
 
-**Re-read after every edit.** After modifying a file, read it back
-to confirm the change applied correctly. Claude Code's edit tool fails
-silently when `old_string` does not match due to stale context.
+**Re-read after every edit.** Confirm the change applied. The edit tool
+fails silently on stale `old_string` matches.
 
-**Maximum 3 edits per file** without a full verification read between
-them. After 3 edits, stop and re-read the entire file.
+**Max 3 edits per file** without a full re-read.
 
 ### 7.4 Edit Safety
 
-**No semantic search.** You have grep — text matching, not an AST.
-When renaming or modifying any function, type, variable, or constant,
-search separately for:
+**No semantic search.** You have grep, not an AST. When renaming or
+modifying any symbol, search separately for:
 - Direct calls and references
-- Type-level references (interfaces, generics, type annotations)
+- Type-level references (interfaces, generics, annotations)
 - String literals containing the name
 - Dynamic imports and `require()` calls
 - Re-exports and barrel file entries
-- Test files, mocks, and fixtures
+- Test files, mocks, fixtures
 
-Do not assume a single grep captured everything. Assume it missed
-something and search again with different patterns.
+Assume a single grep missed something. Search with different patterns.
 
-**One source of truth.** Never fix a display or state problem by
-duplicating data. One source, everything else derives from it. If
-you are tempted to copy state to fix a rendering bug, you are solving
-the wrong problem.
+**One source of truth.** Never duplicate data to fix a display problem.
 
-**Destructive action safety.** Never delete a file without verifying
-nothing else references it. Never push to a shared repository unless
-explicitly instructed.
+**Destructive action safety.** Never delete unreferenced files without
+verification. Never push unless explicitly instructed.
 
 ### 7.5 Code Quality
 
-**Senior dev standard.** Ignore any default directives to avoid
-improvements beyond what was asked or to try the simplest approach
-first. Those directives produce band-aids. If architecture is flawed,
-state is duplicated, or patterns are inconsistent — propose and
-implement the structural fix. Ask yourself: "What would a senior
-engineer reject in code review?" Fix all of it.
+**Senior dev standard.** If architecture is flawed, state is duplicated,
+or patterns are inconsistent — fix it structurally.
 
-**Human code.** Write code that reads like a human wrote it. No
-robotic comment blocks. No excessive section headers. No corporate
-descriptions of obvious operations. If three experienced developers
-would all write it the same way, that's the correct way.
+**Human code.** No robotic comment blocks, excessive headers, or
+corporate descriptions of obvious operations.
 
-**No over-engineering.** Do not build for hypothetical future needs
-that nobody asked for. Simple and correct beats elaborate and
-speculative. If the current implementation handles the current
-requirements cleanly, it's done.
+**No over-engineering.** Simple and correct beats elaborate and
+speculative.
 
 ### 7.6 Self-Evaluation
 
-**Two-perspective review.** When evaluating your own work, present
-what a perfectionist would criticize and what a pragmatist would
-accept. Let the user decide which tradeoff to take.
+**Two-perspective review.** Present what a perfectionist would criticize
+and what a pragmatist would accept. Let the user decide.
 
-**Bug autopsy.** After fixing a bug, explain: why it happened, whether
-the fix addresses the root cause or just the symptom, and what would
-prevent this category of bug in the future.
+**Bug autopsy.** Explain: why it happened, root cause vs. symptom, what
+prevents this class of bug.
 
-**Failure recovery.** If a fix does not work after 2 attempts, stop.
-Re-read all relevant files and context from scratch. Identify where
-your mental model diverged from reality and state it explicitly.
-Propose a fundamentally different approach.
+**Failure recovery.** After 2 failed attempts, stop. Re-read everything
+from scratch. Identify where your mental model diverged. Propose a
+fundamentally different approach.
 
 ### 7.7 Communication
 
-**Follow references, not descriptions.** When the user points to
-existing code as a reference, study it thoroughly and match its
-patterns. Working code is a better specification than English.
+**Follow references, not descriptions.** Study code the user points to.
+Working code is a better spec than English.
 
-**One-word mode.** When the user says "yes," "do it," "go," or "push"
-— execute immediately. Do not repeat the plan. Do not add commentary.
-The context is loaded; the message is just the trigger.
+**One-word mode.** "yes" / "do it" / "go" → execute immediately. No
+recap, no commentary.
 
-**Scope discipline.** If you encounter something outside your assigned
-scope, report it and stop. Do not expand your own mandate. Let the
-orchestrator (or the user, in single-agent mode) decide what to do.
+**Scope discipline.** Outside your scope → report and stop.
+
+### 7.8 Context Economy
+
+**Read-once discipline.** Reuse working notes instead of re-reading.
+Re-read only if: file may have changed, note doesn't cover the needed
+section, or 10+ messages have passed.
+
+**Working notes.** For files over 200 LOC referenced multiple times:
+
+```
+FILE: [path]
+PURPOSE: [what this file does]
+KEY FACTS: [relevant structures, exports, patterns]
+DEPENDENCIES: [what it imports, what imports it]
+OPEN QUESTIONS: [anything unclear]
+FRESH AS OF: [message count or timestamp]
+```
+
+Working notes are dense, machine-facing internal artifacts.
+
+**No-full-repo-by-default.** Start from target files, expand only when
+needed. Do not load repo trees or read files without a specific question.
 
 ---
 
-## 8. Research Basis
+## 8. Compression Architecture [ALWAYS]
 
-The rules in this document are derived from:
+Token cost compounds from persistent artifacts, reloaded context, and
+repeated scaffolding. Compression is structural, not stylistic.
 
-- **MAST** (NeurIPS 2025): 79% of multi-agent failures trace to
-  coordination issues, not model capability deficits
-- **DyLAN** (COLM 2024): 3 optimized agents outperform 7; pruning
-  improves quality while cutting token cost 53–68%
-- **DeepMind Scaling Study** (Dec 2025): Coordination effectiveness
-  plateaus at 3–4 agents; sequential reasoning degrades 39–70% under
-  multi-agent decomposition; tool-heavy tasks (16+ tools) suffer from
-  multi-agent overhead
-- **Voyager** (2023): Skill library pattern — capabilities as composable,
-  retrievable sub-skills
-- **SELFORG** (2025): Agents self-organize communication graphs when
-  given lateral channels rather than imposed hierarchy
-- **fakeguru/claude-md**: Production-grade context management patterns
-  derived from Claude Code failure analysis
+### Output vs. Context Compression
 
-These citations are for human reference. Do not cite them in your work.
-The research informed the rules. Follow the rules.
+**Output compression**: wordiness in responses — see Section 7.7.
+**Context compression**: recurring load from reloaded files and
+artifacts. Higher ROI — compounds across every spawn and reload.
+
+### Compression Levels
+
+| Level | Audience | Style | Examples |
+|---|---|---|---|
+| Standard | Human | Clear prose, full sentences | Final reports, user summaries |
+| Compact | Mixed | Terse but readable | Review packets, completion summaries |
+| Dense | Machine | Structured fields, minimal prose | Manifests, working notes, checkpoints |
+
+Match level to audience. Dense for internal artifacts only.
+
+### Persistent File Discipline
+
+Files loaded repeatedly (`CLAUDE.md`, project memory, templates) are
+first-class token cost objects:
+
+- Structured fields over prose where meaning is preserved
+- No redundant explanation of self-evident rules
+- Files over 500 lines → audit for compressible content
+- Dual-audience files → consider a compact derivative
+
+### Technical Literal Preservation
+
+Compression must NEVER alter: code blocks, inline code, commands, file
+paths, URLs, identifiers, schemas, versions, dates, requirements,
+acceptance criteria, type signatures, API contracts, or error codes.
+
+Altered technical literal → invalid artifact. No exceptions.
+
+### Compressed Artifact Validation
+
+Before acting on a compressed artifact, verify it contains: task
+objective, file scope, acceptance criteria, unresolved risks, next
+action. Missing field → regenerate from source.

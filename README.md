@@ -62,15 +62,17 @@ Maestro implements the architecture this research points to — not a framework 
                                     +-------------------------+
 ```
 
-**Decision Gate** — Evaluates whether a task actually needs multiple agents. Biased toward single-agent to prevent unnecessary coordination overhead. Most tasks stay single-agent.
+**Decision Gate** — Evaluates whether a task actually needs multiple agents. Biased toward single-agent to prevent unnecessary coordination overhead. Includes token-efficiency heuristics that check context duplication, file-set disjointness, and reviewer reconstruction cost before approving multi-agent execution. Most tasks stay single-agent.
 
-**Planner** — Decomposes complex tasks into parallel and sequential work when the Decision Gate approves multi-agent execution.
+**Planner** — Decomposes complex tasks into parallel and sequential work. Includes token-cost assessment and reuses task-class scaffolds (feature, bug fix, refactor, audit, docs+code) for known patterns instead of replanning from scratch.
 
-**Specialists** — Execute focused subtasks with scoped context. Hard-capped at 4 per parallel group based on the DyLAN and DeepMind findings on coordination plateaus.
+**Specialists** — Execute focused subtasks from compact context manifests with scoped tool access. Hard-capped at 4 per parallel group based on the DyLAN and DeepMind findings on coordination plateaus.
 
-**Cross-Talk Routing** — Manages structured communication between specialists when outputs affect one another. Uses a shared context bus, not message relay through a boss agent.
+**Cross-Talk Routing** — Manages structured communication between specialists when outputs affect one another. Uses compact handoff artifacts, not transcript carryover.
 
-**Staff Engineer Review** — Performs adversarial final verification. A separate agent with a different role (reviewer vs. builder) catches issues a single perspective misses.
+**Staff Engineer Review** — Performs adversarial final verification from a minimized review packet (changed files, decisions, risks) with escalation rules for when full context is needed.
+
+**Compression Architecture** — Treats token cost as a structural concern across three density levels (standard/compact/dense) matched to artifact audience. Enforces technical literal preservation, compressed artifact validation, and persistent file discipline for recurring context.
 
 ## Quick Start
 
@@ -99,11 +101,11 @@ curl -o .cursorrules https://raw.githubusercontent.com/mbanderas/maestro/main/.c
 ## How It Works
 
 1. You give your AI coding agent a task as normal
-2. The **Decision Gate** evaluates complexity. Simple tasks run single-agent (no overhead)
-3. For complex tasks, the **Planner** decomposes work into parallel and sequential subtasks
-4. **Specialists** execute subtasks with scoped context, communicating through structured handoffs
-5. The **Staff Engineer** reviews the combined output adversarially
-6. You get the result — faster for complex tasks, identical for simple ones
+2. The **Decision Gate** evaluates complexity and token cost. Simple tasks run single-agent (no overhead)
+3. For complex tasks, the **Planner** decomposes work using task-class scaffolds and token-cost assessment
+4. **Specialists** execute subtasks from compact context manifests, communicating through structured handoff artifacts
+5. The **Staff Engineer** reviews the combined output from a minimized review packet
+6. You get the result — faster for complex tasks, identical for simple ones, token-efficient for both
 
 ## When to Use Maestro
 
