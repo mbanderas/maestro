@@ -6,15 +6,16 @@
 <p align="center">
   <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="MIT License"></a>
   <img src="https://img.shields.io/badge/dependencies-zero-brightgreen" alt="Zero Dependencies">
-  <img src="https://img.shields.io/badge/agents-Claude%20Code%20%7C%20Codex%20%7C%20Cursor-5b82d6" alt="Claude Code | Codex | Cursor">
+  <img src="https://img.shields.io/badge/agents-Claude%20Code%20%7C%20Gemini%20%7C%20Codex%20%7C%20Cursor-5b82d6" alt="Claude Code | Gemini | Codex | Cursor">
 </p>
 
 ---
 
-Drop a single file into Claude Code, Codex, or Cursor and transform sequential single-agent execution into a coordinated multi-agent pipeline. No dependencies. No config. No SDK.
+Add Maestro to Claude Code, Gemini, Codex, or Cursor and transform sequential single-agent execution into a coordinated multi-agent pipeline. No dependencies. No config. No SDK.
 
 ```bash
-curl -o CLAUDE.md https://raw.githubusercontent.com/mbanderas/maestro/main/CLAUDE.md
+curl -O https://raw.githubusercontent.com/mbanderas/maestro/main/AGENTS.md
+curl -O https://raw.githubusercontent.com/mbanderas/maestro/main/CLAUDE.md
 ```
 
 Maestro is built on [peer-reviewed research](https://marklaursen.com/blog/why-your-multi-agent-ai-system-keeps-failing) showing that **79% of multi-agent failures come from coordination breakdowns, not model capability** — and that **three optimized agents outperform seven**.
@@ -76,13 +77,25 @@ Maestro implements the architecture this research points to — not a framework 
 
 ### Claude Code
 
-Copy `CLAUDE.md` into your project root. That's it.
+Copy `CLAUDE.md` and `AGENTS.md` into your project root. `CLAUDE.md` imports the portable doctrine from `AGENTS.md` and adds Claude Code-specific runtime rules.
 
 ```bash
+curl -o AGENTS.md https://raw.githubusercontent.com/mbanderas/maestro/main/AGENTS.md
 curl -o CLAUDE.md https://raw.githubusercontent.com/mbanderas/maestro/main/CLAUDE.md
 ```
 
-Claude Code reads `CLAUDE.md` automatically on startup. Your next task will route through Maestro's Decision Gate.
+Claude Code reads `CLAUDE.md` automatically on startup. The `@AGENTS.md` import pulls in the shared doctrine. Your next task will route through Maestro's Decision Gate.
+
+### Gemini
+
+Copy `GEMINI.md` and `AGENTS.md` into your project root. `GEMINI.md` imports the portable doctrine from `AGENTS.md` and adds Gemini-specific runtime rules.
+
+```bash
+curl -o AGENTS.md https://raw.githubusercontent.com/mbanderas/maestro/main/AGENTS.md
+curl -o GEMINI.md https://raw.githubusercontent.com/mbanderas/maestro/main/GEMINI.md
+```
+
+Gemini reads `GEMINI.md` with precedence over `AGENTS.md` when both are present.
 
 ### Codex
 
@@ -105,6 +118,34 @@ curl -o .cursorrules https://raw.githubusercontent.com/mbanderas/maestro/main/.c
 5. The **Staff Engineer** reviews the combined output adversarially
 6. You get the result — faster for complex tasks, identical for simple ones
 
+## Runtime Adapters
+
+Maestro separates **portable orchestration doctrine** from **runtime-specific adapters**. The core logic — Decision Gate, Planner, Specialists, Cross-Talk, Staff Engineer, Universal Rules, Compression — lives in `AGENTS.md` and works across any agent runtime.
+
+Runtime adapters are thin wrappers that import the shared doctrine and add only what is specific to that runtime:
+
+| File | Role | What it adds |
+|---|---|---|
+| `AGENTS.md` | Portable core | Full orchestration doctrine, runtime-agnostic |
+| `CLAUDE.md` | Claude Code adapter | Subagent/team routing, hooks, context limits, tool scoping |
+| `GEMINI.md` | Gemini adapter | Execution mapping, instruction precedence, verification notes |
+| `.cursorrules` | Cursor adapter | Full doctrine (Cursor does not support imports) |
+
+**Design principle:** runtime-specific features stay in adapters unless they generalize across environments. This keeps the shared doctrine portable and prevents provider-specific details from bloating the core files.
+
+Adding a new runtime adapter means creating a thin file that imports `AGENTS.md` and maps Maestro concepts to the runtime's capabilities.
+
+### Claude Code: Subagents vs Agent Teams
+
+Claude Code offers two mechanisms for parallel work — subagents and [agent teams](https://code.claude.com/docs/en/agent-teams) — and Maestro's `CLAUDE.md` adapter automatically routes to the right one based on the task:
+
+- **Subagents** run within a single session — they execute a scoped task and report results back to the parent agent. Maestro defaults to subagents for most parallel work: narrow, independent tasks where only the result matters.
+- **[Agent teams](https://code.claude.com/docs/en/agent-teams)** coordinate multiple independent Claude Code sessions with shared task lists and direct inter-agent messaging. Unlike subagents, teammates communicate peer-to-peer and self-coordinate. Maestro routes to agent teams only when peer-to-peer coordination is materially useful — long-running parallel workstreams, competing-hypothesis debugging, or cross-layer feature builds where agents need to discuss and challenge each other's work.
+
+This routing is automatic. Maestro's Decision Gate evaluates the task, and the Claude adapter selects the execution mode — subagents by default, teams only when the collaboration overhead is justified by the task's complexity.
+
+Agent teams are **experimental and Claude Code-only** — they are not available in Gemini, Codex, Cursor, or other runtimes. Maestro's portable core uses the general concept of "specialists" which each runtime maps to its own execution model.
+
 ## When to Use Maestro
 
 Maestro helps most on tasks that are:
@@ -125,14 +166,14 @@ This is by design. The research shows coordination overhead makes simple tasks w
 
 | | Maestro | CrewAI / LangGraph / AutoGen |
 |---|---|---|
-| **Setup** | Drop one file, done | Install packages, write Python/TS, configure agents |
+| **Setup** | Copy 1-2 files, done | Install packages, write Python/TS, configure agents |
 | **Dependencies** | Zero | Framework + SDK + runtime |
 | **Where it runs** | Inside your existing AI coding agent | Standalone process you build and deploy |
 | **Agent count** | Hard cap at 4 parallel (research-backed) | Unlimited (user decides) |
 | **Default behavior** | Single-agent unless complexity warrants multi | Always multi-agent |
 | **Design philosophy** | Fewer agents, structured coordination | More agents, flexible topologies |
 
-Maestro is not a framework. It's an orchestration layer for AI coding agents that already exist. You don't write agent code — you drop a file and your existing agent gains multi-agent capabilities.
+Maestro is not a framework. It's an orchestration layer for AI coding agents that already exist. You don't write agent code — you copy a couple of files and your existing agent gains multi-agent capabilities.
 
 If you need a standalone multi-agent application with custom tools, APIs, and deployment pipelines, use a framework. If you want your AI coding agent to handle complex tasks better without changing your workflow, use Maestro.
 
@@ -158,7 +199,7 @@ Contributions are welcome. Before opening a PR:
 
 1. Read the research foundation — Maestro's constraints (4-agent cap, Decision Gate bias toward single-agent) are intentional and research-backed
 2. Keep it zero-dependency — no npm packages, no external imports
-3. Test with real tasks across Claude Code, Codex, and Cursor
+3. Test with real tasks across Claude Code, Gemini, Codex, and Cursor
 
 If you have benchmarks, case studies, or research that challenges or extends the current architecture, open an issue. The design should evolve with evidence.
 

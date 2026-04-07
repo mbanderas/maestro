@@ -323,6 +323,15 @@ reassign, or skip. Do not silently retry more than once.
 Deliver what was asked for. Mention improvement opportunities after
 delivery — let the user decide.
 
+### Runtime Adaptation
+
+- When the runtime provides enforcement (hooks, policies, tool
+  restrictions), prefer structural enforcement over prompt reminders.
+- Collaborative multi-agent modes (e.g., agent teams, shared sessions)
+  must be justified by material coordination benefit — not used by
+  default.
+- Prefer narrow tool surfaces per specialist over broad preloading.
+
 ---
 
 ## 7. Universal Rules [ALWAYS]
