@@ -118,6 +118,20 @@ curl -o .cursorrules https://raw.githubusercontent.com/mbanderas/maestro/main/.c
 5. The **Staff Engineer** reviews the combined output adversarially
 6. You get the result — faster for complex tasks, identical for simple ones
 
+## Context Architecture
+
+Maestro minimizes token cost through progressive context loading — agents start from the smallest artifact that can orient their work and expand to live code only when needed.
+
+**Orientation artifacts** — Optional project maps or subsystem indexes that give the Planner and Specialists a cheap structural overview before reading code. Workers start from narrow context instead of rediscovering the repo from scratch.
+
+**Blast-radius-aware routing** — The Decision Gate considers file centrality when choosing execution mode. Tasks touching dependency hubs (shared interfaces, core modules) bias toward single-agent or tighter review. Tasks isolated in narrow subsystems decompose more safely.
+
+**Index-first retrieval** — When a verified orientation artifact exists, agents read it before broad file discovery. This eliminates repeated repo exploration across specialists — one of the largest sources of wasted tokens in multi-agent workflows.
+
+**Orientation is not authority** — Generated maps and project indexes are navigation aids, not source of truth. Agents always verify against live code before acting, preventing stale context from becoming silent corruption.
+
+These features follow the same principle as the rest of Maestro: reducing coordination cost and context duplication is more effective than adding capability.
+
 ## Runtime Adapters
 
 Maestro separates **portable orchestration doctrine** from **runtime-specific adapters**. The core logic — Decision Gate, Planner, Specialists, Cross-Talk, Staff Engineer, Universal Rules, Compression — lives in `AGENTS.md` and works across any agent runtime.

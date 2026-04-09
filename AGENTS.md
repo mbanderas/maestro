@@ -53,11 +53,12 @@ multi-agent mode:
   prefer single-agent. N× duplication with no quality gain.
 - **Dependency chain**: ≤3 files in one chain → single-agent.
 - **Disjoint file sets**: 3+ specialists only if each owns disjoint
-  files. Overlapping ownership creates cross-talk that erases the
-  parallelism benefit.
-- **Reviewer reconstruction cost**: If decomposition forces the Staff
-  Engineer to reconstruct context a single agent would hold natively,
-  prefer single-agent.
+  files — overlapping ownership erases the parallelism benefit.
+- **Reviewer reconstruction cost**: decomposition forces Staff Engineer
+  to reconstruct context a single agent holds natively → single-agent.
+- **Blast radius**: task touches high-centrality files (shared
+  interfaces, dependency hubs) → bias single-agent or tighter review.
+  Isolated in a narrow subsystem → decomposition is safer.
 
 ### Override Signals
 
@@ -66,8 +67,8 @@ User says "parallelize" / "use agents" → multi-agent regardless.
 
 ### When In Doubt
 
-Default to single-agent. Multi-agent overhead is only justified when
-parallelism or context isolation provides a measurable advantage.
+Default to single-agent. Multi-agent only when parallelism or context
+isolation provides measurable advantage.
 
 ---
 
@@ -150,6 +151,7 @@ ROLE: You are a specialist. You execute one task and report back.
 TASK: [exact objective — one sentence]
 FILES: [read: file1, file2 | modify: file3]
 UPSTREAM: [relevant decisions/outputs from completed dependencies]
+ORIENTATION: [optional — subsystem map or index excerpt if available]
 ASSUMPTIONS: [dependency assumptions that must hold]
 OUTPUT: [what to deliver — format and content]
 ACCEPT: [how to verify completion]
@@ -363,6 +365,10 @@ results → narrow scope and retry. State when you suspect truncation.
 **Persist intermediate results.** After 3+ sequential operations, write
 results to disk. Do not hold them in memory across long chains.
 
+**Orientation is not authority.** Project maps, subsystem notes, and
+generated indexes are navigation aids — verify against live code before
+acting on them.
+
 ### 7.3 Verification
 
 **Forced verification.** FORBIDDEN from reporting complete until:
@@ -432,8 +438,8 @@ recap, no commentary.
 ### 7.8 Context Economy
 
 **Read-once discipline.** Reuse working notes instead of re-reading.
-Re-read only if: file may have changed, note doesn't cover the needed
-section, or 10+ messages have passed.
+Re-read only if: file may have changed, note is incomplete, or 10+
+messages have passed.
 
 **Working notes.** For files over 200 LOC referenced multiple times:
 
@@ -450,6 +456,10 @@ Working notes are dense, machine-facing internal artifacts.
 
 **No-full-repo-by-default.** Start from target files, expand only when
 needed. Do not load repo trees or read files without a specific question.
+
+**Index-first retrieval.** When a verified orientation artifact exists
+(project map, subsystem index), use it before broad file discovery.
+Expand to live code when the artifact doesn't answer the question.
 
 ---
 
