@@ -13,10 +13,23 @@
 
 Add Maestro to Claude Code, Gemini, Codex, or Cursor and transform sequential single-agent execution into a coordinated multi-agent pipeline. No dependencies. No config. No SDK.
 
+### New project
+
+Drop the files for your runtime into the project root. Your agent picks them up on the next session:
+
 ```bash
+# Claude Code
 curl -O https://raw.githubusercontent.com/mbanderas/maestro/main/AGENTS.md
 curl -O https://raw.githubusercontent.com/mbanderas/maestro/main/CLAUDE.md
+
+# Gemini — swap CLAUDE.md for GEMINI.md
+# Codex — AGENTS.md only
+# Cursor — .cursorrules only (full doctrine, no import needed)
 ```
+
+### Existing project
+
+Already have a `CLAUDE.md`, `GEMINI.md`, or `.cursorrules`? Download `AGENTS.md` into your project root, then add `@AGENTS.md` to the top of your existing config file to import the orchestration doctrine. See [Quick Start](#quick-start) for per-runtime details.
 
 Maestro is built on [peer-reviewed research](https://marklaursen.com/blog/why-your-multi-agent-ai-system-keeps-failing) showing that **79% of multi-agent failures come from coordination breakdowns, not model capability** — and that **three optimized agents outperform seven**.
 
@@ -77,37 +90,45 @@ Maestro implements the architecture this research points to — not a framework 
 
 ### Claude Code
 
-Copy `CLAUDE.md` and `AGENTS.md` into your project root. `CLAUDE.md` imports the portable doctrine from `AGENTS.md` and adds Claude Code-specific runtime rules.
+**Fresh setup** — drop both files into your project root:
 
 ```bash
-curl -o AGENTS.md https://raw.githubusercontent.com/mbanderas/maestro/main/AGENTS.md
-curl -o CLAUDE.md https://raw.githubusercontent.com/mbanderas/maestro/main/CLAUDE.md
+curl -O https://raw.githubusercontent.com/mbanderas/maestro/main/AGENTS.md
+curl -O https://raw.githubusercontent.com/mbanderas/maestro/main/CLAUDE.md
 ```
+
+**Existing `CLAUDE.md`** — download `AGENTS.md` and add `@AGENTS.md` to the top of your existing file. Optionally merge the runtime rules from Maestro's [`CLAUDE.md`](CLAUDE.md).
 
 Claude Code reads `CLAUDE.md` automatically on startup. The `@AGENTS.md` import pulls in the shared doctrine. Your next task will route through Maestro's Decision Gate.
 
 ### Gemini
 
-Copy `GEMINI.md` and `AGENTS.md` into your project root. `GEMINI.md` imports the portable doctrine from `AGENTS.md` and adds Gemini-specific runtime rules.
+**Fresh setup:**
 
 ```bash
-curl -o AGENTS.md https://raw.githubusercontent.com/mbanderas/maestro/main/AGENTS.md
-curl -o GEMINI.md https://raw.githubusercontent.com/mbanderas/maestro/main/GEMINI.md
+curl -O https://raw.githubusercontent.com/mbanderas/maestro/main/AGENTS.md
+curl -O https://raw.githubusercontent.com/mbanderas/maestro/main/GEMINI.md
 ```
 
-Gemini reads `GEMINI.md` with precedence over `AGENTS.md` when both are present.
+**Existing `GEMINI.md`** — download `AGENTS.md` and add `@AGENTS.md` to the top of your existing file. Optionally merge the runtime rules from Maestro's [`GEMINI.md`](GEMINI.md).
 
 ### Codex
 
 ```bash
-curl -o AGENTS.md https://raw.githubusercontent.com/mbanderas/maestro/main/AGENTS.md
+curl -O https://raw.githubusercontent.com/mbanderas/maestro/main/AGENTS.md
 ```
+
+Codex reads `AGENTS.md` directly — no adapter needed.
 
 ### Cursor
 
+**Fresh setup:**
+
 ```bash
-curl -o .cursorrules https://raw.githubusercontent.com/mbanderas/maestro/main/.cursorrules
+curl -O https://raw.githubusercontent.com/mbanderas/maestro/main/.cursorrules
 ```
+
+**Existing `.cursorrules`** — Cursor does not support file imports, so append the contents of Maestro's [`.cursorrules`](.cursorrules) to your existing file.
 
 ## How It Works
 
