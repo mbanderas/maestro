@@ -1,0 +1,140 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 520" font-family="system-ui, -apple-system, sans-serif">
+  <defs>
+    <marker id="arr" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#30363d"/>
+    </marker>
+  </defs>
+
+  <!-- Background -->
+  <rect width="800" height="520" fill="#0d1117" rx="12"/>
+
+  <!-- Title -->
+  <text x="400" y="36" font-size="16" font-weight="600" fill="#e6edf3" text-anchor="middle">Maestro Architecture</text>
+
+  <!-- ═══════════ DECISION GATE ═══════════ -->
+  <rect x="320" y="56" width="160" height="48" rx="8" fill="#161b22" stroke="#58a6ff" stroke-width="1.5"/>
+  <!-- pulsing glow overlay -->
+  <rect x="320" y="56" width="160" height="48" rx="8" fill="none" stroke="#58a6ff" stroke-width="1.5">
+    <animate attributeName="opacity" values="0.5;1;0.5" dur="3s" repeatCount="indefinite"/>
+  </rect>
+  <text x="400" y="77" font-size="13" font-weight="600" fill="#e6edf3" text-anchor="middle">Decision Gate</text>
+  <text x="400" y="93" font-size="10.5" fill="#8b949e" text-anchor="middle">single vs multi</text>
+
+  <!-- ═══════════ LEFT BRANCH: Single Agent ═══════════ -->
+  <line x1="370" y1="104" x2="182" y2="188" stroke="#30363d" stroke-width="1.5" marker-end="url(#arr)"/>
+
+  <rect x="110" y="190" width="140" height="42" rx="8" fill="#161b22" stroke="#238636" stroke-width="1.5"/>
+  <text x="180" y="211" font-size="13" font-weight="600" fill="#7ee787" text-anchor="middle">Single Agent</text>
+  <text x="180" y="225" font-size="10.5" fill="#8b949e" text-anchor="middle">most tasks</text>
+
+  <!-- default path badge -->
+  <rect x="125" y="240" width="110" height="22" rx="11" fill="#238636" opacity="0.15"/>
+  <text x="180" y="255" font-size="10" fill="#7ee787" text-anchor="middle">default path</text>
+
+  <!-- dot: Gate → Single Agent -->
+  <circle r="3.5" fill="#58a6ff">
+    <animateMotion path="M 370,104 L 182,188" dur="3s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.1;0.85;1" dur="3s" repeatCount="indefinite"/>
+  </circle>
+
+  <!-- ═══════════ RIGHT BRANCH: Planner ═══════════ -->
+  <line x1="430" y1="104" x2="558" y2="163" stroke="#30363d" stroke-width="1.5" marker-end="url(#arr)"/>
+
+  <rect x="490" y="165" width="140" height="42" rx="8" fill="#161b22" stroke="#58a6ff" stroke-width="1.5"/>
+  <text x="560" y="186" font-size="13" font-weight="600" fill="#e6edf3" text-anchor="middle">Planner</text>
+  <text x="560" y="200" font-size="10.5" fill="#8b949e" text-anchor="middle">decompose task</text>
+
+  <!-- dot: Gate → Planner -->
+  <circle r="3.5" fill="#58a6ff">
+    <animateMotion path="M 430,104 L 558,163" dur="3s" begin="0.3s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.1;0.85;1" dur="3s" begin="0.3s" repeatCount="indefinite"/>
+  </circle>
+
+  <!-- ═══════════ Planner → fan-out ═══════════ -->
+  <line x1="560" y1="207" x2="560" y2="270" stroke="#30363d" stroke-width="1.5"/>
+  <circle cx="560" cy="275" r="5" fill="#30363d" stroke="#58a6ff" stroke-width="1"/>
+
+  <!-- dot: Planner → fan-out -->
+  <circle r="3" fill="#58a6ff">
+    <animateMotion path="M 560,207 L 560,270" dur="3s" begin="1s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.1;0.85;1" dur="3s" begin="1s" repeatCount="indefinite"/>
+  </circle>
+
+  <!-- ═══════════ Fan-out → Specialists ═══════════ -->
+  <!-- max 4 badge -->
+  <rect x="370" y="298" width="74" height="20" rx="10" fill="#d29922" opacity="0.12"/>
+  <text x="407" y="312" font-size="9" fill="#d29922" text-anchor="middle">max 4 agents</text>
+
+  <!-- cross-talk label -->
+  <text x="560" y="338" font-size="9.5" fill="#d29922" text-anchor="middle" opacity="0.7">cross-talk routing</text>
+
+  <!-- lines to specialists -->
+  <line x1="560" y1="280" x2="422" y2="348" stroke="#30363d" stroke-width="1.5" marker-end="url(#arr)"/>
+  <line x1="560" y1="280" x2="560" y2="348" stroke="#30363d" stroke-width="1.5" marker-end="url(#arr)"/>
+  <line x1="560" y1="280" x2="698" y2="348" stroke="#30363d" stroke-width="1.5" marker-end="url(#arr)"/>
+
+  <!-- dots: fan-out → specialists -->
+  <circle r="3" fill="#d29922">
+    <animateMotion path="M 560,280 L 422,348" dur="3s" begin="1.6s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.1;0.85;1" dur="3s" begin="1.6s" repeatCount="indefinite"/>
+  </circle>
+  <circle r="3" fill="#d29922">
+    <animateMotion path="M 560,280 L 560,348" dur="3s" begin="1.8s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.1;0.85;1" dur="3s" begin="1.8s" repeatCount="indefinite"/>
+  </circle>
+  <circle r="3" fill="#d29922">
+    <animateMotion path="M 560,280 L 698,348" dur="3s" begin="2.0s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.1;0.85;1" dur="3s" begin="2.0s" repeatCount="indefinite"/>
+  </circle>
+
+  <!-- ═══════════ SPECIALISTS ═══════════ -->
+  <rect x="360" y="350" width="120" height="42" rx="8" fill="#161b22" stroke="#d29922" stroke-width="1.5"/>
+  <text x="420" y="371" font-size="13" font-weight="600" fill="#e6edf3" text-anchor="middle">Specialist A</text>
+  <text x="420" y="385" font-size="10.5" fill="#8b949e" text-anchor="middle">scoped task</text>
+
+  <rect x="500" y="350" width="120" height="42" rx="8" fill="#161b22" stroke="#d29922" stroke-width="1.5"/>
+  <text x="560" y="371" font-size="13" font-weight="600" fill="#e6edf3" text-anchor="middle">Specialist B</text>
+  <text x="560" y="385" font-size="10.5" fill="#8b949e" text-anchor="middle">scoped task</text>
+
+  <rect x="640" y="350" width="120" height="42" rx="8" fill="#161b22" stroke="#d29922" stroke-width="1.5"/>
+  <text x="700" y="371" font-size="13" font-weight="600" fill="#e6edf3" text-anchor="middle">Specialist C</text>
+  <text x="700" y="385" font-size="10.5" fill="#8b949e" text-anchor="middle">scoped task</text>
+
+  <!-- ═══════════ CROSS-TALK ═══════════ -->
+  <line x1="458" y1="371" x2="522" y2="371" stroke="#d29922" stroke-width="1" stroke-dasharray="4,3" opacity="0.5"/>
+  <line x1="598" y1="371" x2="662" y2="371" stroke="#d29922" stroke-width="1" stroke-dasharray="4,3" opacity="0.5"/>
+
+  <!-- cross-talk dots bouncing between specialists -->
+  <circle r="2.5" fill="#d29922" opacity="0.8">
+    <animateMotion path="M 458,371 L 522,371" dur="2s" repeatCount="indefinite" calcMode="spline" keySplines="0.42 0 0.58 1"/>
+  </circle>
+  <circle r="2.5" fill="#d29922" opacity="0.8">
+    <animateMotion path="M 662,371 L 598,371" dur="2s" begin="1s" repeatCount="indefinite" calcMode="spline" keySplines="0.42 0 0.58 1"/>
+  </circle>
+
+  <!-- ═══════════ Specialists → Staff Engineer ═══════════ -->
+  <line x1="420" y1="392" x2="548" y2="440" stroke="#30363d" stroke-width="1.5"/>
+  <line x1="560" y1="392" x2="560" y2="440" stroke="#30363d" stroke-width="1.5"/>
+  <line x1="700" y1="392" x2="572" y2="440" stroke="#30363d" stroke-width="1.5"/>
+  <!-- single arrowhead at convergence point -->
+  <polygon points="560,448 555,440 565,440" fill="#30363d"/>
+
+  <!-- dots: specialists → staff engineer -->
+  <circle r="3" fill="#bc4c00">
+    <animateMotion path="M 420,392 L 555,442" dur="3s" begin="3s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.1;0.85;1" dur="3s" begin="3s" repeatCount="indefinite"/>
+  </circle>
+  <circle r="3" fill="#bc4c00">
+    <animateMotion path="M 560,392 L 560,442" dur="3s" begin="3.2s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.1;0.85;1" dur="3s" begin="3.2s" repeatCount="indefinite"/>
+  </circle>
+  <circle r="3" fill="#bc4c00">
+    <animateMotion path="M 700,392 L 565,442" dur="3s" begin="3.4s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.1;0.85;1" dur="3s" begin="3.4s" repeatCount="indefinite"/>
+  </circle>
+
+  <!-- ═══════════ STAFF ENGINEER ═══════════ -->
+  <rect x="475" y="448" width="170" height="48" rx="8" fill="#161b22" stroke="#bc4c00" stroke-width="1.5"/>
+  <text x="560" y="469" font-size="13" font-weight="600" fill="#e6edf3" text-anchor="middle">Staff Engineer</text>
+  <text x="560" y="485" font-size="10.5" fill="#8b949e" text-anchor="middle">adversarial review</text>
+</svg>

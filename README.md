@@ -42,32 +42,9 @@ Maestro implements the architecture this research points to — not a framework 
 
 ## Architecture
 
-```
-                          +------------------+
-                          |   Decision Gate  |
-                          | (single vs multi)|
-                          +--------+---------+
-                                   |
-                    +--------------+--------------+
-                    |                             |
-             Single Agent                  +-----+------+
-             (most tasks)                  |   Planner  |
-                                           +-----+------+
-                                                 |
-                                    +------------+------------+
-                                    |            |            |
-                              +-----------+ +-----------+ +-----------+
-                              |Specialist | |Specialist | |Specialist |
-                              |    A      | |    B      | |    C      |
-                              +-----------+ +-----------+ +-----------+
-                                    |            |            |
-                                    +---Cross-Talk Routing----+
-                                                 |
-                                    +------------+------------+
-                                    | Staff Engineer Review   |
-                                    | (adversarial verify)    |
-                                    +-------------------------+
-```
+<p align="center">
+  <img src="docs/architecture.svg" alt="Maestro architecture diagram" width="700">
+</p>
 
 **Decision Gate** — Routes each task to single-agent or multi-agent execution based on complexity, parallelizability, and token cost. Most tasks stay single-agent.
 
