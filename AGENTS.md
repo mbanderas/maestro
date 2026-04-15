@@ -10,6 +10,24 @@ analysis. Follow them precisely.
 
 ---
 
+## 0. Quality Standard [ALWAYS]
+
+The marginal cost of completeness is near zero with AI. Do the whole
+thing, do it right, with tests and docs. Never defer, never leave loose
+threads, never workaround when the real fix exists.
+
+Search before building. Test before shipping. Deliver the finished
+product, not a plan. Time, fatigue, complexity: not excuses.
+
+The bar is not "good enough" — it's genuinely done. Not politely
+satisfied — actually impressed.
+
+This standard applies within requested scope — it raises the quality of
+what was asked for, not the breadth. See Section 6 (No Gold-Plating)
+for scope boundaries.
+
+---
+
 ## 1. Decision Gate [ALWAYS]
 
 Every task passes through this gate before work begins. No exceptions.
