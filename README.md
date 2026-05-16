@@ -69,6 +69,8 @@ Claude Code reads `CLAUDE.md` on startup. The `@AGENTS.md` import inside it pull
 
 **Already have a `CLAUDE.md`?** Don't overwrite it. Instead, download just `AGENTS.md` and add `@AGENTS.md` to the top of your existing `CLAUDE.md` to import the doctrine. You can optionally merge the runtime rules from Maestro's [`CLAUDE.md`](CLAUDE.md) into yours.
 
+**Optional:** Maestro also ships a context-window progress bar for the Claude Code status line — see [Context Bar](#claude-code-context-bar).
+
 ### Gemini
 
 ```bash
@@ -146,6 +148,59 @@ Claude Code offers two mechanisms for parallel work — subagents and [agent tea
 This routing is automatic. Maestro's Decision Gate evaluates the task, and the Claude adapter selects the execution mode — subagents by default, teams only when the collaboration overhead is justified by the task's complexity.
 
 Agent teams are **experimental and Claude Code-only** — they are not available in Gemini, Codex, Cursor, or other runtimes. Maestro's portable core uses the general concept of "specialists" which each runtime maps to its own execution model.
+
+### Claude Code: Context Bar
+
+Maestro ships an optional status line for Claude Code — a context-window progress bar showing how much of the model's context is used.
+
+```
+████████░░░░░░░░░░░░ 42% 84k/200k · my-project
+```
+
+The bar updates live, shifts from green to amber to red as context fills, and detects the model's context window automatically — including the 1M-token Opus tier. It is **enabled by default** once installed.
+
+**Install** — Windows / PowerShell:
+
+```powershell
+mkdir ~/.claude/statusline, ~/.claude/commands -Force
+curl -o ~/.claude/statusline/context-bar.ps1 https://raw.githubusercontent.com/mbanderas/maestro/main/statusline/context-bar.ps1
+curl -o ~/.claude/commands/context-bar.md https://raw.githubusercontent.com/mbanderas/maestro/main/commands/context-bar.md
+```
+
+**Install** — macOS / Linux (the bar requires [`jq`](https://jqlang.github.io/jq/); without it the status line shows the folder name only):
+
+```bash
+mkdir -p ~/.claude/statusline ~/.claude/commands
+curl -o ~/.claude/statusline/context-bar.sh https://raw.githubusercontent.com/mbanderas/maestro/main/statusline/context-bar.sh
+curl -o ~/.claude/commands/context-bar.md https://raw.githubusercontent.com/mbanderas/maestro/main/commands/context-bar.md
+chmod +x ~/.claude/statusline/context-bar.sh
+```
+
+Then point Claude Code at the script by adding a `statusLine` block to `~/.claude/settings.json` (use the **absolute path** to the script):
+
+```jsonc
+// Windows
+"statusLine": {
+  "type": "command",
+  "command": "powershell -NoProfile -ExecutionPolicy Bypass -File \"C:\\Users\\you\\.claude\\statusline\\context-bar.ps1\""
+}
+
+// macOS / Linux
+"statusLine": {
+  "type": "command",
+  "command": "bash /Users/you/.claude/statusline/context-bar.sh"
+}
+```
+
+**Enable / disable** — the bar is on by default. Toggle it with the `/context-bar` slash command:
+
+| Command | Effect |
+|---|---|
+| `/context-bar` | Toggle on/off |
+| `/context-bar off` | Disable — status line shows the folder name only |
+| `/context-bar on` | Re-enable |
+
+The toggle is a flag file (`.context-bar-disabled`) next to the script — no settings edit, no restart. The change applies on the next status line refresh.
 
 ## When to Use Maestro
 
