@@ -202,6 +202,12 @@ Then point Claude Code at the script by adding a `statusLine` block to `~/.claud
 
 The toggle is a flag file (`.context-bar-disabled`) next to the script — no settings edit, no restart. The change applies on the next status line refresh.
 
+**Codex CLI** — this script does not apply. Codex CLI has no command-backed
+status line; it only renders a fixed set of built-in items. It already
+ships a native context-usage indicator — enable it with the `/statusline`
+picker, or set `context` in the `[tui].status_line` list in
+`~/.codex/config.toml`.
+
 ## When to Use Maestro
 
 Maestro helps most on tasks that are:
