@@ -149,6 +149,58 @@ This routing is automatic. Maestro's Decision Gate evaluates the task, and the C
 
 Agent teams are **experimental and Claude Code-only** — they are not available in Gemini, Codex, Cursor, or other runtimes. Maestro's portable core uses the general concept of "specialists" which each runtime maps to its own execution model.
 
+### Claude Code: Verification Hook
+
+Maestro ships an optional `SubagentStop` hook for Claude Code that
+enforces the Section 7.3 verification rule structurally — no prompt
+reminder, no relying on the model to police itself. When a subagent
+stops, the hook checks two things and emits a soft warning if either
+fails:
+
+1. Are there orphaned `background_tasks` still active? If so, the
+   subagent is declaring complete while work is still running.
+2. Did a type-checker, linter, or test runner appear in the recent
+   transcript? If not, the subagent likely skipped verification.
+
+The hook never blocks — it injects `additionalContext` so the next
+turn sees the warning and can re-verify. Recognized tools include
+`tsc --noEmit`, `eslint`, `pytest`, `jest`, `vitest`, `go test`,
+`cargo test`, `npm/pnpm/yarn test`, `ruff check`, `mypy`,
+`prettier --check`, and `biome check`.
+
+**Install** — download into `~/.claude/hooks/` and wire into
+`~/.claude/settings.json`:
+
+```bash
+mkdir -p ~/.claude/hooks
+curl -o ~/.claude/hooks/maestro-subagent-guard.js https://raw.githubusercontent.com/mbanderas/maestro/main/hooks/maestro-subagent-guard.js
+```
+
+Add a `SubagentStop` entry under `hooks` in `~/.claude/settings.json`
+(merge with any existing hooks block):
+
+```jsonc
+"hooks": {
+  "SubagentStop": [
+    {
+      "matcher": "",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "node \"/absolute/path/to/.claude/hooks/maestro-subagent-guard.js\""
+        }
+      ]
+    }
+  ]
+}
+```
+
+On Windows, use the absolute path with escaped backslashes, e.g.
+`"C:\\Users\\you\\.claude\\hooks\\maestro-subagent-guard.js"`.
+
+The hook requires Claude Code 2.1.145 or later — earlier versions do
+not include `background_tasks` in the `SubagentStop` payload.
+
 ### Claude Code: Context Bar
 
 Maestro ships an optional status line for Claude Code — a context-window progress bar showing how much of the model's context is used.
