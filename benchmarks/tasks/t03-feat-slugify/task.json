@@ -1,0 +1,7 @@
+{
+  "id": "t03-feat-slugify",
+  "category": "multi-file-feature",
+  "size": "s",
+  "prompt": "Add a slugify(text) function to src/format.js and re-export it from src/index.js. slugify must: lowercase the input, trim it, replace runs of whitespace with a single hyphen, strip every character other than a-z, 0-9, and hyphens, collapse repeated hyphens into one, and trim leading/trailing hyphens. Example: '  Hello,  World!  ' becomes 'hello-world'. Existing exports must keep working.",
+  "verify": "node verify.cjs"
+}

@@ -1,0 +1,7 @@
+{
+  "id": "t04-feat-cli-repeat",
+  "category": "multi-file-feature",
+  "size": "s",
+  "prompt": "Add a --repeat N flag to the CLI in src/. parseArgs in src/args.js must accept --repeat followed by a positive integer (default 1; a missing or invalid value falls back to 1), and src/cli.js must print the message N times, one per line. Existing flags (--message, --upper) must keep working.",
+  "verify": "node verify.cjs"
+}

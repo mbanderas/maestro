@@ -1,0 +1,7 @@
+{
+  "id": "t06-audit-dead-code",
+  "category": "audit",
+  "size": "s",
+  "prompt": "Audit src/ for dead code. Identify the exported functions in src/legacy.js that are not used anywhere outside their own definition (note: a function called by another live function is NOT dead). Write your findings to AUDIT.md in the project root: one markdown bullet line per dead function, each bullet naming exactly one dead function. Do not modify any source files.",
+  "verify": "node verify.cjs"
+}

@@ -1,0 +1,7 @@
+{
+  "id": "t01-fix-inclusive-range",
+  "category": "single-file-fix",
+  "size": "xs",
+  "prompt": "sumRange(a, b) in stats.js should return the sum of all integers from a to b inclusive, but callers report results that are too small. Fix the bug. Keep the function signature and module exports unchanged.",
+  "verify": "node verify.cjs"
+}

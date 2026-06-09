@@ -1,0 +1,7 @@
+{
+  "id": "t05-refactor-rename",
+  "category": "refactor",
+  "size": "s",
+  "prompt": "Rename the function fmtDt in src/util.js to formatDate and update every usage across the codebase (there are both destructured imports and namespace-style util.fmtDt calls). No fmtDt identifier may remain anywhere in src/. Behavior must be unchanged.",
+  "verify": "node verify.cjs"
+}

@@ -1,0 +1,7 @@
+{
+  "id": "t02-fix-even-median",
+  "category": "single-file-fix",
+  "size": "xs",
+  "prompt": "median(values) in median.js is wrong for even-length input: median([1, 2, 3, 4]) should return 2.5 but returns 3. Fix it. Odd-length behavior and the empty-input error must stay as they are.",
+  "verify": "node verify.cjs"
+}
