@@ -17,8 +17,11 @@ Maestro installs as plain markdown files your AI agent reads on startup — no p
 |---|---|
 | Claude Code | [`AGENTS.md`](AGENTS.md) + [`CLAUDE.md`](CLAUDE.md) |
 | Gemini | [`AGENTS.md`](AGENTS.md) + [`GEMINI.md`](GEMINI.md) |
-| Codex | [`AGENTS.md`](AGENTS.md) |
+| Codex | [`AGENTS.md`](AGENTS.md) — see [Maestro on Codex](docs/codex.md) |
 | Cursor | [`.cursorrules`](.cursorrules) |
+| GitHub Copilot | [`AGENTS.md`](AGENTS.md) — nearest `AGENTS.md` in the directory tree wins; a root `CLAUDE.md` or `GEMINI.md` also works |
+| Cline | [`AGENTS.md`](AGENTS.md) — native support (also auto-detects `.cursorrules`) |
+| Windsurf | [`AGENTS.md`](AGENTS.md) — root file is always-on, processed by the Rules engine |
 
 Copy-paste install commands are in [Quick Start](#quick-start) below.
 
@@ -153,6 +156,15 @@ Runtime adapters are thin wrappers that import the shared doctrine and add only 
 | `CLAUDE.md` | Claude Code adapter | Subagent/team routing, hooks, context limits, tool scoping, long-horizon mapping (/loop, schedules) |
 | `GEMINI.md` | Gemini adapter | Execution mapping, instruction precedence, verification notes, long-horizon note |
 | `.cursorrules` | Cursor adapter | Full doctrine (Cursor does not support imports) |
+| [`docs/codex.md`](docs/codex.md) | Codex guide | AGENTS.md precedence and 32 KiB cap, Automations long-horizon mapping (no separate adapter file — Codex reads `AGENTS.md` natively) |
+
+GitHub Copilot, Cline, and Windsurf read `AGENTS.md` directly (verified
+against their official docs, 2026-06-10), so the portable core works
+there with no adapter. Runtime-specific niceties (hooks, context bar,
+long-horizon loop commands) remain Claude Code features. Maestro's
+`AGENTS.md` is ~10 KB — under Windsurf's 12,000-character workspace
+rule limit and roughly a third of Codex's default 32 KiB instruction
+budget.
 
 **Design principle:** runtime-specific features stay in adapters unless they generalize across environments. This keeps the shared doctrine portable and prevents provider-specific details from bloating the core files.
 
