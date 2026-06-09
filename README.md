@@ -35,8 +35,8 @@ Most multi-agent frameworks add agents to make things faster. The research says 
 | Multi-agent systems fail 41-87% of the time | [MAST](https://arxiv.org/abs/2503.13657), NeurIPS 2025 |
 | 79% of failures come from coordination, not capability | [MAST](https://arxiv.org/abs/2503.13657), NeurIPS 2025 |
 | 3 optimized agents outperform 7 (53-68% cost reduction) | [DyLAN](https://arxiv.org/abs/2310.02170), COLM 2024 |
-| Sequential reasoning degrades 39-70% under multi-agent | [DeepMind](https://arxiv.org/abs/2502.14546), 2025 |
-| Coordination gains plateau at 3-4 agents | [DeepMind](https://arxiv.org/abs/2502.14546), 2025 |
+| Sequential reasoning degrades 39-70% under multi-agent | [Scaling Agent Systems](https://arxiv.org/abs/2512.08296) (Google/MIT), 2025 |
+| Architecture-task fit, not agent count, predicts multi-agent gains | [Scaling Agent Systems](https://arxiv.org/abs/2512.08296) (Google/MIT), 2025 |
 
 Maestro implements the architecture this research points to — not a framework that wraps agents in boilerplate, but a routing layer that only activates multi-agent coordination when the task actually demands it.
 
@@ -50,11 +50,13 @@ Maestro implements the architecture this research points to — not a framework 
 
 **Planner** — Decomposes complex tasks into parallel and sequential subtasks with clear boundaries and acceptance criteria.
 
-**Specialists** — Execute focused subtasks with scoped context, hard-capped at 4 per parallel group based on the DyLAN and DeepMind findings.
+**Specialists** — Execute focused subtasks with scoped context, hard-capped at 4 per parallel group based on the DyLAN and agent-scaling findings.
 
 **Cross-Talk Routing** — Detects when one specialist's output affects another and routes the minimum necessary context between them.
 
 **Staff Engineer Review** — Performs adversarial final verification to catch contradictions, breakage, and architectural drift.
+
+**Long-Horizon Operation** — Checkpoint artifacts, self-pacing, and explicit end conditions govern recurring or multi-session autonomous runs (Section 10 of the doctrine).
 
 ## Quick Start
 
@@ -322,7 +324,9 @@ Maestro's architecture is grounded in 700+ sources across computer science, libr
 |---|---|---|---|
 | [MAST](https://arxiv.org/abs/2503.13657) | 2025 | NeurIPS Spotlight | 41-87% failure rates; 79% from coordination |
 | [DyLAN](https://arxiv.org/abs/2310.02170) | 2024 | COLM | 3 agents outperform 7; dynamic topology selection |
-| [DeepMind Scaling Study](https://arxiv.org/abs/2502.14546) | 2025 | arXiv | 3 scaling laws for multi-agent systems |
+| [Towards a Science of Scaling Agent Systems](https://arxiv.org/abs/2512.08296) | 2025 | arXiv (Google/MIT) | 260 configs; architecture-task fit dominates; sequential tasks degrade 39-70% |
+| [Agent Scaling via Diversity](https://arxiv.org/abs/2602.03794) | 2026 | arXiv | 2 diverse agents match 16 homogeneous — diversity, not headcount, drives gains |
+| [LoopTrap](https://arxiv.org/abs/2605.05846) | 2026 | arXiv | Termination poisoning: loop end-conditions are an attack surface; hard caps mitigate |
 | [MetaGPT](https://arxiv.org/abs/2308.00352) | 2023 | — | Structured handoffs score 3.9/4 vs unstructured 2.1/4 |
 | [Voyager](https://arxiv.org/abs/2305.16291) | 2023 | NeurIPS | Skill library pattern for capability organization |
 | [GTD](https://arxiv.org/abs/2504.05767) | 2025 | arXiv | 0.3% degradation under failure with redundant topologies |
