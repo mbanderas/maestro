@@ -16,6 +16,14 @@
 - Agent teams only for peer-to-peer coordination over long-running
   parallel workstreams with shared state.
 
+### Worktree Isolation (parallel writers)
+- 2+ specialists in one group modifying files: pass
+  `isolation: "worktree"` per Agent call. Prevents cross-talk
+  file-state corruption; auto-cleans if the agent makes no changes;
+  otherwise returns branch+path for the orchestrator to merge.
+- Skip (in-place default) for read-only specialists, a single writer
+  in the group, or mutually exclusive file sets (<=3 files each).
+
 ### Enforcement
 - Hooks > prompt reminders for structural checks (lint, format, policy,
   verification gates, SubagentStop guards).

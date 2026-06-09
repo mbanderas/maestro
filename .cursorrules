@@ -32,6 +32,9 @@ Execute via S7. Skip S2-S6.
 - Overlapping ownership erases parallelism; high-centrality: bias single
 - User override: "single agent" or "parallelize" wins regardless
 - Default: single-agent when in doubt
+- Frontier orchestrator (large-context, top-tier model): decomposition
+  for capability is obsolete — only parallelism, context isolation, or
+  adversarial review justify multi-agent. Bias single-agent harder.
 
 ---
 

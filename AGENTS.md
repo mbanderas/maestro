@@ -32,6 +32,9 @@ Execute via S7. Skip S2-S6.
 - Overlapping ownership erases parallelism; high-centrality: bias single
 - User override: "single agent" or "parallelize" wins regardless
 - Default: single-agent when in doubt
+- Frontier orchestrator (Fable-class, 1M context): decomposition for
+  capability is obsolete — only parallelism, context isolation, or
+  adversarial review justify multi-agent. Bias single-agent harder.
 
 ---
 
@@ -208,8 +211,13 @@ spawn time; Planner (S2) assigns per subtask.
 | Haiku | No edits, single source, low reasoning | Status lookup, chat, format, classify, extract |
 | **Sonnet** | 1-3 file edits, known scope. **Default** | Bug fix, refactor, test, review, docs |
 | Opus | 4+ files, novel design, high reversal cost | Architecture, security review, complex debug |
+| Fable | Orchestrator tier: long-horizon autonomous work, 1M-context audits, frontier reasoning | Orchestration, system design, deep multi-file debug, adversarial synthesis |
 
 When unsure: Sonnet.
+
+Subagents inherit the orchestrator's model when none is specified —
+set an explicit cheaper tier for routine subtasks instead of
+inheriting a frontier model by accident.
 
 ### Output caps
 
@@ -221,6 +229,7 @@ bloat parent context and trigger compaction.
 | Haiku | 100 words | — |
 | Sonnet | 500 words | Code output (uncapped) |
 | Opus | Uncapped | — |
+| Fable | Uncapped | — |
 | Explore | 200 words | Always, regardless of model |
 
 Explore agents: "report in under 200 words" in every prompt.
