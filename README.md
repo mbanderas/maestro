@@ -132,8 +132,8 @@ Runtime adapters are thin wrappers that import the shared doctrine and add only 
 | File | Role | What it adds |
 |---|---|---|
 | `AGENTS.md` | Portable core | Full orchestration doctrine, runtime-agnostic |
-| `CLAUDE.md` | Claude Code adapter | Subagent/team routing, hooks, context limits, tool scoping |
-| `GEMINI.md` | Gemini adapter | Execution mapping, instruction precedence, verification notes |
+| `CLAUDE.md` | Claude Code adapter | Subagent/team routing, hooks, context limits, tool scoping, long-horizon mapping (/loop, schedules) |
+| `GEMINI.md` | Gemini adapter | Execution mapping, instruction precedence, verification notes, long-horizon note |
 | `.cursorrules` | Cursor adapter | Full doctrine (Cursor does not support imports) |
 
 **Design principle:** runtime-specific features stay in adapters unless they generalize across environments. This keeps the shared doctrine portable and prevents provider-specific details from bloating the core files.
