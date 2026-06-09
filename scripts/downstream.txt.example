@@ -1,0 +1,6 @@
+# Downstream repos that bundle Maestro AGENTS.md.
+# Copy to scripts/downstream.txt and list your own workspaces.
+# One workspace-relative path per line. Comments with #.
+
+my-first-repo
+my-second-repo

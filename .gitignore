@@ -1,0 +1,5 @@
+# Working scratch files (session checkpoints, inspection copies)
+_*
+
+# Machine-specific downstream repo list; see scripts/downstream.txt.example
+scripts/downstream.txt
