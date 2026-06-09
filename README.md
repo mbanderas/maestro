@@ -226,6 +226,62 @@ not include `background_tasks` in the `SubagentStop` payload. The
 earlier (2.1.69 and 2.0.42); when absent the hook degrades gracefully
 and simply warns less.
 
+### Claude Code: Hook Pack
+
+Three more optional hooks enforce other Maestro rules structurally.
+Same engineering rules as the verification hook: plain Node `.cjs`,
+zero dependencies, soft warnings only (never block), fire-once guards,
+graceful degradation on missing payload fields. Tests live next to
+each hook (`node hooks/<name>.test.cjs`).
+
+| Hook | Event | Enforces |
+|---|---|---|
+| `maestro-loop-guard.cjs` | `Stop` | S10 long-horizon: warns when a looping session (session crons or `ScheduleWakeup` calls) has no `_<task>.md` checkpoint artifact in the working directory, or exceeds the iteration cap (`MAESTRO_LOOP_MAX_ITER`, default 50) |
+| `maestro-phase-scope.cjs` | `PostToolUse` | S7.1 phase scope: warns when more than 5 distinct files (`MAESTRO_PHASE_FILE_CAP`) are modified in a single turn |
+| `maestro-gate-telemetry.cjs` | `SessionEnd` | S1 audit (opt-in): logs one JSON line per session — gate decision (single/multi), specialist count, end reason |
+
+**Privacy (gate telemetry):** the telemetry hook does nothing unless
+you set `MAESTRO_TELEMETRY=1`. When enabled it appends to
+`~/.claude/maestro-telemetry.jsonl` on your machine — counts, the end
+reason, and the project folder *name* only. No prompts, no file
+contents, no full paths, no network, ever.
+
+**Install** — download into `~/.claude/hooks/`:
+
+```bash
+curl -o ~/.claude/hooks/maestro-loop-guard.cjs https://raw.githubusercontent.com/mbanderas/maestro/main/hooks/maestro-loop-guard.cjs
+curl -o ~/.claude/hooks/maestro-phase-scope.cjs https://raw.githubusercontent.com/mbanderas/maestro/main/hooks/maestro-phase-scope.cjs
+curl -o ~/.claude/hooks/maestro-gate-telemetry.cjs https://raw.githubusercontent.com/mbanderas/maestro/main/hooks/maestro-gate-telemetry.cjs
+```
+
+Wire into `~/.claude/settings.json` (merge with any existing `hooks`
+block; use absolute paths, escaped backslashes on Windows):
+
+```jsonc
+"hooks": {
+  "Stop": [
+    { "matcher": "", "hooks": [
+      { "type": "command", "command": "node \"/absolute/path/to/.claude/hooks/maestro-loop-guard.cjs\"" }
+    ]}
+  ],
+  "PostToolUse": [
+    { "matcher": "Edit|Write|NotebookEdit", "hooks": [
+      { "type": "command", "command": "node \"/absolute/path/to/.claude/hooks/maestro-phase-scope.cjs\"" }
+    ]}
+  ],
+  "SessionEnd": [
+    { "matcher": "", "hooks": [
+      { "type": "command", "command": "node \"/absolute/path/to/.claude/hooks/maestro-gate-telemetry.cjs\"" }
+    ]}
+  ]
+}
+```
+
+The loop guard reads the `session_crons` Stop-payload field and Stop
+`additionalContext` output, both available in current Claude Code
+releases (see the Claude Code changelog); on older versions it simply
+stays silent.
+
 ### Claude Code: Context Bar
 
 Maestro ships an optional status line for Claude Code — a context-window progress bar showing how much of the model's context is used.
