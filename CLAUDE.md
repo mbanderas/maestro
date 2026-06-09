@@ -36,3 +36,18 @@
 - Max 3 edits per file without full re-read.
 - Read tool "PARTIAL view" notice = chunk-trigger; re-issue with
   offset/limit.
+
+### Long-Horizon Operation (S10 mapping)
+- Fixed cadence: `/loop <interval>` (session cron, auto-expires ~7
+  days) or `/schedule` for durable cloud routines. No interval:
+  self-paced via ScheduleWakeup (60-3600s clamp).
+- Wakeup pacing: prompt cache TTL ~5 min. Actively polling external
+  state: <=270s. Otherwise 1200s+. Never schedule wakeups to poll
+  harness-tracked background work — completion notifies on its own.
+- Event-gated waits: arm a persistent Monitor as the primary wake
+  signal; ScheduleWakeup is the fallback heartbeat.
+- Checkpoint artifact: `_<task>.md` in repo root (gitignore `_*`);
+  read first on every wakeup.
+- Workflow tool: deterministic multi-agent fan-out (pipeline/parallel,
+  schema-validated outputs) — explicit user opt-in only; S9 routing
+  and output caps apply per agent.

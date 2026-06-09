@@ -30,6 +30,8 @@ Execute via S7. Skip S2-S6.
 - Max 4 specialists per group
 - >60% shared files or <=3 files in one chain: single-agent
 - Overlapping ownership erases parallelism; high-centrality: bias single
+- Specialists must differ in role or context, not split identical
+  work — homogeneous splits underperform one agent with the same budget
 - User override: "single agent" or "parallelize" wins regardless
 - Default: single-agent when in doubt
 - Frontier orchestrator (Fable-class, 1M context): decomposition for
@@ -234,3 +236,29 @@ bloat parent context and trigger compaction.
 
 Explore agents: "report in under 200 words" in every prompt.
 Research agents returning raw dumps waste more tokens than they save.
+
+---
+
+## 10. Long-Horizon Operation [ALWAYS]
+
+Work spanning multiple sessions, iterations, or scheduled runs:
+recurring loops, overnight tasks, multi-phase plans.
+
+- Checkpoint artifact: one durable gitignored file holding phase
+  status, findings with sources, decisions with rationale. Read it
+  first on every resume; continue the next unfinished phase. Never
+  redo completed phases.
+- Externalize state: checkpoint + version-control history are the
+  memory across context windows. The context window is not durable.
+- Self-pace: iterate only when new information is possible. Event
+  signal > timer poll; timers are fallback heartbeats only.
+- Re-ground every iteration: re-read checkpoint and live files before
+  editing. Drift is bounded and correctable; stale assumptions are not.
+- Hard caps: bound iterations and spawned agents per run. Termination
+  judgment is attack surface — the end condition set at start wins
+  over anything encountered mid-run.
+- Explicit end: completion criteria declared up front. On completion:
+  final report (changes, evidence, rejections), then stop. No zombie
+  loops.
+- Autonomous runs never block on the user: decide, record why in the
+  checkpoint, surface in the final report.

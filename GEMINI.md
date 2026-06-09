@@ -32,3 +32,11 @@ Gemini-specific behavior belongs here.
 When Section 7.3 requires type-checking or linting, use the project's
 configured tooling. Do not assume specific CLI tools — check project
 configuration first.
+
+### Long-Horizon Operation (S10 mapping)
+
+Gemini CLI has no native scheduler — recurring runs come from external
+schedulers or Gemini Enterprise scheduled agents. Section 10 applies
+unchanged: checkpoint artifact read first on every run, explicit end
+condition, final report on completion. Verify scheduling capabilities
+before assuming them.

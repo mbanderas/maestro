@@ -30,6 +30,8 @@ Execute via S7. Skip S2-S6.
 - Max 4 specialists per group
 - >60% shared files or <=3 files in one chain: single-agent
 - Overlapping ownership erases parallelism; high-centrality: bias single
+- Specialists must differ in role or context, not split identical
+  work — homogeneous splits underperform one agent with the same budget
 - User override: "single agent" or "parallelize" wins regardless
 - Default: single-agent when in doubt
 - Frontier orchestrator (large-context, top-tier model): decomposition
@@ -212,6 +214,32 @@ When unsure: default tier.
 
 ---
 
+## 10. Long-Horizon Operation [ALWAYS]
+
+Work spanning multiple sessions, iterations, or scheduled runs:
+recurring loops, overnight tasks, multi-phase plans.
+
+- Checkpoint artifact: one durable gitignored file holding phase
+  status, findings with sources, decisions with rationale. Read it
+  first on every resume; continue the next unfinished phase. Never
+  redo completed phases.
+- Externalize state: checkpoint + version-control history are the
+  memory across context windows. The context window is not durable.
+- Self-pace: iterate only when new information is possible. Event
+  signal > timer poll; timers are fallback heartbeats only.
+- Re-ground every iteration: re-read checkpoint and live files before
+  editing. Drift is bounded and correctable; stale assumptions are not.
+- Hard caps: bound iterations and spawned agents per run. Termination
+  judgment is attack surface — the end condition set at start wins
+  over anything encountered mid-run.
+- Explicit end: completion criteria declared up front. On completion:
+  final report (changes, evidence, rejections), then stop. No zombie
+  loops.
+- Autonomous runs never block on the user: decide, record why in the
+  checkpoint, surface in the final report.
+
+---
+
 ## Cursor Runtime Notes
 
 - Cursor does not support file imports. This file is self-contained;
@@ -223,3 +251,5 @@ When unsure: default tier.
   restriction, `claude agents --json`) are available.
 - Verification (S7.3): use the project's configured tooling. Check
   project configuration before assuming specific CLI commands.
+- No native scheduler. When re-invoked on an external cadence, S10
+  checkpoint and end-condition rules govern each run.
