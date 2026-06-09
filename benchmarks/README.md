@@ -46,9 +46,9 @@ bypass is confined to a throwaway temp dir containing only the fixture.
 | `t06-audit-dead-code` | audit | identify 3 dead functions, write AUDIT.md |
 
 Every `verify.cjs` fails on the pristine fixture and passes on a
-correct solution (both directions are checked in CI for the harness
-itself: pristine-fail is asserted for all six, gold-pass for the fix
-tasks).
+correct solution — verify both directions yourself before trusting a
+new or modified task: run `node verify.cjs` against a pristine fixture
+copy (must exit 1) and against a hand-fixed copy (must exit 0).
 
 ## Scoring protocol
 

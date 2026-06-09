@@ -1,0 +1,19 @@
+{
+  "task": "t01-fix-inclusive-range",
+  "category": "single-file-fix",
+  "cli": "claude",
+  "model": "haiku",
+  "mode": "off",
+  "run": 1,
+  "pass": true,
+  "wall_ms": 14209,
+  "agent_ms": 12796,
+  "num_turns": 4,
+  "cost_usd": 0.0254703,
+  "in_tokens": 30,
+  "out_tokens": 769,
+  "cache_read": 107723,
+  "cache_write": 8208,
+  "is_error": false,
+  "timestamp": "2026-06-10T00:55:21.6081973+01:00"
+}
