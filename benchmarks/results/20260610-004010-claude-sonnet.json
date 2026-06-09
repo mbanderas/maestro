@@ -1,0 +1,40 @@
+[
+  {
+    "task": "t06-audit-dead-code",
+    "category": "audit",
+    "cli": "claude",
+    "model": "sonnet",
+    "mode": "off",
+    "run": 1,
+    "pass": true,
+    "wall_ms": 26341,
+    "agent_ms": 25342,
+    "num_turns": 5,
+    "cost_usd": 0.08776194999999999,
+    "in_tokens": 5,
+    "out_tokens": 1436,
+    "cache_read": 105039,
+    "cache_write": 9095,
+    "is_error": false,
+    "timestamp": "2026-06-10T00:40:42.1662687+01:00"
+  },
+  {
+    "task": "t06-audit-dead-code",
+    "category": "audit",
+    "cli": "claude",
+    "model": "sonnet",
+    "mode": "on",
+    "run": 1,
+    "pass": true,
+    "wall_ms": 28895,
+    "agent_ms": 27855,
+    "num_turns": 7,
+    "cost_usd": 0.11496099999999998,
+    "in_tokens": 6,
+    "out_tokens": 1463,
+    "cache_read": 148605,
+    "cache_write": 12754,
+    "is_error": false,
+    "timestamp": "2026-06-10T00:41:21.8704613+01:00"
+  }
+]

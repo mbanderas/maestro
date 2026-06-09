@@ -1,0 +1,40 @@
+[
+  {
+    "task": "t01-fix-inclusive-range",
+    "category": "single-file-fix",
+    "cli": "claude",
+    "model": "sonnet",
+    "mode": "off",
+    "run": 1,
+    "pass": true,
+    "wall_ms": 14862,
+    "agent_ms": 13562,
+    "num_turns": 4,
+    "cost_usd": 0.06666330000000001,
+    "in_tokens": 5,
+    "out_tokens": 411,
+    "cache_read": 104201,
+    "cache_write": 7644,
+    "is_error": false,
+    "timestamp": "2026-06-10T00:38:23.3565431+01:00"
+  },
+  {
+    "task": "t01-fix-inclusive-range",
+    "category": "single-file-fix",
+    "cli": "claude",
+    "model": "sonnet",
+    "mode": "on",
+    "run": 1,
+    "pass": true,
+    "wall_ms": 13516,
+    "agent_ms": 12520,
+    "num_turns": 4,
+    "cost_usd": 0.08320295000000001,
+    "in_tokens": 5,
+    "out_tokens": 417,
+    "cache_read": 114804,
+    "cache_write": 11181,
+    "is_error": false,
+    "timestamp": "2026-06-10T00:39:06.1144103+01:00"
+  }
+]

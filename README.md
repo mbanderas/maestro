@@ -316,6 +316,32 @@ Maestro is not a framework. It's an orchestration layer for AI coding agents tha
 
 If you need a standalone multi-agent application with custom tools, APIs, and deployment pipelines, use a framework. If you want your AI coding agent to handle complex tasks better without changing your workflow, use Maestro.
 
+## Benchmarks
+
+Maestro ships a reproducible A/B harness in [`benchmarks/`](benchmarks/):
+six fixture tasks (single-file fix, multi-file feature, refactor, audit),
+a zero-dependency runner for Windows and macOS/Linux, and a deterministic
+`verify.cjs` checker per task. Each task runs with Maestro ON
+(doctrine files in the work dir) vs OFF (absent), under an isolated
+`CLAUDE_CONFIG_DIR` so global config cannot contaminate either cell.
+Protocol, scoring rubric, and Codex/Gemini recipes:
+[`benchmarks/README.md`](benchmarks/README.md).
+
+First measured rows (Claude Code, `sonnet`, **n=1 — exploratory**, raw
+JSON in [`benchmarks/results/`](benchmarks/results/)):
+
+| Task | OFF pass | ON pass | OFF cost | ON cost |
+|---|---|---|---|---|
+| t01-fix-inclusive-range | yes | yes | $0.067 | $0.083 |
+| t02-fix-even-median | yes | yes | $0.068 | $0.084 |
+| t06-audit-dead-code | yes | yes | $0.088 | $0.115 |
+
+Honest reading: on small tasks both cells succeed and Maestro adds a
+small doctrine-read overhead (~$0.02/task) — exactly what the Decision
+Gate predicts for work below the multi-agent threshold. The interesting
+cells (larger tasks, n>=3, Codex/Gemini) are pending; the protocol
+forbids publishing numbers that were not actually measured.
+
 ## Research Foundation
 
 Maestro's architecture is grounded in 700+ sources across computer science, library science, safety engineering, and knowledge theory. The key papers:
