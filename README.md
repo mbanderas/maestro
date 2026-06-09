@@ -159,8 +159,23 @@ fails:
 
 1. Are there orphaned `background_tasks` still active? If so, the
    subagent is declaring complete while work is still running.
-2. Did a type-checker, linter, or test runner appear in the recent
-   transcript? If not, the subagent likely skipped verification.
+2. Did a file-modifying subagent run a type-checker, linter, or test
+   runner? If not, it likely skipped verification.
+
+Three safety properties keep the warning from doing more harm than
+good (a warning on stop extends the subagent's turn, so a careless
+guard can displace the final report the orchestrator is waiting for):
+
+- **Read-only agents are exempt.** Explore/Plan agent types, or any
+  agent whose transcript shows no `Edit`/`Write`/`NotebookEdit` calls
+  and no recognizable Bash mutation (e.g. `git commit`), have nothing
+  to verify and are never warned.
+- **Fires at most once per agent.** The warning re-prompts the agent,
+  which stops again and re-triggers the hook; without a once-guard
+  the loop pushes the real report out of the final message.
+- **The report survives.** The warning text tells the agent to restate
+  its complete final report, since only the last message is returned
+  to the orchestrator.
 
 The hook never blocks — it injects `additionalContext` so the next
 turn sees the warning and can re-verify. Recognized tools include
@@ -168,12 +183,17 @@ turn sees the warning and can re-verify. Recognized tools include
 `cargo test`, `npm/pnpm/yarn test`, `ruff check`, `mypy`,
 `prettier --check`, and `biome check`.
 
+The file ships as `.cjs` so Node treats it as CommonJS even if a
+`"type": "module"` package.json exists somewhere above your
+`~/.claude/hooks/` directory. Tests live next to it — run
+`node hooks/maestro-subagent-guard.test.cjs` from the repo root.
+
 **Install** — download into `~/.claude/hooks/` and wire into
 `~/.claude/settings.json`:
 
 ```bash
 mkdir -p ~/.claude/hooks
-curl -o ~/.claude/hooks/maestro-subagent-guard.js https://raw.githubusercontent.com/mbanderas/maestro/main/hooks/maestro-subagent-guard.js
+curl -o ~/.claude/hooks/maestro-subagent-guard.cjs https://raw.githubusercontent.com/mbanderas/maestro/main/hooks/maestro-subagent-guard.cjs
 ```
 
 Add a `SubagentStop` entry under `hooks` in `~/.claude/settings.json`
@@ -187,7 +207,7 @@ Add a `SubagentStop` entry under `hooks` in `~/.claude/settings.json`
       "hooks": [
         {
           "type": "command",
-          "command": "node \"/absolute/path/to/.claude/hooks/maestro-subagent-guard.js\""
+          "command": "node \"/absolute/path/to/.claude/hooks/maestro-subagent-guard.cjs\""
         }
       ]
     }
@@ -196,10 +216,13 @@ Add a `SubagentStop` entry under `hooks` in `~/.claude/settings.json`
 ```
 
 On Windows, use the absolute path with escaped backslashes, e.g.
-`"C:\\Users\\you\\.claude\\hooks\\maestro-subagent-guard.js"`.
+`"C:\\Users\\you\\.claude\\hooks\\maestro-subagent-guard.cjs"`.
 
 The hook requires Claude Code 2.1.145 or later — earlier versions do
-not include `background_tasks` in the `SubagentStop` payload.
+not include `background_tasks` in the `SubagentStop` payload. The
+`agent_type` and `agent_transcript_path` fields it reads were added
+earlier (2.1.69 and 2.0.42); when absent the hook degrades gracefully
+and simply warns less.
 
 ### Claude Code: Context Bar
 

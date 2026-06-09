@@ -1,0 +1,117 @@
+#!/usr/bin/env node
+// Tests for maestro-subagent-guard.cjs. Zero dependencies.
+// Run: node hooks/maestro-subagent-guard.test.cjs
+
+const { execFileSync } = require('child_process');
+const fs = require('fs');
+const os = require('os');
+const path = require('path');
+
+const HOOK = path.join(__dirname, 'maestro-subagent-guard.cjs');
+const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'maestro-guard-test-'));
+
+function transcript(name, lines) {
+  const p = path.join(tmp, name);
+  fs.writeFileSync(p, lines.map(l => JSON.stringify(l)).join('\n'));
+  return p;
+}
+
+function runHook(payload) {
+  return execFileSync(process.execPath, [HOOK], {
+    input: JSON.stringify(payload),
+    encoding: 'utf8'
+  });
+}
+
+const readOnlyTx = transcript('readonly.jsonl', [
+  { type: 'assistant', message: { content: [{ type: 'tool_use', name: 'Read', input: { file_path: 'a.ts' } }] } },
+  { type: 'assistant', message: { content: [{ type: 'tool_use', name: 'Grep', input: { pattern: 'foo' } }] } },
+  { type: 'assistant', message: { content: [{ type: 'text', text: 'Final report: found 3 usages.' }] } }
+]);
+
+const writerNoVerifyTx = transcript('writer-noverify.jsonl', [
+  { type: 'assistant', message: { content: [{ type: 'tool_use', name: 'Edit', input: { file_path: 'a.ts' } }] } },
+  { type: 'assistant', message: { content: [{ type: 'text', text: 'Done.' }] } }
+]);
+
+const writerVerifiedTx = transcript('writer-verified.jsonl', [
+  { type: 'assistant', message: { content: [{ type: 'tool_use', name: 'Write', input: { file_path: 'a.ts' } }] } },
+  { type: 'assistant', message: { content: [{ type: 'tool_use', name: 'Bash', input: { command: 'npx tsc --noEmit && npx eslint . --quiet' } }] } },
+  { type: 'assistant', message: { content: [{ type: 'text', text: 'Done, checks pass.' }] } }
+]);
+
+const bashWriterTx = transcript('bash-writer.jsonl', [
+  { type: 'assistant', message: { content: [{ type: 'tool_use', name: 'Bash', input: { command: 'git commit -m "feat: thing"' } }] } },
+  { type: 'assistant', message: { content: [{ type: 'text', text: 'Committed.' }] } }
+]);
+
+const alreadyWarnedTx = transcript('already-warned.jsonl', [
+  { type: 'assistant', message: { content: [{ type: 'tool_use', name: 'Edit', input: { file_path: 'a.ts' } }] } },
+  { type: 'system', text: 'Maestro guard:\n- No type-check/lint/test detected after file modifications.' },
+  { type: 'assistant', message: { content: [{ type: 'text', text: 'No checker configured. Final report: done.' }] } }
+]);
+
+let failures = 0;
+function check(name, cond) {
+  if (cond) { console.log(`  ok    ${name}`); }
+  else { failures++; console.error(`  FAIL  ${name}`); }
+}
+
+console.log('maestro-subagent-guard tests');
+
+// 1. Read-only transcript, no agent_type: exempt from verify warning.
+let out = runHook({ agent_transcript_path: readOnlyTx });
+check('read-only transcript -> silent', out === '');
+
+// 2. Explore agent_type: exempt regardless of transcript content.
+out = runHook({ agent_type: 'Explore', agent_transcript_path: writerNoVerifyTx });
+check('agent_type Explore -> silent', out === '');
+
+// 3. Writer without verification: warning fires, with report-restate line.
+out = runHook({ agent_transcript_path: writerNoVerifyTx });
+check('writer without verify -> warns', out.includes('No type-check/lint/test'));
+check('warning tells agent to restate report', out.includes('restate your complete final report'));
+check('warning is valid hook JSON', (() => {
+  try { return JSON.parse(out).hookSpecificOutput.hookEventName === 'SubagentStop'; }
+  catch { return false; }
+})());
+
+// 4. Writer with verification: silent.
+out = runHook({ agent_transcript_path: writerVerifiedTx });
+check('writer with verify -> silent', out === '');
+
+// 5. Bash-pattern mutation (git commit) counts as writer.
+out = runHook({ agent_transcript_path: bashWriterTx });
+check('bash git-commit writer without verify -> warns', out.includes('No type-check/lint/test'));
+
+// 6. Fire once: marker already in transcript -> silent, no loop.
+out = runHook({ agent_transcript_path: alreadyWarnedTx });
+check('already-warned transcript -> silent (no loop)', out === '');
+
+// 7. Fire once beats background-task warning too.
+out = runHook({
+  agent_transcript_path: alreadyWarnedTx,
+  background_tasks: [{ id: 't1', status: 'running' }]
+});
+check('already-warned + bg task -> still silent', out === '');
+
+// 8. Active background task: warns for any agent, including read-only.
+out = runHook({
+  agent_type: 'Explore',
+  agent_transcript_path: readOnlyTx,
+  background_tasks: [{ id: 't1', status: 'running' }]
+});
+check('orphaned background task -> warns', out.includes('background task'));
+
+// 9. Missing transcript: silent (fails open, never blocks).
+out = runHook({ agent_transcript_path: path.join(tmp, 'missing.jsonl') });
+check('missing transcript -> silent', out === '');
+
+// 10. Garbage stdin: exits 0, silent.
+out = execFileSync(process.execPath, [HOOK], { input: 'not json', encoding: 'utf8' });
+check('garbage stdin -> silent exit 0', out === '');
+
+fs.rmSync(tmp, { recursive: true, force: true });
+
+if (failures) { console.error(`${failures} failure(s)`); process.exit(1); }
+console.log('all tests passed');
