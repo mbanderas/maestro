@@ -1,0 +1,16 @@
+{
+  "name": "maestro",
+  "description": "Self-hosted marketplace for the Maestro multi-agent orchestration plugin.",
+  "owner": {
+    "name": "Mark Banderas",
+    "url": "https://github.com/mbanderas"
+  },
+  "plugins": [
+    {
+      "name": "maestro",
+      "source": "./",
+      "description": "Research-grounded multi-agent orchestration doctrine for AI coding agents: decision-gated routing, 4-specialist cap, structural enforcement hooks, context-bar command.",
+      "version": "1.0.0"
+    }
+  ]
+}

@@ -62,6 +62,24 @@ Maestro implements the architecture this research points to — not a framework 
 
 ### Claude Code
 
+**Option A — plugin (hooks + context-bar command, one step).** Maestro
+is an installable Claude Code plugin; the repo is its own marketplace:
+
+```
+/plugin marketplace add mbanderas/maestro
+/plugin install maestro@maestro
+```
+
+The plugin auto-wires all four enforcement hooks (subagent guard, loop
+guard, phase-scope guard, opt-in gate telemetry) and the
+`/maestro:context-bar` command. Two things it cannot do for you:
+the doctrine files (`AGENTS.md`/`CLAUDE.md`) still go in your project
+root (Option B), and the status line script still needs a one-line
+`statusLine` settings entry (see [Context Bar](#claude-code-context-bar))
+— plugins cannot set the main status line.
+
+**Option B — plain files (doctrine only, zero machinery):**
+
 ```bash
 curl -O https://raw.githubusercontent.com/mbanderas/maestro/main/AGENTS.md
 curl -O https://raw.githubusercontent.com/mbanderas/maestro/main/CLAUDE.md
