@@ -1,0 +1,78 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/mbanderas/maestro/main/schemas/specialist-manifest.schema.json",
+  "title": "Maestro Specialist Manifest",
+  "description": "Formalizes the AGENTS.md S3 specialist manifest. Optional tooling aid: the prose doctrine in AGENTS.md remains the source of truth. A specialist receives exactly this manifest and no conversation history, other tasks, or full plan -- isolation is the advantage.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["role", "task", "files", "output", "accept"],
+  "properties": {
+    "role": {
+      "type": "string",
+      "description": "What this specialist is (e.g. 'API refactor specialist'). One role per specialist; specialists in a group must differ in role or context, not split identical work (S1 diversity constraint).",
+      "minLength": 1
+    },
+    "task": {
+      "type": "string",
+      "description": "The single scoped objective. Out of scope: report and stop.",
+      "minLength": 1
+    },
+    "files": {
+      "type": "object",
+      "description": "File scope. Anything outside these lists is out of bounds.",
+      "additionalProperties": false,
+      "required": ["read", "modify"],
+      "properties": {
+        "read": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Paths or globs the specialist may read."
+        },
+        "modify": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Paths or globs the specialist may modify. Empty for read-only specialists."
+        }
+      }
+    },
+    "upstream": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Outputs from prior specialists this task depends on (minimum viable info: a signature, not a 200-line diff)."
+    },
+    "orientation": {
+      "type": "string",
+      "description": "Cheap structural overview (project map, subsystem index). Navigation aid, not authority -- verify against live code before acting (S7.2)."
+    },
+    "assumptions": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Load-bearing assumptions stated up front. If one is uncertain, the specialist must flag it instead of building on it (S7.0)."
+    },
+    "output": {
+      "type": "string",
+      "description": "Exact deliverable format expected back (e.g. 'changed files + 5-line summary'). Agent prompts must specify max response length (S9 output caps).",
+      "minLength": 1
+    },
+    "accept": {
+      "type": "array",
+      "items": { "type": "string" },
+      "minItems": 1,
+      "description": "Acceptance criteria. These are the exit condition, not a post-hoc check (S7.3)."
+    },
+    "tools": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Tool scope for this specialist (least privilege)."
+    },
+    "rules": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Injected universal rules (S7). In Claude Code these arrive via the system scaffold; listed here for portability."
+    },
+    "model": {
+      "type": "string",
+      "description": "Model tier per S9 routing (haiku | sonnet | opus | fable). Cheapest model that handles the task; explicit tier beats accidental frontier inheritance."
+    }
+  }
+}

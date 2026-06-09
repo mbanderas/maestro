@@ -63,6 +63,7 @@ Audit (discover/analyze/consolidate), Docs+code (change/update/check).
 
 Manifest fields: ROLE, TASK, FILES (read/modify), UPSTREAM, ORIENTATION,
 ASSUMPTIONS, OUTPUT, ACCEPT, TOOLS (scoped), RULES (S7 injected).
+Machine-readable form: schemas/ (optional; this prose stays source of truth).
 
 No conversation history, other tasks, full plan, or unrelated context.
 Isolation is the advantage. Out of scope: report and stop.

@@ -1,0 +1,63 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/mbanderas/maestro/main/schemas/handoff.schema.json",
+  "title": "Maestro Handoff Packet",
+  "description": "Formalizes the AGENTS.md S4/S6 cross-talk and checkpoint packet: the minimum context routed between specialists, or persisted before spawns, handoffs, and resumes. Optional tooling aid: the prose doctrine remains the source of truth. Before acting on a compressed packet, verify objective, scope, criteria, risks, and next action are present (S8).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["objective", "files", "requirements", "next_action"],
+  "properties": {
+    "objective": {
+      "type": "string",
+      "description": "What the receiving agent must accomplish or what the checkpoint preserves.",
+      "minLength": 1
+    },
+    "files": {
+      "type": "array",
+      "items": { "type": "string" },
+      "minItems": 0,
+      "description": "Files in scope, with roles if helpful (e.g. 'src/api.ts -- interface changed')."
+    },
+    "requirements": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Constraints and acceptance criteria still in force."
+    },
+    "decisions": {
+      "type": "array",
+      "description": "Decisions already made, each with its rationale. Receiving agents do not re-litigate.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["decision"],
+        "properties": {
+          "decision": { "type": "string", "minLength": 1 },
+          "why": { "type": "string" }
+        }
+      }
+    },
+    "risks": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Known risks, cross-breakage candidates (interfaces/imports/types/state), unverified assumptions."
+    },
+    "next_action": {
+      "type": "string",
+      "description": "The single next step. A resume starts here, not from full history (S6).",
+      "minLength": 1
+    },
+    "upstream_changes": {
+      "type": "array",
+      "description": "Cross-talk payload (S4): what an earlier specialist changed that affects the receiver -- minimum context only (signature, not diff).",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["change"],
+        "properties": {
+          "change": { "type": "string", "minLength": 1 },
+          "affects": { "type": "string" }
+        }
+      }
+    }
+  }
+}

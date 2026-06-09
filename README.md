@@ -61,6 +61,8 @@ Maestro implements the architecture this research points to — not a framework 
 
 **Long-Horizon Operation** — Checkpoint artifacts, self-pacing, and explicit end conditions govern recurring or multi-session autonomous runs (Section 10 of the doctrine).
 
+The specialist manifest (S3) and cross-talk handoff packet (S4/S6) also ship as optional machine-readable JSON Schemas in [`schemas/`](schemas/) for tooling and validation — the prose doctrine remains the source of truth.
+
 ## Quick Start
 
 ### Claude Code
