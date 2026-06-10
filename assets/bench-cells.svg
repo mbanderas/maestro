@@ -1,0 +1,77 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 330" role="img" aria-labelledby="t d">
+  <title id="t">Maestro benchmark medians, hidden-oracle cells</title>
+  <desc id="d">Median cost in USD per task-run for tasks t07 to t10 with doctrine OFF, ON, and the compact CORE variant on t09. Pass rates shown per cell. ON never beats OFF on pass rate; t08 is the one cell where ON is cheaper.</desc>
+  <style>
+    .lbl  { font: 600 13px ui-monospace, SFMono-Regular, Consolas, monospace; fill: #f0f0f4; }
+    .sub  { font: 400 11px ui-monospace, SFMono-Regular, Consolas, monospace; fill: #9e9eaa; }
+    .tick { font: 400 10px ui-monospace, SFMono-Regular, Consolas, monospace; fill: #9e9eaa; }
+    .val  { font: 600 10.5px ui-monospace, SFMono-Regular, Consolas, monospace; fill: #f0f0f4; }
+    .grid { stroke: #222228; stroke-width: 1; }
+    .off  { fill: #44444e; }
+    .on   { fill: #f59e0b; }
+    .core { fill: rgb(245 158 11 / 0.16); stroke: #f59e0b; stroke-width: 1.5; }
+  </style>
+
+  <rect width="760" height="330" rx="12" fill="#0a0a0c"/>
+
+  <text class="lbl" x="40" y="32">median cost per task-run (USD)</text>
+  <text class="sub" x="40" y="48">claude code, sonnet, hidden-oracle runner, 2026-06-10 - medians of valid runs</text>
+
+  <!-- legend -->
+  <rect class="off" x="528" y="24" width="12" height="12" rx="2"/>
+  <text class="sub" x="546" y="34">off</text>
+  <rect class="on" x="586" y="24" width="12" height="12" rx="2"/>
+  <text class="sub" x="604" y="34">on</text>
+  <rect class="core" x="640" y="24" width="12" height="12" rx="2"/>
+  <text class="sub" x="658" y="34">core</text>
+
+  <!-- gridlines: 0 to 0.40, 475 px per USD -->
+  <line class="grid" x1="70" y1="250" x2="720" y2="250"/>
+  <line class="grid" x1="70" y1="202.5" x2="720" y2="202.5"/>
+  <line class="grid" x1="70" y1="155" x2="720" y2="155"/>
+  <line class="grid" x1="70" y1="107.5" x2="720" y2="107.5"/>
+  <line class="grid" x1="70" y1="60" x2="720" y2="60"/>
+  <text class="tick" x="62" y="254" text-anchor="end">0</text>
+  <text class="tick" x="62" y="206" text-anchor="end">.10</text>
+  <text class="tick" x="62" y="159" text-anchor="end">.20</text>
+  <text class="tick" x="62" y="111" text-anchor="end">.30</text>
+  <text class="tick" x="62" y="64" text-anchor="end">.40</text>
+
+  <!-- t07 -->
+  <rect class="off" x="136" y="172" width="34" height="78"/>
+  <rect class="on"  x="178" y="141" width="34" height="109"/>
+  <text class="val" x="153" y="164" text-anchor="middle">.164</text>
+  <text class="val" x="195" y="133" text-anchor="middle">.230</text>
+  <text class="lbl" x="174" y="274" text-anchor="middle">t07</text>
+  <text class="sub" x="174" y="290" text-anchor="middle">3/3 - 3/3</text>
+  <text class="sub" x="174" y="305" text-anchor="middle">feature, 9 files</text>
+
+  <!-- t08 -->
+  <rect class="off" x="286" y="133" width="34" height="117"/>
+  <rect class="on"  x="328" y="142" width="34" height="108"/>
+  <text class="val" x="303" y="125" text-anchor="middle">.247</text>
+  <text class="val" x="345" y="134" text-anchor="middle">.228</text>
+  <text class="lbl" x="324" y="274" text-anchor="middle">t08</text>
+  <text class="sub" x="324" y="290" text-anchor="middle">3/3 - 3/3</text>
+  <text class="sub" x="324" y="305" text-anchor="middle">refactor, 10 files</text>
+
+  <!-- t09 (off, on, core) -->
+  <rect class="off"  x="436" y="108" width="34" height="142"/>
+  <rect class="on"   x="478" y="100" width="34" height="150"/>
+  <rect class="core" x="520" y="86"  width="34" height="164"/>
+  <text class="val" x="453" y="100" text-anchor="middle">.299</text>
+  <text class="val" x="495" y="92" text-anchor="middle">.316</text>
+  <text class="val" x="537" y="78" text-anchor="middle">.345</text>
+  <text class="lbl" x="495" y="274" text-anchor="middle">t09</text>
+  <text class="sub" x="495" y="290" text-anchor="middle">5/6 - 5/6 - 6/6</text>
+  <text class="sub" x="495" y="305" text-anchor="middle">hidden invariants</text>
+
+  <!-- t10 -->
+  <rect class="off" x="612" y="202" width="34" height="48"/>
+  <rect class="on"  x="654" y="170" width="34" height="80"/>
+  <text class="val" x="629" y="194" text-anchor="middle">.101</text>
+  <text class="val" x="671" y="162" text-anchor="middle">.169</text>
+  <text class="lbl" x="650" y="274" text-anchor="middle">t10</text>
+  <text class="sub" x="650" y="290" text-anchor="middle">5/5 - 5/5</text>
+  <text class="sub" x="650" y="305" text-anchor="middle">staged extension</text>
+</svg>

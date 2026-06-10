@@ -411,53 +411,57 @@ If you need a standalone multi-agent application with custom tools, APIs, and de
 ## Benchmarks
 
 Maestro ships a reproducible A/B harness in [`benchmarks/`](benchmarks/):
-eight fixture tasks (single-file fix, multi-file feature, refactor,
-audit, plus two medium multi-file cells), a zero-dependency runner for
-Windows and macOS/Linux, and a deterministic `verify.cjs` checker per
-task. Each task runs with Maestro ON
-(doctrine files in the work dir) vs OFF (absent), under an isolated
-`CLAUDE_CONFIG_DIR` so global config cannot contaminate either cell.
-Protocol, scoring rubric, and Codex/Gemini recipes:
-[`benchmarks/README.md`](benchmarks/README.md).
+ten fixture tasks (single-file fixes through hidden-invariant
+multi-file features and staged self-extension), a zero-dependency
+runner for Windows and macOS/Linux, and a deterministic `verify.cjs`
+checker per task. Each task runs with Maestro ON (doctrine files in
+the work dir) vs OFF (absent), under an isolated `CLAUDE_CONFIG_DIR`
+so global config cannot contaminate either cell, and the checker stays
+**hidden from the agent until the run ends** (visible oracles inflate
+pass rates 20-60%, arXiv:2602.10975). Protocol, scoring rubric, and
+Codex/Gemini recipes: [`benchmarks/README.md`](benchmarks/README.md).
 
-Measured rows (Claude Code, `sonnet`, **n=3 per cell — small sample,
-medians, no significance claims**, raw JSON in
-[`benchmarks/results/`](benchmarks/results/)). **Validity caveat:**
-these rows predate the 2026-06-10 hidden-oracle runner fix — the agent
-could read `verify.cjs` during the run, which inflates pass rates
-20-60% in both modes (arXiv:2602.10975). Treat pass columns as upper
-bounds; post-fix cells replace this table as they are measured:
+Current cells (Claude Code, `sonnet`, hidden-oracle runner,
+2026-06-10 — medians of valid runs, voided CLI-error runs excluded
+and documented):
 
-| Task | OFF pass | ON pass | OFF med cost | ON med cost | OFF med turns | ON med turns |
+<p align="center">
+  <img src="assets/bench-cells.svg" alt="Bar chart of median cost per task-run for t07 to t10 with doctrine off, on, and core variant; pass rates per cell shown beneath each group" width="740">
+</p>
+
+| Cell | n | Pass | Med wall | Med turns | Med cost | Med out-tok |
 |---|---|---|---|---|---|---|
-| t01-fix-inclusive-range | 3/3 | 3/3 | $0.067 | $0.084 | 4 | 4 |
-| t02-fix-even-median | 3/3 | 3/3 | $0.068 | $0.084 | 4 | 4 |
-| t03-feat-slugify | 3/3 | 3/3 | $0.073 | $0.090 | 5 | 5 |
-| t04-feat-cli-repeat | 3/3 | 3/3 | $0.087 | $0.105 | 6 | 6 |
-| t05-refactor-rename | 3/3 | 3/3 | $0.104 | $0.153 | 9 | 11 |
-| t06-audit-dead-code | 3/3 | 3/3 | $0.084 | $0.124 | 5 | 7 |
-| t07-feat-report-subsystem | 3/3 | 3/3 | $0.206 | $0.238 | 15 | 16 |
-| t08-refactor-error-convention | 3/3 | 3/3 | $0.209 | $0.225 | 26 | 24 |
+| t07 OFF | 3 | 3/3 | 70s | 12 | $0.164 | 2,421 |
+| t07 ON | 3 | 3/3 | 71s | 15 | $0.230 | 2,799 |
+| t08 OFF | 3 | 3/3 | 85s | 33 | $0.247 | 6,127 |
+| t08 ON | 3 | 3/3 | 59s | 27 | $0.228 | 4,457 |
+| t09 OFF | 6 | 5/6 | 129s | 19 | $0.299 | 5,211 |
+| t09 ON | 6 | 5/6 | 137s | 18.5 | $0.316 | 5,502 |
+| t09 CORE | 6 | 6/6 | 137s | 20.5 | $0.345 | 5,231 |
+| t10 OFF | 5 | 5/5 | 29s | 6 | $0.101 | 1,607 |
+| t10 ON | 5 | 5/5 | 51s | 9 | $0.169 | 2,949 |
 
-Honest reading: on every cell measured so far both modes succeed every
-run, and Maestro adds a doctrine-read overhead ($0.016-0.048 median per
-task, biggest on cells where verification rules add turns). That is
-exactly what the Decision Gate predicts for work below the multi-agent
-threshold — and on the medium cells (t07/t08) it means Maestro did
-**not** earn its overhead in pass-rate terms: sonnet alone already
-solves them 3/3, so success parity is the ceiling. Pass-rate deltas
-would need tasks hard enough that the OFF cell starts failing; until
-those are measured, no capability claim is made. Full per-cell medians
-including wall time and tokens:
-[`benchmarks/results/20260610-summary-n3.md`](benchmarks/results/20260610-summary-n3.md)
-and
-[`benchmarks/results/20260610-summary-t07-t08.md`](benchmarks/results/20260610-summary-t07-t08.md).
-Codex (`gpt-5.5`) and Gemini (`gemini-3.1-pro-preview`) cells for the
-three smallest tasks are measured at n=3 with the same success parity
-and the same overhead-only pattern — per-CLI tables and isolation
-caveats in
-[`benchmarks/results/20260610-summary-codex-gemini.md`](benchmarks/results/20260610-summary-codex-gemini.md)
-(numbers are never compared across CLIs or models). The protocol
+Honest reading: **Maestro ON has never beaten OFF on success rate in
+any measured cell.** t09 (hidden-invariant feature) is the first task
+hard enough that both modes drop below 100% — and they drop equally
+(5/6 each; at n=6 one run is ~17 pp, so this is noise territory). The
+one cell where the doctrine measurably pays is t08, a convention-heavy
+cross-cutting refactor: ON is faster (-30% wall), shorter (-18%
+turns), and cheaper (-8%) at equal pass — consistent with the
+verification rules cutting wasted iterations. Elsewhere ON is pure
+overhead (t10: +78% median wall). The CORE row tests the compact
+~50-line doctrine variant: same pass regime, no efficiency gain over
+full ON. Small samples throughout; no significance claims. Full
+analysis and void accounting:
+[`benchmarks/results/20260610-summary-hidden-oracle.md`](benchmarks/results/20260610-summary-hidden-oracle.md).
+
+Earlier same-day results for t01-t06 (and the Codex `gpt-5.5` /
+Gemini `gemini-3.1-pro-preview` cells) were measured **before** the
+hidden-oracle fix and are kept as labeled upper bounds in
+[`benchmarks/results/`](benchmarks/results/) — same success-parity,
+overhead-only pattern, but the agent could read the checker during
+those runs, so their pass rates are not comparable to the table above.
+Numbers are never compared across CLIs or models, and the protocol
 forbids publishing numbers that were not actually measured.
 
 ## Research Foundation
