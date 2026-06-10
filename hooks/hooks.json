@@ -1,5 +1,16 @@
 {
   "hooks": {
+    "UserPromptSubmit": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/maestro-gate-reminder.cjs\""
+          }
+        ]
+      }
+    ],
     "SubagentStop": [
       {
         "matcher": "",
