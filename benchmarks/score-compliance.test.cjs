@@ -128,6 +128,27 @@ s = scoreStream(stream('nodetest.jsonl', [
 ]));
 check('nodetest: verification_ran true', s.behaviors.verification_ran === true);
 
+// 10b. Post-mutation node smoke test: smoke_tested, consistent claim.
+s = scoreStream(stream('smoke.jsonl', [
+  init,
+  toolUse('Write', { file_path: 'src/cmd.js' }),
+  toolUse('Bash', { command: 'node src/cli.js report-summary' }),
+  result('Done, command works as expected.')
+]));
+check('smoke: smoke_tested true', s.behaviors.smoke_tested === true);
+check('smoke: verification_ran false', s.behaviors.verification_ran === false);
+check('smoke: claim_consistent true', s.behaviors.claim_consistent === true);
+
+// 10c. node run BEFORE any mutation is exploration, not a smoke test.
+s = scoreStream(stream('presmoke.jsonl', [
+  init,
+  toolUse('Bash', { command: 'node src/cli.js list-products' }),
+  toolUse('Edit', { file_path: 'src/cli.js' }),
+  result('Done, implemented.')
+]));
+check('presmoke: smoke_tested false', s.behaviors.smoke_tested === false);
+check('presmoke: claim_consistent false', s.behaviors.claim_consistent === false);
+
 // 11. Garbage lines skipped, empty stream scores conservatively.
 s = scoreStream(stream('garbage.jsonl', [{ nonsense: true }]));
 check('garbage: no crash, no token', s.behaviors.status_token === false);
