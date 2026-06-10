@@ -96,7 +96,7 @@ foreach ($taskDir in $taskDirs) {
       Copy-Item (Join-Path $taskDir.FullName 'verify.cjs') $workDir -Force
       Push-Location $workDir
       try {
-        node verify.cjs *> $null
+        $verifyOut = (node verify.cjs 2>&1 | Select-Object -First 1) -join ''
         $pass = ($LASTEXITCODE -eq 0)
       } finally { Pop-Location }
 
@@ -116,6 +116,12 @@ foreach ($taskDir in $taskDirs) {
       } else {
         $json = $null
         try { $json = $raw | ConvertFrom-Json } catch {}
+        # Gemini sometimes emits non-JSON noise (quota notices) before the
+        # JSON document; retry from the first brace so usage still parses.
+        if (-not $json -and $raw) {
+          $i = $raw.IndexOf('{')
+          if ($i -ge 0) { try { $json = $raw.Substring($i) | ConvertFrom-Json } catch {} }
+        }
         if ($json -and $json.stats.models) {
           $names = @($json.stats.models.PSObject.Properties.Name)
           if (-not $reportedModel -and $names.Count -gt 0) { $reportedModel = $names -join '+' }
@@ -134,10 +140,12 @@ foreach ($taskDir in $taskDirs) {
         mode        = $runMode
         run         = $n
         pass        = $pass
+        verify_note = if ($pass) { $null } else { [string]$verifyOut }
         wall_ms     = $sw.ElapsedMilliseconds
         in_tokens   = $inTok
         out_tokens  = $outTok
         cache_read  = $cached
+        agent_error = if (-not $outTok -and $raw) { $raw.Substring(0, [Math]::Min(200, $raw.Length)) } elseif (-not $raw) { 'EMPTY_OUTPUT' } else { $null }
         timestamp   = (Get-Date -Format 'o')
       }
       $results.Add([pscustomobject]$row)
