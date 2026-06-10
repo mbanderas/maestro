@@ -1,0 +1,77 @@
+[
+  {
+    "task": "t12-feat-export-subsystem",
+    "method": "interactive-proxy (two-turn stream-json stdin, -p, non-TTY)",
+    "cli": "claude",
+    "model": "sonnet",
+    "mode": "on",
+    "run": 1,
+    "pass": false,
+    "verify_note": "FAIL: orders.json first record mismatch: got {\"id\":\"o01\",\"customerId\":\"c1\",\"total\":17.5}, want {\"id\":\"o01\",\"customerId\":\"c1\",\"items\":[{\"productId\":\"p1\",\"qty\":3},{\"productId\":\"p2\",\"qty\":1}]}",
+    "wall_ms": 174719,
+    "num_turns": 8,
+    "cost_usd": 0.6280776499999999,
+    "result_events": 2,
+    "exit_code": 0,
+    "is_error": false,
+    "stderr_head": null,
+    "agent_spawns": [
+      {
+        "subagent_type": "Explore",
+        "description": "Explore repository structure and conventions"
+      }
+    ],
+    "stream_file": "streams\\20260610-220142-interactive-proxy-sonnet\\t12-feat-export-subsystem-proxy-r1.jsonl",
+    "timestamp": "2026-06-10T22:04:37.520Z"
+  },
+  {
+    "task": "t12-feat-export-subsystem",
+    "method": "interactive-proxy (two-turn stream-json stdin, -p, non-TTY)",
+    "cli": "claude",
+    "model": "sonnet",
+    "mode": "on",
+    "run": 2,
+    "pass": true,
+    "verify_note": null,
+    "wall_ms": 235400,
+    "num_turns": 12,
+    "cost_usd": 0.7561644999999999,
+    "result_events": 2,
+    "exit_code": 0,
+    "is_error": false,
+    "stderr_head": null,
+    "agent_spawns": [
+      {
+        "subagent_type": "Explore",
+        "description": "Explore repo structure and conventions"
+      }
+    ],
+    "stream_file": "streams\\20260610-220142-interactive-proxy-sonnet\\t12-feat-export-subsystem-proxy-r2.jsonl",
+    "timestamp": "2026-06-10T22:08:33.417Z"
+  },
+  {
+    "task": "t12-feat-export-subsystem",
+    "method": "interactive-proxy (two-turn stream-json stdin, -p, non-TTY)",
+    "cli": "claude",
+    "model": "sonnet",
+    "mode": "on",
+    "run": 3,
+    "pass": false,
+    "verify_note": "FAIL: products.csv first data row: got \"p1,Widget,2.50\", want \"p1,Widget,2.5\"",
+    "wall_ms": 281405,
+    "num_turns": 15,
+    "cost_usd": 0.9426970499999998,
+    "result_events": 2,
+    "exit_code": 0,
+    "is_error": false,
+    "stderr_head": null,
+    "agent_spawns": [
+      {
+        "subagent_type": "Explore",
+        "description": "Explore repo structure and conventions"
+      }
+    ],
+    "stream_file": "streams\\20260610-220142-interactive-proxy-sonnet\\t12-feat-export-subsystem-proxy-r3.jsonl",
+    "timestamp": "2026-06-10T22:13:15.014Z"
+  }
+]
