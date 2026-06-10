@@ -62,7 +62,6 @@ foreach ($taskDir in $taskDirs) {
       if (Test-Path $workDir) { Remove-Item $workDir -Recurse -Force }
       New-Item -ItemType Directory -Force $workDir | Out-Null
       Copy-Item (Join-Path $taskDir.FullName 'fixture\*') $workDir -Recurse -Force
-      Copy-Item (Join-Path $taskDir.FullName 'verify.cjs') $workDir -Force
       if ($runMode -eq 'on') {
         Copy-Item (Join-Path $repoRoot 'AGENTS.md') $workDir -Force
         if ($Cli -eq 'gemini') { Copy-Item (Join-Path $repoRoot 'GEMINI.md') $workDir -Force }
@@ -92,6 +91,9 @@ foreach ($taskDir in $taskDirs) {
         Pop-Location
       }
 
+      # Oracle stays hidden during the run: verify.cjs lands only after the
+      # agent finishes (visible tests inflate pass rates 20-60%, FeatureBench).
+      Copy-Item (Join-Path $taskDir.FullName 'verify.cjs') $workDir -Force
       Push-Location $workDir
       try {
         node verify.cjs *> $null

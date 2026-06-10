@@ -63,7 +63,6 @@ for TASK_DIR in $TASK_DIRS; do
       WORK_DIR="$WORK_ROOT/$ID-$RUN_MODE-r$N-$STAMP"
       rm -rf "$WORK_DIR"; mkdir -p "$WORK_DIR"
       cp -R "$TASK_DIR/fixture/." "$WORK_DIR/"
-      cp "$TASK_DIR/verify.cjs" "$WORK_DIR/"
       if [ "$RUN_MODE" = "on" ]; then
         cp "$REPO_ROOT/AGENTS.md" "$REPO_ROOT/CLAUDE.md" "$WORK_DIR/"
       fi
@@ -76,6 +75,9 @@ for TASK_DIR in $TASK_DIRS; do
         --dangerously-skip-permissions < /dev/null 2>/dev/null) || RAW=""
       WALL_MS=$((($(date +%s%N) / 1000000) - START_MS))
 
+      # Oracle stays hidden during the run: verify.cjs lands only after the
+      # agent finishes (visible tests inflate pass rates 20-60%, FeatureBench).
+      cp "$TASK_DIR/verify.cjs" "$WORK_DIR/"
       if (cd "$WORK_DIR" && node verify.cjs >/dev/null 2>&1); then PASS=true; else PASS=false; fi
 
       ROW=$(echo "${RAW:-null}" | jq -c --arg task "$ID" --arg cat "$CATEGORY" \

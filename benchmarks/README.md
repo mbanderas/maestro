@@ -17,8 +17,17 @@ Node, exit 0 = pass). The runner:
    work dir.
 3. Invokes the agent CLI non-interactively in that dir
    (`claude -p <prompt> --output-format json`).
-4. Runs `verify.cjs` and records pass/fail, wall time, and the token /
+4. Copies `verify.cjs` into the work dir only **after** the agent
+   exits, then runs it and records pass/fail, wall time, and the token /
    turn / cost figures the CLI reports.
+
+**Hidden oracle.** The agent never sees `verify.cjs` during the run.
+Visible ground-truth tests inflate agent resolution rates 20-60%
+(FeatureBench, arXiv:2602.10975) and turn the task into
+test-satisfaction instead of spec-satisfaction. Results recorded before
+2026-06-10 were measured with the oracle visible in the work dir and
+are NOT comparable to later results; affected summaries are labeled
+in place.
 
 ### Isolation (required for a valid OFF cell)
 
@@ -63,6 +72,13 @@ copy (must exit 1) and against a hand-fixed copy (must exit 0).
   runs hit retries and cache variance.
 - **Never compare across models or CLI versions.** Record both in the
   results file.
+- **A/B invariant (hard rule):** cells differ ONLY in doctrine-file
+  presence. Same CLI flags, model, budget cap, isolation, and hidden
+  oracle in both modes — harness changes move agent scores 10-20 pp on
+  their own, so any second variable voids the comparison.
+- **Effect-size floor:** at n=3, differences under ~5 pp are noise
+  (single-run pass@1 varies 2.2-6.0 pp at temp 0, arXiv:2602.07150).
+  Label them indistinguishable; claims about small effects need n>=9.
 - **Honesty rule:** unmeasured cells do not appear in any README table.
   No extrapolation, no "expected" numbers.
 
