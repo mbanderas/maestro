@@ -12,7 +12,12 @@
 // Fires at most once per agent: additionalContext re-prompts the
 // agent, which stops again and re-triggers this hook. Without the
 // once-guard the warning loops and pushes the real report out of the
-// final message entirely.
+// final message entirely. The guard is a marker file in the temp dir
+// keyed by the agent transcript path -- additionalContext is injected
+// into the conversation, NOT written to the transcript file, so
+// grepping the transcript for our own warning never matches
+// (observed live 2026-06-10). The transcript check is kept as a
+// secondary guard for harness versions that do persist it.
 //
 // Soft warnings via additionalContext. Never blocks. When the warning
 // fires, the agent is told to restate its final report so the
@@ -24,6 +29,9 @@
 // Install: see README "Claude Code: Verification Hook".
 
 const fs = require('fs');
+const os = require('os');
+const path = require('path');
+const crypto = require('crypto');
 
 let data = {};
 try { data = JSON.parse(fs.readFileSync(0, 'utf8')); } catch { process.exit(0); }
@@ -39,8 +47,15 @@ if (txPath && fs.existsSync(txPath)) {
   } catch {}
 }
 
-// Fire once per agent. Our marker in the transcript means the warning
-// was already delivered -- exit before building any warning.
+// Fire once per agent: marker file keyed by transcript path (or
+// session id). MAESTRO_GUARD_STATE_DIR overrides the marker dir for
+// tests. Transcript check kept as a secondary guard.
+const guardKey = data.agent_transcript_path || data.transcript_path || data.session_id || '';
+const stateDir = process.env.MAESTRO_GUARD_STATE_DIR || os.tmpdir();
+const marker = guardKey
+  ? path.join(stateDir, 'maestro-guard-' + crypto.createHash('sha1').update(String(guardKey)).digest('hex').slice(0, 16))
+  : null;
+if (marker && fs.existsSync(marker)) process.exit(0);
 if (txText.includes('Maestro guard:')) process.exit(0);
 
 const warnings = [];
@@ -68,6 +83,7 @@ if (!readOnly && txText && !verifyRe.test(txText)) {
 }
 
 if (warnings.length) {
+  if (marker) { try { fs.writeFileSync(marker, String(Date.now())); } catch {} }
   const payload = {
     hookSpecificOutput: {
       hookEventName: 'SubagentStop',

@@ -16,10 +16,13 @@ function transcript(name, lines) {
   return p;
 }
 
+const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), 'maestro-guard-state-'));
+
 function runHook(payload) {
   return execFileSync(process.execPath, [HOOK], {
     input: JSON.stringify(payload),
-    encoding: 'utf8'
+    encoding: 'utf8',
+    env: { ...process.env, MAESTRO_GUARD_STATE_DIR: stateDir }
   });
 }
 
@@ -111,7 +114,20 @@ check('missing transcript -> silent', out === '');
 out = execFileSync(process.execPath, [HOOK], { input: 'not json', encoding: 'utf8' });
 check('garbage stdin -> silent exit 0', out === '');
 
+// 11. Marker-file once-guard: additionalContext never reaches the
+// transcript file (observed live 2026-06-10), so a second stop with an
+// UNCHANGED transcript must still be silent after one warning.
+const repeatTx = transcript('writer-repeat.jsonl', [
+  { type: 'assistant', message: { content: [{ type: 'tool_use', name: 'Edit', input: { file_path: 'b.ts' } }] } },
+  { type: 'assistant', message: { content: [{ type: 'text', text: 'Done.' }] } }
+]);
+out = runHook({ agent_transcript_path: repeatTx });
+check('repeat stop: first fire warns', out.includes('No type-check/lint/test'));
+out = runHook({ agent_transcript_path: repeatTx });
+check('repeat stop: second fire silent (marker file)', out === '');
+
 fs.rmSync(tmp, { recursive: true, force: true });
+fs.rmSync(stateDir, { recursive: true, force: true });
 
 if (failures) { console.error(`${failures} failure(s)`); process.exit(1); }
 console.log('all tests passed');
