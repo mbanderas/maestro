@@ -19,7 +19,8 @@ param(
   [int]$Runs = 1,
   [string]$Model = 'sonnet',
   [double]$MaxBudgetUsd = 1.0,    # per task-run cap passed to claude
-  [switch]$KeepWork               # keep temp work dirs for inspection
+  [switch]$KeepWork,              # keep temp work dirs for inspection
+  [switch]$SaveStream             # capture full stream-json event log per run
 )
 
 $ErrorActionPreference = 'Stop'
@@ -48,6 +49,15 @@ Set-Content (Join-Path $cfgDir 'settings.json') '{}'
 $stamp = Get-Date -Format 'yyyyMMdd-HHmmss'
 $results = [System.Collections.Generic.List[object]]::new()
 
+# Stream capture: full event log per run (for behavioral compliance
+# scoring via score-compliance.cjs). stream-json requires --verbose
+# when combined with -p (CLI-enforced).
+$streamDir = $null
+if ($SaveStream) {
+  $streamDir = Join-Path $resultsDir "streams\$stamp-claude-$Model"
+  New-Item -ItemType Directory -Force $streamDir | Out-Null
+}
+
 foreach ($taskDir in $taskDirs) {
   $spec = Get-Content (Join-Path $taskDir.FullName 'task.json') -Raw | ConvertFrom-Json
   foreach ($runMode in $modes) {
@@ -70,9 +80,15 @@ foreach ($taskDir in $taskDirs) {
       Push-Location $workDir
       $sw = [Diagnostics.Stopwatch]::StartNew()
       try {
-        $raw = '' | claude -p $spec.prompt --model $Model --output-format json `
-          --strict-mcp-config --no-session-persistence `
-          --max-budget-usd $MaxBudgetUsd --dangerously-skip-permissions 2>$null
+        if ($SaveStream) {
+          $raw = '' | claude -p $spec.prompt --model $Model --output-format stream-json --verbose `
+            --strict-mcp-config --no-session-persistence `
+            --max-budget-usd $MaxBudgetUsd --dangerously-skip-permissions 2>$null
+        } else {
+          $raw = '' | claude -p $spec.prompt --model $Model --output-format json `
+            --strict-mcp-config --no-session-persistence `
+            --max-budget-usd $MaxBudgetUsd --dangerously-skip-permissions 2>$null
+        }
       } finally {
         $sw.Stop()
         Pop-Location
@@ -80,7 +96,15 @@ foreach ($taskDir in $taskDirs) {
       }
 
       $json = $null
-      try { $json = ($raw -join "`n") | ConvertFrom-Json } catch {}
+      $streamFile = $null
+      if ($SaveStream) {
+        $streamFile = Join-Path $streamDir "$($spec.id)-$runMode-r$n.jsonl"
+        Set-Content $streamFile (@($raw) -join "`n")
+        $resultLine = @($raw) | Where-Object { $_ -match '^\{"type":"result"' } | Select-Object -Last 1
+        try { $json = $resultLine | ConvertFrom-Json } catch {}
+      } else {
+        try { $json = ($raw -join "`n") | ConvertFrom-Json } catch {}
+      }
 
       # Oracle stays hidden during the run: verify.cjs lands only after the
       # agent finishes (visible tests inflate pass rates 20-60%, FeatureBench).
@@ -109,6 +133,8 @@ foreach ($taskDir in $taskDirs) {
         cache_read  = $json.usage.cache_read_input_tokens
         cache_write = $json.usage.cache_creation_input_tokens
         is_error    = if ($null -ne $json) { $json.is_error } else { $true }
+        stream_file = if ($streamFile) { [IO.Path]::GetRelativePath($resultsDir, $streamFile) } else { $null }
+        work_dir    = $workDir
         timestamp   = (Get-Date -Format 'o')
       }
       $results.Add([pscustomobject]$row)
