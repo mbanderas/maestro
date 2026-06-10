@@ -1,0 +1,7 @@
+{
+  "id": "t08-refactor-error-convention",
+  "category": "cross-cutting-refactor",
+  "size": "m",
+  "prompt": "Refactor error handling across src/ to a single convention. Every module currently throws plain Error objects whose messages have the form 'SOME_CODE: human text'. (1) Create src/errors.js exporting class AppError extends Error with constructor(code, message); instances must have .name === 'AppError', .code === the code string, and .message === the human text only. (2) Convert every throw site in every module under src/ to throw new AppError('<code>', '<human text>') where the code is the prefix before the first colon of the old message and the human text is everything after the colon and space, so no thrown message contains the code prefix anymore. (3) Re-export AppError from the barrel src/index.js alongside the existing exports. (4) After the refactor, no 'new Error(' call may remain anywhere in src/ except inside src/errors.js itself. All success-path behavior must be unchanged.",
+  "verify": "node verify.cjs"
+}
