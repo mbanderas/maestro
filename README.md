@@ -467,8 +467,9 @@ runs, 0 voids):
   the frontier summary, not the sonnet table above; numbers are never
   compared across models.)
 - **The multi-agent path (S2-S6) never fires headless.** t12 was
-  built to trip the Decision Gate (three concerns, ~10 files, spec
-  resolvable only through `docs/conventions.md`). Every run — ON and
+  built to trip the Decision Gate (three concerns, 7 files touched
+  across a 16-file app, spec resolvable only through
+  `docs/conventions.md`). Every run — ON and
   OFF alike — spawned exactly one Explore recon subagent and zero
   Planner/specialist/review agents. Maestro's measured effects come
   from the universal rules (S7-S10), not orchestration, in `claude -p`

@@ -39,9 +39,10 @@ already within the model's reach.
 ## Claim 2 — does the multi-agent path (S2-S6) ever fire headless? NO
 
 t12-feat-export-subsystem was built to trip the S1 Decision Gate:
-three concerns (commands + config + docs), ~10 files touched, a
-deliberately underspecified prompt whose resolution requires reading
-`docs/conventions.md`. Sonnet, ON/OFF, n=3, cap $2.00.
+three concerns (commands + config + docs), 7 files touched (4 new,
+3 edited) across a 16-file app, a deliberately underspecified prompt
+whose resolution requires reading `docs/conventions.md`. Sonnet,
+ON/OFF, n=3, cap $2.00.
 
 | Task | Mode | n | Pass | Median cost | Median turns | Median wall ms |
 |------|------|---|------|-------------|--------------|----------------|
@@ -98,8 +99,8 @@ Notable nulls, reported straight:
 
 ## Caveats
 
-- One model per claim (haiku for 1/3, sonnet for 2): no cross-model
-  comparison implied between tables.
+- One model per claim (haiku for claims 1 and 3, sonnet for claim 2):
+  no cross-model comparison implied between tables.
 - n=3 per cell: pass-rate ties are solid (identical outcomes), but
   small behavioral deltas are noise; claims would need n>=9.
 - t12's prompt names the three entities to export; a stronger
