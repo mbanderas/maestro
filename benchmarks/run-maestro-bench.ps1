@@ -14,8 +14,8 @@
 [CmdletBinding()]
 param(
   [string[]]$Task = @(),          # task ids; empty = all tasks
-  [ValidateSet('on', 'off', 'both')]
-  [string]$Mode = 'both',
+  [ValidateSet('on', 'off', 'both', 'core')]
+  [string]$Mode = 'both',   # core = compact variants/AGENTS-core.md bundle
   [int]$Runs = 1,
   [string]$Model = 'sonnet',
   [double]$MaxBudgetUsd = 1.0,    # per task-run cap passed to claude
@@ -59,6 +59,9 @@ foreach ($taskDir in $taskDirs) {
       if ($runMode -eq 'on') {
         Copy-Item (Join-Path $repoRoot 'AGENTS.md') $workDir -Force
         Copy-Item (Join-Path $repoRoot 'CLAUDE.md') $workDir -Force
+      } elseif ($runMode -eq 'core') {
+        Copy-Item (Join-Path $benchRoot 'variants\AGENTS-core.md') (Join-Path $workDir 'AGENTS.md') -Force
+        Set-Content (Join-Path $workDir 'CLAUDE.md') "@AGENTS.md"
       }
 
       Write-Host "[$($spec.id)] mode=$runMode run=$n model=$Model ..." -NoNewline
