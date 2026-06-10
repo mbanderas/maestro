@@ -67,6 +67,11 @@ const bashWriterTx = transcript('bash-writer.jsonl', [
   { type: 'assistant', message: { content: [{ type: 'text', text: 'Committed.' }] } }
 ]);
 
+const spawnerTx = transcript('spawner.jsonl', [
+  { type: 'assistant', message: { content: [{ type: 'tool_use', name: 'Bash', input: { command: 'npm run watch', run_in_background: true } }] } },
+  { type: 'assistant', message: { content: [{ type: 'text', text: 'Watcher started, report ready.' }] } }
+]);
+
 const alreadyWarnedTx = transcript('already-warned.jsonl', [
   { type: 'assistant', message: { content: [{ type: 'tool_use', name: 'Edit', input: { file_path: 'a.ts' } }] } },
   { type: 'system', text: 'Maestro guard:\n- No type-check/lint/test detected after file modifications.' },
@@ -130,13 +135,23 @@ out = runHook({
 });
 check('already-warned + bg task -> still silent', out === '');
 
-// 8. Active background task: warns for any agent, including read-only.
+// 8. Active background task + transcript shows spawning: warns, even
+// for a read-only agent.
+out = runHook({
+  agent_transcript_path: spawnerTx,
+  background_tasks: [{ id: 't1', status: 'running' }]
+});
+check('spawned + orphaned background task -> warns', out.includes('background task'));
+
+// 8b. Active background tasks but agent spawned nothing: silent.
+// background_tasks is machine-wide; unrelated sessions' tasks must
+// not nag this agent.
 out = runHook({
   agent_type: 'Explore',
   agent_transcript_path: readOnlyTx,
   background_tasks: [{ id: 't1', status: 'running' }]
 });
-check('orphaned background task -> warns', out.includes('background task'));
+check('no spawn evidence + bg tasks -> silent', out === '');
 
 // 9. Missing transcript: silent (fails open, never blocks).
 out = runHook({ agent_transcript_path: path.join(tmp, 'missing.jsonl') });

@@ -62,9 +62,15 @@ if (txText.includes('Maestro guard:')) process.exit(0);
 
 const warnings = [];
 
+// background_tasks in the SubagentStop payload is machine-wide (all
+// sessions), not scoped to this agent (observed live 2026-06-10: a
+// fixture-builder agent was warned about unrelated sessions' tasks).
+// Only warn when the agent's own transcript shows it spawned
+// background work; agents that spawned nothing are exempt.
+const spawnRe = /"run_in_background"\s*:\s*true|"name"\s*:\s*"TaskCreate"/;
 const bg = Array.isArray(data.background_tasks) ? data.background_tasks : [];
 const active = bg.filter(t => t && (t.status === 'running' || t.status === 'pending' || t.status === 'active'));
-if (active.length) {
+if (active.length && spawnRe.test(txText)) {
   warnings.push(`${active.length} background task(s) still active. Wait or stop before declaring complete (AGENTS.md S7.3).`);
 }
 

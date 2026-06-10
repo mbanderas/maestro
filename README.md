@@ -199,7 +199,10 @@ stops, the hook checks three things and emits a soft warning if any
 fails:
 
 1. Are there orphaned `background_tasks` still active? If so, the
-   subagent is declaring complete while work is still running.
+   subagent is declaring complete while work is still running. Scoped
+   to agents whose transcript shows they spawned background work —
+   the payload field is machine-wide, and unrelated sessions' tasks
+   must not nag an agent that spawned nothing.
 2. Did a file-modifying subagent run a type-checker, linter, or test
    runner? If not, it likely skipped verification.
 3. Does a file-modifying subagent's final report carry one of the
