@@ -1,0 +1,22 @@
+{
+  "task": "t01-fix-inclusive-range",
+  "category": "single-file-fix",
+  "cli": "claude",
+  "model": "sonnet",
+  "mode": "on",
+  "run": 1,
+  "pass": true,
+  "verify_note": null,
+  "wall_ms": 14241,
+  "agent_ms": 12764,
+  "num_turns": 4,
+  "cost_usd": 0.11448300000000002,
+  "in_tokens": 5,
+  "out_tokens": 409,
+  "cache_read": 117530,
+  "cache_write": 12086,
+  "is_error": false,
+  "stream_file": "streams\\20260611-004917-claude-sonnet\\t01-fix-inclusive-range-on-r1.jsonl",
+  "work_dir": "C:\\Users\\mail\\AppData\\Local\\Temp\\maestro-bench\\t01-fix-inclusive-range-on-r1-20260611-004917",
+  "timestamp": "2026-06-11T00:49:50.2637722+01:00"
+}
