@@ -1,0 +1,7 @@
+[
+  { "id": "m-1", "ticketId": "t-100", "author": "Alice", "body": "Still cannot log in.", "createdAt": "2025-08-10" },
+  { "id": "m-2", "ticketId": "t-100", "author": "Support", "body": "Try resetting your password.", "createdAt": "2025-08-11" },
+  { "id": "m-3", "ticketId": "t-101", "author": "Bob", "body": "Why was I charged twice?", "createdAt": "2025-10-01" },
+  { "id": "m-4", "ticketId": "t-103", "author": "Carol", "body": "Refund received, thanks.", "createdAt": "2025-12-16" },
+  { "id": "m-5", "ticketId": "t-105", "author": "Carol", "body": "Please upgrade me to Pro.", "createdAt": "2026-01-01" }
+]

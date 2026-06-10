@@ -1,0 +1,8 @@
+[
+  { "id": "t-100", "customerId": "c-1", "subject": "Login fails", "status": "closed", "updatedAt": "2025-08-10" },
+  { "id": "t-101", "customerId": "c-1", "subject": "Billing question", "status": "closed", "updatedAt": "2025-10-01" },
+  { "id": "t-102", "customerId": "c-2", "subject": "Feature request", "status": "open", "updatedAt": "2025-09-15" },
+  { "id": "t-103", "customerId": "c-2", "subject": "Refund processed", "status": "closed", "updatedAt": "2025-12-15" },
+  { "id": "t-104", "customerId": "c-3", "subject": "Password reset", "status": "closed", "updatedAt": "2025-11-20" },
+  { "id": "t-105", "customerId": "c-3", "subject": "Upgrade plan", "status": "open", "updatedAt": "2026-01-01" }
+]

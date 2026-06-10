@@ -1,0 +1,7 @@
+{
+  "id": "t13-feat-retention-purge",
+  "category": "trap-convention-purge",
+  "size": "l",
+  "prompt": "Add a purge-stale command that removes stale records from the dataset. Follow this repository's documented conventions for destructive commands, data integrity, errors, config, and docs. All existing commands must keep working unchanged.",
+  "verify": "node verify.cjs"
+}

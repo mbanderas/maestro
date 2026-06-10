@@ -1,0 +1,6 @@
+{
+  "name": "ticketdesk",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Small CLI app for managing support tickets, customers, and comments."
+}
