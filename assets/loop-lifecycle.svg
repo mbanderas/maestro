@@ -1,0 +1,64 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 512" role="img" aria-labelledby="t d">
+  <title id="t">Maestro loop engineering lifecycle</title>
+  <desc id="d">A bounded autonomous loop: read checkpoint, re-anchor goal, execute phase, verify, write checkpoint, then wait for an event or wakeup — exiting to a final report when the success condition or hard cap is met.</desc>
+  <style>
+    .node { fill: #121216; stroke: #222228; stroke-width: 1.5; }
+    .done { fill: rgb(245 158 11 / 0.08); stroke: #f59e0b; stroke-width: 2; }
+    .lbl  { font: 600 12.5px ui-monospace, SFMono-Regular, Consolas, monospace; fill: #f0f0f4; }
+    .sub  { font: 400 10.5px ui-monospace, SFMono-Regular, Consolas, monospace; fill: #9e9eaa; }
+    .ring { stroke: #44444e; stroke-width: 1.5; fill: none; stroke-dasharray: 6 8;
+            animation: spin 9s linear infinite; }
+    .exit { stroke: #f59e0b; stroke-width: 1.8; fill: none; stroke-dasharray: 6 7;
+            animation: dash 1.6s linear infinite; }
+    .acct { fill: #fbbf24; }
+    @keyframes spin { to { stroke-dashoffset: -252; } }
+    @keyframes dash { to { stroke-dashoffset: -26; } }
+    @media (prefers-reduced-motion: reduce) { .ring, .exit { animation: none; } }
+  </style>
+  <defs>
+    <marker id="ax" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#f59e0b"/>
+    </marker>
+  </defs>
+
+  <rect width="480" height="512" rx="12" fill="#0a0a0c"/>
+
+  <!-- rotating cycle ring (clockwise) -->
+  <circle class="ring" cx="240" cy="230" r="150"/>
+
+  <!-- center -->
+  <text class="lbl" x="240" y="218" text-anchor="middle">S10 loop</text>
+  <text class="sub" x="240" y="234" text-anchor="middle">bounded iterations</text>
+  <text class="sub" x="240" y="249" text-anchor="middle">never blocks on user</text>
+
+  <!-- nodes clockwise from top -->
+  <rect class="node" x="168" y="56" width="144" height="40" rx="8"/>
+  <text class="lbl" x="240" y="74" text-anchor="middle">read checkpoint</text>
+  <text class="sub" x="240" y="88" text-anchor="middle">resume, never redo</text>
+
+  <rect class="node" x="306" y="132" width="138" height="40" rx="8"/>
+  <text class="lbl" x="375" y="150" text-anchor="middle">re-anchor goal</text>
+  <text class="sub" x="375" y="164" text-anchor="middle">verbatim, every wake</text>
+
+  <rect class="node" x="306" y="288" width="138" height="40" rx="8"/>
+  <text class="lbl" x="375" y="306" text-anchor="middle">execute phase</text>
+  <text class="sub" x="375" y="320" text-anchor="middle">bounded fan-out</text>
+
+  <rect class="node" x="168" y="364" width="144" height="40" rx="8"/>
+  <text class="lbl" x="240" y="382" text-anchor="middle">verify</text>
+  <text class="sub" x="240" y="396" text-anchor="middle">success criteria = exit</text>
+
+  <rect class="node" x="36" y="288" width="138" height="40" rx="8"/>
+  <text class="lbl" x="105" y="306" text-anchor="middle">write checkpoint</text>
+  <text class="sub" x="105" y="320" text-anchor="middle">before context limit</text>
+
+  <rect class="node" x="36" y="132" width="138" height="40" rx="8"/>
+  <text class="lbl" x="105" y="150" text-anchor="middle">event / wakeup</text>
+  <text class="sub" x="105" y="164" text-anchor="middle">signal &gt; timer</text>
+
+  <!-- dual-termination exit -->
+  <path class="exit" d="M240 404 V448 H300" marker-end="url(#ax)"/>
+  <rect class="done" x="308" y="428" width="156" height="44" rx="8"/>
+  <text class="lbl acct" x="386" y="447" text-anchor="middle">final report</text>
+  <text class="sub" x="386" y="462" text-anchor="middle">success OR hard cap</text>
+</svg>

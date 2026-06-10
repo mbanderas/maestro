@@ -46,7 +46,7 @@ Maestro implements the architecture this research points to — not a framework 
 ## Architecture
 
 <p align="center">
-  <img src="docs/architecture.svg" alt="Maestro architecture diagram" width="700">
+  <img src="assets/maestro-flow.svg" alt="Maestro orchestration flow: task through the S1 decision gate to either a single agent or the planner, specialist group, and staff engineer pipeline, converging on verified delivery" width="780">
 </p>
 
 **Decision Gate** — Routes each task to single-agent or multi-agent execution based on complexity, parallelizability, and token cost. Most tasks stay single-agent.
@@ -59,7 +59,11 @@ Maestro implements the architecture this research points to — not a framework 
 
 **Staff Engineer Review** — Performs adversarial final verification to catch contradictions, breakage, and architectural drift.
 
-**Long-Horizon Operation** — Checkpoint artifacts, self-pacing, and explicit end conditions govern recurring or multi-session autonomous runs (Section 10 of the doctrine).
+**Long-Horizon Operation** — Checkpoint artifacts, self-pacing, and explicit end conditions govern recurring or multi-session autonomous runs (Section 10 of the doctrine, including the Loop Engineering rules):
+
+<p align="center">
+  <img src="assets/loop-lifecycle.svg" alt="Loop engineering lifecycle: read checkpoint, re-anchor goal, execute phase, verify, write checkpoint, event or wakeup — exiting to a final report on success or hard cap" width="440">
+</p>
 
 The specialist manifest (S3) and cross-talk handoff packet (S4/S6) also ship as optional machine-readable JSON Schemas in [`schemas/`](schemas/) for tooling and validation — the prose doctrine remains the source of truth.
 
