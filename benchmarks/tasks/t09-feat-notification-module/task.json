@@ -1,0 +1,7 @@
+{
+  "id": "t09-feat-notification-module",
+  "category": "multi-file-feature-hidden-invariants",
+  "size": "m",
+  "prompt": "Add a notifications module to the ops console: per-user message queues with send(user, message), list(user), clear(user); a config key notifications.maxQueue (positive integer, default 50) capping each user's queue — when full, the oldest message is dropped; emit an event when a message is queued; add a CLI command 'notify <user> <message>'; document the module. Follow the existing conventions of this codebase throughout.",
+  "verify": "node verify.cjs"
+}
