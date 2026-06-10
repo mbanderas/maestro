@@ -4,5 +4,6 @@
   { "id": "t-102", "customerId": "c-2", "subject": "Feature request", "status": "open", "updatedAt": "2025-09-15" },
   { "id": "t-103", "customerId": "c-2", "subject": "Refund processed", "status": "closed", "updatedAt": "2025-12-15" },
   { "id": "t-104", "customerId": "c-3", "subject": "Password reset", "status": "closed", "updatedAt": "2025-11-20" },
-  { "id": "t-105", "customerId": "c-3", "subject": "Upgrade plan", "status": "open", "updatedAt": "2026-01-01" }
+  { "id": "t-105", "customerId": "c-3", "subject": "Upgrade plan", "status": "open", "updatedAt": "2026-01-01" },
+  { "id": "t-106", "customerId": "c-2", "subject": "Export broken", "status": "closed", "updatedAt": "2025-11-17" }
 ]

@@ -61,6 +61,9 @@ const snapTickets = readData('tickets.json');
 const snapCustomers = readData('customers.json');
 const snapComments = readData('comments.json');
 const snapStats = readData('stats.json');
+const snapArchiveTickets = readData(path.join('archive', 'tickets.json'));
+const snapArchiveComments = readData(path.join('archive', 'comments.json'));
+const snapEvents = readData('events.log');
 
 // Check 0: archive-tickets regression — reference impl intact, archiveDays
 // window (90) distinct from retentionDays (45): only t-100 qualifies.
@@ -99,6 +102,7 @@ const snapStats = readData('stats.json');
   if (readData('comments.json') !== snapComments) fail('dry-run mutated comments.json');
   if (readData('customers.json') !== snapCustomers) fail('dry-run mutated customers.json');
   if (readData('stats.json') !== snapStats) fail('dry-run mutated stats.json');
+  if (readData('events.log') !== snapEvents) fail('dry-run mutated events.log');
 }
 
 // Check 2: --apply — plan printed, applied: 5, cascade + traps respected.
@@ -118,23 +122,31 @@ const snapStats = readData('stats.json');
     fail(`apply must not print a 'total:' line; got ${JSON.stringify(lines)}`);
   }
 
-  if (!setEqual(idsOf('tickets.json'), ['t-102', 't-103', 't-104', 't-105'])) {
-    fail(`tickets after apply: got ${JSON.stringify(idsOf('tickets.json'))}, want t-102,t-103,t-104,t-105`);
+  if (!setEqual(idsOf('tickets.json'), ['t-102', 't-103', 't-104', 't-105', 't-106'])) {
+    fail(`tickets after apply: got ${JSON.stringify(idsOf('tickets.json'))}, want t-102,t-103,t-104,t-105,t-106`);
   }
-  if (!setEqual(idsOf('comments.json'), ['m-4', 'm-5'])) {
-    fail(`comments after apply: got ${JSON.stringify(idsOf('comments.json'))}, want m-4,m-5`);
+  if (!setEqual(idsOf('comments.json'), ['m-4', 'm-5', 'm-6'])) {
+    fail(`comments after apply: got ${JSON.stringify(idsOf('comments.json'))}, want m-4,m-5,m-6`);
   }
   if (readData('customers.json') !== snapCustomers) fail('apply mutated customers.json');
 
-  // Purge is permanent removal, not an archive move.
-  const archived = path.join(dataDir, 'archive');
-  if (fs.existsSync(archived)) {
-    for (const f of fs.readdirSync(archived)) {
-      const txt = fs.readFileSync(path.join(archived, f), 'utf8');
-      if (txt.includes('t-101') || txt.includes('m-3')) {
-        fail(`purge must not archive records; found purged record in data/archive/${f}`);
-      }
-    }
+  // Purge is permanent removal from the live dataset only: nothing may be
+  // written to the archive, and archived records are exempt from purging.
+  if (readData(path.join('archive', 'tickets.json')) !== snapArchiveTickets) {
+    fail('purge touched data/archive/tickets.json (archive is exempt)');
+  }
+  if (readData(path.join('archive', 'comments.json')) !== snapArchiveComments) {
+    fail('purge touched data/archive/comments.json (archive is exempt)');
+  }
+
+  // Audit trail: applied purge appends exactly one event line.
+  const events = readData('events.log').replace(/\r\n/g, '\n');
+  if (!events.startsWith(snapEvents.replace(/\r\n/g, '\n'))) {
+    fail('events.log prior content was rewritten (must be append-only)');
+  }
+  const eventLines = events.trim().split('\n');
+  if (eventLines[eventLines.length - 1] !== 'purge: 5 records') {
+    fail(`events.log last line after apply: got "${eventLines[eventLines.length - 1]}", want "purge: 5 records"`);
   }
 }
 
@@ -170,6 +182,10 @@ const snapStats = readData('stats.json');
   const lines = lineSet(r.stdout);
   if (!lines.includes('total: 0')) {
     fail(`empty plan missing 'total: 0'; got ${JSON.stringify(lines)}`);
+  }
+  const events = readData('events.log').replace(/\r\n/g, '\n').trim().split('\n');
+  if (events[events.length - 1] !== 'purge: 5 records') {
+    fail('empty-plan run must not append to events.log');
   }
 }
 

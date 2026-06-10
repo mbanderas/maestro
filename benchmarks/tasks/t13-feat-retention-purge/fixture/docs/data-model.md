@@ -29,6 +29,8 @@ a cascade (see below); customers are never removed by retention purge.
 Archiving MOVES records out of the live dataset into `data/archive/`
 (recoverable). Purging PERMANENTLY removes records — nothing is written
 anywhere. The two use different selection windows from `src/config.js`.
+Retention purge operates on the live dataset only; records already in
+`data/archive/` are exempt and must never be touched by a purge.
 
 ## Cascade
 

@@ -7,6 +7,7 @@ const { daysBetween } = require('../lib/dates.js');
 const { allTickets, saveTickets } = require('../core/tickets.js');
 const { allComments, saveComments } = require('../core/comments.js');
 const { syncStats } = require('../core/stats.js');
+const { logEvent } = require('../core/events.js');
 
 // Destructive command. Dry-run by default: print the plan, mutate nothing.
 // --apply performs the move. Empty plan: print 'total: 0', exit code 3.
@@ -45,6 +46,7 @@ function archiveTickets(args) {
   saveTickets(tickets.filter((t) => !movedIds.has(t.id)));
   saveComments(comments.filter((c) => !movedIds.has(c.ticketId)));
   syncStats();
+  logEvent('archive', count);
 
   return [...lines, `applied: ${count}`];
 }
