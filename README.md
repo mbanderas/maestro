@@ -421,8 +421,9 @@ If you need a standalone multi-agent application with custom tools, APIs, and de
 ## Benchmarks
 
 Maestro ships a reproducible A/B harness in [`benchmarks/`](benchmarks/):
-eleven fixture tasks (single-file fixes through hidden-invariant
-features and a 19-file validation sweep), a zero-dependency
+twelve fixture tasks (single-file fixes through hidden-invariant
+features, a 19-file validation sweep, and a multi-concern subsystem
+with a deliberately underspecified spec), a zero-dependency
 runner for Windows and macOS/Linux, and a deterministic `verify.cjs`
 checker per task. Each task runs with Maestro ON (doctrine files in
 the work dir) vs OFF (absent), under an isolated `CLAUDE_CONFIG_DIR`
@@ -436,7 +437,7 @@ Current cells (Claude Code, `sonnet`, hidden-oracle runner,
 and documented):
 
 <p align="center">
-  <img src="assets/bench-cells.svg" alt="Bar chart of median cost per task-run for t07 to t10 with doctrine off, on, and core variant; pass rates per cell shown beneath each group" width="740">
+  <img src="assets/bench-cells.svg" alt="Bar chart of median cost per task-run for t07 to t10 and t12 with doctrine off, on, and core variant; pass rates per cell shown beneath each group" width="860">
 </p>
 
 | Cell | n | Pass | Med wall | Med turns | Med cost | Med out-tok |
@@ -452,22 +453,50 @@ and documented):
 | t10 ON | 5 | 5/5 | 51s | 9 | $0.169 | 2,949 |
 | t11 OFF | 1 | 1/1 | 238s | 37 | $0.507 | 12,924 |
 | t11 ON | 1 | 1/1 | 201s | 37 | $0.533 | 9,905 |
+| t12 OFF | 3 | 3/3 | 198s | 22 | $0.343 | 7,270 |
+| t12 ON | 3 | 3/3 | 137s | 21 | $0.358 | 5,814 |
+
+Three further claims were measured on 2026-06-10 (haiku weak-model
+cells t07-t11 at n=3 per cell, the t12 multi-agent-trigger cell, and
+a five-behavior compliance scorer over full event streams — 36 valid
+runs, 0 voids):
+
+- **Weak-model rescue: not measurable here.** Haiku passes 30/30
+  across t07-t11 in both modes — the suite has no headroom at this
+  tier, so pass-rate rescue cannot be observed. (Haiku cells live in
+  the frontier summary, not the sonnet table above; numbers are never
+  compared across models.)
+- **The multi-agent path (S2-S6) never fires headless.** t12 was
+  built to trip the Decision Gate (three concerns, ~10 files, spec
+  resolvable only through `docs/conventions.md`). Every run — ON and
+  OFF alike — spawned exactly one Explore recon subagent and zero
+  Planner/specialist/review agents. Maestro's measured effects come
+  from the universal rules (S7-S10), not orchestration, in `claude -p`
+  runs.
+- **Compliance deltas are null at these tiers.** No run in any mode
+  ever stated a S7.3 status token (0/36, including every ON run);
+  surgical scope and oracle integrity were perfect in both modes;
+  smoke-testing tied 9/15 vs 9/15 on haiku. Prose doctrine alone did
+  not move headless reporting behavior — which is why the
+  verification hook enforces it structurally.
 
 Honest reading: **Maestro ON has never beaten OFF on success rate in
 any measured cell** — at t09's n=9 the modes are exactly tied (8/9
 each). What the data does show is an **efficiency pattern on
 convention-heavy, multi-file work**: t08 ON is -30% wall / -18% turns
 / -8% cost at equal pass, the t11 pilot is -16% wall / -23%
-out-tokens at identical turns, and the same t08 win reproduces on
+out-tokens at identical turns, t12 ON is -31% wall / -20% out-tokens
+at equal pass (+4% cost), and the same t08 win reproduces on
 Gemini (-40% wall at n=3, equal pass). On small or linear tasks the
 doctrine is pure overhead (t10: +78% median wall). t09 separates
 *models* more than modes: gemini-3.1-pro-preview passes 1 of 6 valid
 runs, gpt-5.4-mini passes 4/4, sonnet ~8-in-9. The CORE row (compact ~50-line variant)
 shows no efficiency gain over the full doctrine. Small samples
 throughout; no significance claims. Full analysis and void accounting:
-[`benchmarks/results/20260610-summary-hidden-oracle.md`](benchmarks/results/20260610-summary-hidden-oracle.md)
+[`benchmarks/results/20260610-summary-hidden-oracle.md`](benchmarks/results/20260610-summary-hidden-oracle.md),
+[`benchmarks/results/20260610-summary-xcli.md`](benchmarks/results/20260610-summary-xcli.md),
 and
-[`benchmarks/results/20260610-summary-xcli.md`](benchmarks/results/20260610-summary-xcli.md).
+[`benchmarks/results/20260610-summary-frontier.md`](benchmarks/results/20260610-summary-frontier.md).
 
 Post-fix Gemini (`gemini-3.1-pro-preview`) and Codex (`gpt-5.4-mini`,
 exploratory n=1) cells for t08/t09 — including the gemini quota voids

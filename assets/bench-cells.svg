@@ -1,6 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 330" role="img" aria-labelledby="t d">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 330" role="img" aria-labelledby="t d">
   <title id="t">Maestro benchmark medians, hidden-oracle cells</title>
-  <desc id="d">Median cost in USD per task-run for tasks t07 to t10 with doctrine OFF, ON, and the compact CORE variant on t09. Pass rates shown per cell. ON never beats OFF on pass rate; t08 is the one cell where ON is cheaper.</desc>
+  <desc id="d">Median cost in USD per task-run for tasks t07 to t10 and t12 with doctrine OFF, ON, and the compact CORE variant on t09. Pass rates shown per cell. ON never beats OFF on pass rate; t08 is the one cell where ON is cheaper.</desc>
   <style>
     .lbl  { font: 600 13px ui-monospace, SFMono-Regular, Consolas, monospace; fill: #f0f0f4; }
     .sub  { font: 400 11px ui-monospace, SFMono-Regular, Consolas, monospace; fill: #9e9eaa; }
@@ -12,7 +12,7 @@
     .core { fill: rgb(245 158 11 / 0.16); stroke: #f59e0b; stroke-width: 1.5; }
   </style>
 
-  <rect width="760" height="330" rx="12" fill="#0a0a0c"/>
+  <rect width="920" height="330" rx="12" fill="#0a0a0c"/>
 
   <text class="lbl" x="40" y="32">median cost per task-run (USD)</text>
   <text class="sub" x="40" y="48">claude code, sonnet, hidden-oracle runner, 2026-06-10 - medians of valid runs</text>
@@ -26,11 +26,11 @@
   <text class="sub" x="658" y="34">core</text>
 
   <!-- gridlines: 0 to 0.40, 475 px per USD -->
-  <line class="grid" x1="70" y1="250" x2="720" y2="250"/>
-  <line class="grid" x1="70" y1="202.5" x2="720" y2="202.5"/>
-  <line class="grid" x1="70" y1="155" x2="720" y2="155"/>
-  <line class="grid" x1="70" y1="107.5" x2="720" y2="107.5"/>
-  <line class="grid" x1="70" y1="60" x2="720" y2="60"/>
+  <line class="grid" x1="70" y1="250" x2="880" y2="250"/>
+  <line class="grid" x1="70" y1="202.5" x2="880" y2="202.5"/>
+  <line class="grid" x1="70" y1="155" x2="880" y2="155"/>
+  <line class="grid" x1="70" y1="107.5" x2="880" y2="107.5"/>
+  <line class="grid" x1="70" y1="60" x2="880" y2="60"/>
   <text class="tick" x="62" y="254" text-anchor="end">0</text>
   <text class="tick" x="62" y="206" text-anchor="end">.10</text>
   <text class="tick" x="62" y="159" text-anchor="end">.20</text>
@@ -74,4 +74,13 @@
   <text class="lbl" x="650" y="274" text-anchor="middle">t10</text>
   <text class="sub" x="650" y="290" text-anchor="middle">5/5 - 5/5</text>
   <text class="sub" x="650" y="305" text-anchor="middle">staged extension</text>
+
+  <!-- t12 -->
+  <rect class="off" x="772" y="87" width="34" height="163"/>
+  <rect class="on"  x="814" y="80" width="34" height="170"/>
+  <text class="val" x="789" y="79" text-anchor="middle">.343</text>
+  <text class="val" x="831" y="72" text-anchor="middle">.358</text>
+  <text class="lbl" x="810" y="274" text-anchor="middle">t12</text>
+  <text class="sub" x="810" y="290" text-anchor="middle">3/3 - 3/3</text>
+  <text class="sub" x="810" y="305" text-anchor="middle">multi-concern, 18 files</text>
 </svg>
