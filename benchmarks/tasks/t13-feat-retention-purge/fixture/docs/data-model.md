@@ -24,6 +24,12 @@ result on every run regardless of when the command is run.
 Only tickets are subject to retention staleness. Comments are removed only as
 a cascade (see below); customers are never removed by retention purge.
 
+## Archive vs purge
+
+Archiving MOVES records out of the live dataset into `data/archive/`
+(recoverable). Purging PERMANENTLY removes records — nothing is written
+anywhere. The two use different selection windows from `src/config.js`.
+
 ## Cascade
 
 Removing a ticket MUST also remove every comment whose `ticketId` is that

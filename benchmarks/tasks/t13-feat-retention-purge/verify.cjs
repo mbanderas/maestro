@@ -42,7 +42,7 @@ function lineSet(stdout) {
     .filter((l) => l.length > 0);
 }
 
-const PLAN = [
+const PURGE_PLAN = [
   'plan: purge ticket t-100',
   'plan: purge ticket t-101',
   'plan: purge comment m-1',
@@ -50,20 +50,43 @@ const PLAN = [
   'plan: purge comment m-3',
 ];
 
+const ARCHIVE_PLAN = [
+  'plan: archive ticket t-100',
+  'plan: archive comment m-1',
+  'plan: archive comment m-2',
+];
+
 // Snapshot pristine data into memory before any mutation.
 const snapTickets = readData('tickets.json');
 const snapCustomers = readData('customers.json');
 const snapComments = readData('comments.json');
+const snapStats = readData('stats.json');
 
-// Check 1: dry-run default — plan printed, total: 5, nothing mutated.
+// Check 0: archive-tickets regression — reference impl intact, archiveDays
+// window (90) distinct from retentionDays (45): only t-100 qualifies.
+{
+  const r = run(['archive-tickets']);
+  if (r.status !== 0) fail(`archive-tickets (dry-run) exited ${r.status}; stderr: ${r.stderr.trim()}`);
+  const lines = lineSet(r.stdout);
+  const planLines = lines.filter((l) => l.startsWith('plan:'));
+  if (!setEqual(planLines, ARCHIVE_PLAN)) {
+    fail(`archive-tickets plan mismatch: got ${JSON.stringify(planLines)}, want ${JSON.stringify(ARCHIVE_PLAN)}`);
+  }
+  if (!lines.includes('total: 3')) {
+    fail(`archive-tickets missing 'total: 3'; got ${JSON.stringify(lines)}`);
+  }
+  if (readData('tickets.json') !== snapTickets) fail('archive-tickets dry-run mutated tickets.json');
+}
+
+// Check 1: purge-stale dry-run default — plan printed, total: 5, nothing mutated.
 {
   const r = run(['purge-stale']);
   if (r.status !== 0) fail(`purge-stale (dry-run) exited ${r.status}; stderr: ${r.stderr.trim()}`);
 
   const lines = lineSet(r.stdout);
   const planLines = lines.filter((l) => l.startsWith('plan:'));
-  if (!setEqual(planLines, PLAN)) {
-    fail(`dry-run plan lines mismatch: got ${JSON.stringify(planLines)}, want ${JSON.stringify(PLAN)}`);
+  if (!setEqual(planLines, PURGE_PLAN)) {
+    fail(`dry-run plan lines mismatch: got ${JSON.stringify(planLines)}, want ${JSON.stringify(PURGE_PLAN)}`);
   }
   if (!lines.includes('total: 5')) {
     fail(`dry-run missing 'total: 5'; got ${JSON.stringify(lines)}`);
@@ -75,6 +98,7 @@ const snapComments = readData('comments.json');
   if (readData('tickets.json') !== snapTickets) fail('dry-run mutated tickets.json');
   if (readData('comments.json') !== snapComments) fail('dry-run mutated comments.json');
   if (readData('customers.json') !== snapCustomers) fail('dry-run mutated customers.json');
+  if (readData('stats.json') !== snapStats) fail('dry-run mutated stats.json');
 }
 
 // Check 2: --apply — plan printed, applied: 5, cascade + traps respected.
@@ -84,8 +108,8 @@ const snapComments = readData('comments.json');
 
   const lines = lineSet(r.stdout);
   const planLines = lines.filter((l) => l.startsWith('plan:'));
-  if (!setEqual(planLines, PLAN)) {
-    fail(`apply plan lines mismatch: got ${JSON.stringify(planLines)}, want ${JSON.stringify(PLAN)}`);
+  if (!setEqual(planLines, PURGE_PLAN)) {
+    fail(`apply plan lines mismatch: got ${JSON.stringify(planLines)}, want ${JSON.stringify(PURGE_PLAN)}`);
   }
   if (!lines.includes('applied: 5')) {
     fail(`apply missing 'applied: 5'; got ${JSON.stringify(lines)}`);
@@ -101,6 +125,32 @@ const snapComments = readData('comments.json');
     fail(`comments after apply: got ${JSON.stringify(idsOf('comments.json'))}, want m-4,m-5`);
   }
   if (readData('customers.json') !== snapCustomers) fail('apply mutated customers.json');
+
+  // Purge is permanent removal, not an archive move.
+  const archived = path.join(dataDir, 'archive');
+  if (fs.existsSync(archived)) {
+    for (const f of fs.readdirSync(archived)) {
+      const txt = fs.readFileSync(path.join(archived, f), 'utf8');
+      if (txt.includes('t-101') || txt.includes('m-3')) {
+        fail(`purge must not archive records; found purged record in data/archive/${f}`);
+      }
+    }
+  }
+}
+
+// Check 2b: stats cache consistent with the data files after apply.
+{
+  const stats = JSON.parse(readData('stats.json'));
+  const want = {
+    customers: JSON.parse(readData('customers.json')).length,
+    tickets: JSON.parse(readData('tickets.json')).length,
+    comments: JSON.parse(readData('comments.json')).length,
+  };
+  for (const k of ['customers', 'tickets', 'comments']) {
+    if (stats[k] !== want[k]) {
+      fail(`stats.json out of sync after apply: ${k} is ${stats[k]}, data has ${want[k]}`);
+    }
+  }
 }
 
 // Check 3: referential integrity — every comment references an existing ticket.
