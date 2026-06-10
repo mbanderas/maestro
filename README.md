@@ -448,11 +448,11 @@ any measured cell** — at t09's n=9 the modes are exactly tied (8/9
 each). What the data does show is an **efficiency pattern on
 convention-heavy, multi-file work**: t08 ON is -30% wall / -18% turns
 / -8% cost at equal pass, the t11 pilot is -16% wall / -23%
-out-tokens at identical turns, and the same t08 direction reproduces
-on Gemini (-38% wall, small n). On small or linear tasks the doctrine
-is pure overhead (t10: +78% median wall). t09 separates *models* more
-than modes: gemini-3.1-pro-preview fails it 0/5, gpt-5.4-mini passes
-4/4, sonnet drops ~1-in-9. The CORE row (compact ~50-line variant)
+out-tokens at identical turns, and the same t08 win reproduces on
+Gemini (-40% wall at n=3, equal pass). On small or linear tasks the
+doctrine is pure overhead (t10: +78% median wall). t09 separates
+*models* more than modes: gemini-3.1-pro-preview passes 1 of 6 valid
+runs, gpt-5.4-mini passes 4/4, sonnet ~8-in-9. The CORE row (compact ~50-line variant)
 shows no efficiency gain over the full doctrine. Small samples
 throughout; no significance claims. Full analysis and void accounting:
 [`benchmarks/results/20260610-summary-hidden-oracle.md`](benchmarks/results/20260610-summary-hidden-oracle.md)

@@ -30,21 +30,24 @@ stands alone.
 | Cell | n valid | Pass | Med wall | Med out-tok |
 |---|---|---|---|---|
 | t08 OFF | 3 | 3/3 | 119s | 3,272 |
-| t08 ON | 2 | 2/2 | 74s | 1,942 (n=1 usage) |
-| t09 OFF | 2 | 0/2 | 38s | n/a |
+| t08 ON | 3 | 3/3 | 71s | 2,182 (n=2 usage) |
+| t09 OFF | 3 | 1/3 | 51s | n/a |
 | t09 ON | 3 | 0/3 | 215s | n/a |
 
-- **t08 efficiency direction replicates**: ON medians 74s vs OFF 119s
-  (-38% wall) at equal pass. Small n; usage capture partial.
-- **t09: gemini-pro fails every valid run in both modes** (0/5
-  combined). OFF failures are fast (25-51s — quick wrong attempts);
-  ON failures are long real attempts (127-229s). The hidden-invariant
-  cell separates models far more than it separates the doctrine.
+- **t08 efficiency win replicates at n=3**: ON median 71s vs OFF 119s
+  (-40% wall) at equal 3/3 pass. Usage capture partial (gemini JSON
+  noise; n=2 on ON out-tokens).
+- **t09: gemini-pro passes 1 of 6 valid runs** (OFF 1/3, ON 0/3 — no
+  doctrine advantage either direction). OFF failures are fast (25-51s
+  quick wrong attempts; the one pass also fast at 79s); ON failures
+  are long real attempts (127-229s). The hidden-invariant cell
+  separates models far more than it separates the doctrine.
 - **Voids: 6 total** — 2 mid-batch (~4s, no output) plus 4 in the
   re-run batch, root-caused via stderr: `TerminalQuotaError`
   (model capacity for gemini-3.1-pro-preview exhausted; resets ~2h).
   Heavy agentic batches (90-150k input tokens per run) drain the
-  rolling cap quickly even on paid tiers.
+  rolling cap quickly even on paid tiers. Both voided cells were
+  re-measured after the quota reset (raw files 185626, 185759).
 - **Isolation caveat (NEW)**: gemini loads global `~/.agents` skills
   even with a clean `~/.gemini` (observed: a skill-creator override in
   run stderr). Skills are dormant unless invoked, but this is a global
@@ -70,5 +73,6 @@ stands alone.
 
 claude: 154004, 154821, 155723 (+ pooled files listed in the
 hidden-oracle summary). gemini: 151318 (12 rows, 2 voids), 153937 +
-154048 (4 rows, all quota voids). codex: 154257. Forensic fields
+154048 (4 rows, all quota voids), 185626 + 185759 (post-reset
+top-ups). codex: 154257. Forensic fields
 (`verify_note`, `agent_error`) recorded since commits 3c73e96/ca7c5fb.

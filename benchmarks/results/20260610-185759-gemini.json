@@ -1,0 +1,16 @@
+{
+  "task": "t08-refactor-error-convention",
+  "category": "cross-cutting-refactor",
+  "cli": "gemini",
+  "model": "gemini-3.1-pro-preview",
+  "mode": "on",
+  "run": 1,
+  "pass": true,
+  "verify_note": null,
+  "wall_ms": 70861,
+  "in_tokens": 217163,
+  "out_tokens": 2422,
+  "cache_read": 168619,
+  "agent_error": null,
+  "timestamp": "2026-06-10T18:59:22.2663350+01:00"
+}
