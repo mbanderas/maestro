@@ -55,6 +55,8 @@ bypass is confined to a throwaway temp dir containing only the fixture.
 | `t06-audit-dead-code` | audit | identify 3 dead functions, write AUDIT.md |
 | `t07-feat-report-subsystem` | multi-file feature (m) | add report module + CLI command + config flag + docs across a 9-file app |
 | `t08-refactor-error-convention` | cross-cutting refactor (m) | introduce `AppError` and convert every throw site across 10 modules |
+| `t09-feat-notification-module` | hidden-invariant feature (m) | add a module to an ops console whose conventions (registry order, strings table, declared events, config schema, docs format) are discoverable but unstated; verify checks them as hidden invariants |
+| `t10-feat-staged-formatter` | staged self-extension (m) | three staged byte-exact contracts in one prompt; regression traps re-check stage 1 after stage 3 |
 
 Every `verify.cjs` fails on the pristine fixture and passes on a
 correct solution — verify both directions yourself before trusting a
@@ -79,6 +81,12 @@ copy (must exit 1) and against a hand-fixed copy (must exit 0).
 - **Effect-size floor:** at n=3, differences under ~5 pp are noise
   (single-run pass@1 varies 2.2-6.0 pp at temp 0, arXiv:2602.07150).
   Label them indistinguishable; claims about small effects need n>=9.
+- **Void rule:** rows with `is_error: true` (CLI/API failure — the
+  agent never ran or was cut off) are voids, not failures: excluded
+  from every tally, documented with their count, and re-run. The
+  runner records `is_error` and the checker's first output line
+  (`verify_note`) per row precisely so voids are distinguishable from
+  genuine misses.
 - **Honesty rule:** unmeasured cells do not appear in any README table.
   No extrapolation, no "expected" numbers.
 
@@ -89,7 +97,13 @@ Windows:
 ```powershell
 pwsh -NoProfile -File benchmarks/run-maestro-bench.ps1            # all tasks, both modes
 pwsh -NoProfile -File benchmarks/run-maestro-bench.ps1 -Task t01-fix-inclusive-range -Runs 3
+pwsh -NoProfile -File benchmarks/run-maestro-bench.ps1 -Task t09-feat-notification-module -Mode core -Runs 3
 ```
+
+`-Mode core` runs a third cell bundling the compact
+[`variants/AGENTS-core.md`](variants/AGENTS-core.md) (~50 lines)
+instead of the full doctrine — the A/B/C cell for the compression
+hypothesis (docs/research-2026.md, Track D).
 
 macOS / Linux (requires [`jq`](https://jqlang.github.io/jq/)):
 
