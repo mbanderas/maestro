@@ -63,13 +63,14 @@ rows are comparable only within that CLI's table.
   Claude cells: on small tasks the doctrine cannot improve a 100% pass
   rate, so overhead is the measurable effect.
 - **Codex pays the largest ON overhead observed in the whole suite:**
-  roughly +55-115% median wall and +60-110% median output tokens. The
-  doctrine files land as plain input (+30-48k median input tokens) and
-  gpt-5.5 visibly spends turns engaging with them.
+  +49-117% median wall and +63-111% median output tokens across the
+  three cells. The doctrine file lands as plain input (+30-48k median
+  input tokens) and gpt-5.5 visibly spends turns engaging with it.
 - **Gemini's ON overhead is mostly input-side** (+10-43k median input
-  tokens from reading the doctrine) with wall time within run-to-run
-  noise and output tokens roughly flat — it appears to largely read
-  past the doctrine on tasks this small.
+  tokens from reading the doctrine); median wall differences (-7% to
+  +26%) are smaller than the run-to-run spread within cells, and output
+  tokens are roughly flat — it appears to largely read past the
+  doctrine on tasks this small.
 - These cells say nothing about whether the doctrine helps either CLI
   on harder tasks; t07/t08-class cross-CLI cells were not run (budget
   scoped to the smallest three tasks) and remain future work.

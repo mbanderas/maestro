@@ -82,7 +82,9 @@ macOS / Linux (requires [`jq`](https://jqlang.github.io/jq/)):
 ./benchmarks/run-maestro-bench.sh -t t01-fix-inclusive-range -r 3
 ```
 
-Results land in `benchmarks/results/<timestamp>-<cli>-<model>.json`.
+Results land in `benchmarks/results/<timestamp>-claude-<model>.json`
+(Claude runner) or `benchmarks/results/<timestamp>-<cli>.json`
+(cross-CLI runner; model recorded inside each row).
 
 ## Other CLIs (Codex, Gemini)
 
