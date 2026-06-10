@@ -1,5 +1,7 @@
 # Benchmark results — 2026-06-10, Codex + Gemini cells, n=3 per cell
 
+> **Validity note (added 2026-06-10):** these runs were measured with `verify.cjs` visible in the work dir (pre-hidden-oracle runner). Visible tests inflate agent pass rates 20-60% (arXiv:2602.10975), so cells here likely overstate success in BOTH modes and are not comparable to post-fix results. See benchmarks/README.md "Hidden oracle".
+
 First cross-CLI rows: smallest three tasks (t01, t02, t06), both modes,
 n=3 per cell per CLI. Medians, small sample, no significance claims.
 Per protocol, never compare numbers across CLIs or models — each CLI's

@@ -418,7 +418,11 @@ Protocol, scoring rubric, and Codex/Gemini recipes:
 
 Measured rows (Claude Code, `sonnet`, **n=3 per cell — small sample,
 medians, no significance claims**, raw JSON in
-[`benchmarks/results/`](benchmarks/results/)):
+[`benchmarks/results/`](benchmarks/results/)). **Validity caveat:**
+these rows predate the 2026-06-10 hidden-oracle runner fix — the agent
+could read `verify.cjs` during the run, which inflates pass rates
+20-60% in both modes (arXiv:2602.10975). Treat pass columns as upper
+bounds; post-fix cells replace this table as they are measured:
 
 | Task | OFF pass | ON pass | OFF med cost | ON med cost | OFF med turns | ON med turns |
 |---|---|---|---|---|---|---|
