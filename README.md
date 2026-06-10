@@ -1,5 +1,8 @@
 <p align="center">
-  <strong>Maestro</strong><br>
+  <img src="assets/maestro-banner.jpg" alt="Maestro — AI coding agents, conducted properly" width="100%">
+</p>
+
+<p align="center">
   Research-grounded multi-agent orchestrator for AI coding agents
 </p>
 
