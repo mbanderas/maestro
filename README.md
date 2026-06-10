@@ -192,13 +192,17 @@ Agent teams are **experimental and Claude Code-only** — they are not available
 Maestro ships an optional `SubagentStop` hook for Claude Code that
 enforces the Section 7.3 verification rule structurally — no prompt
 reminder, no relying on the model to police itself. When a subagent
-stops, the hook checks two things and emits a soft warning if either
+stops, the hook checks three things and emits a soft warning if any
 fails:
 
 1. Are there orphaned `background_tasks` still active? If so, the
    subagent is declaring complete while work is still running.
 2. Did a file-modifying subagent run a type-checker, linter, or test
    runner? If not, it likely skipped verification.
+3. Does a file-modifying subagent's final report carry one of the
+   Section 7.3 status tokens (`VERIFIED` / `PENDING_REVIEW` /
+   `UNVERIFIED` / `FAIL`)? Uppercase only — lowercase "verified" in
+   prose is not a status declaration.
 
 Three safety properties keep the warning from doing more harm than
 good (a warning on stop extends the subagent's turn, so a careless

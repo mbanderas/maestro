@@ -2,6 +2,8 @@
 // Maestro SubagentStop guard. Enforces AGENTS.md S7.3 structurally.
 // - Warn on stop with orphaned background_tasks (all agents)
 // - Warn if a file-modifying agent ran no type-check/lint/test
+// - Warn if a file-modifying agent's final text carries none of the
+//   S7.3 status tokens (VERIFIED / PENDING_REVIEW / UNVERIFIED / FAIL)
 //
 // Read-only agents (Explore, Plan, or any agent with no file mutation
 // in its transcript) are exempt from the verification warning:
@@ -80,6 +82,28 @@ const readOnly = READ_ONLY_TYPES.has(agentType) || (txText !== '' && !mutateRe.t
 const verifyRe = /(tsc\s+--noEmit|eslint|pytest|jest|vitest|\bgo\s+test\b|\bcargo\s+test\b|npm\s+(?:run\s+)?test|pnpm\s+test|yarn\s+test|ruff\s+check|mypy|prettier\s+--check|biome\s+check)/i;
 if (!readOnly && txText && !verifyRe.test(txText)) {
   warnings.push('No type-check/lint/test detected after file modifications. Verify before complete, or state "no checker configured" (AGENTS.md S7.3).');
+}
+
+// S7.3 status vocabulary: a file-modifying agent's final text must
+// carry one of the four status tokens. Case-sensitive on purpose --
+// the doctrine tokens are uppercase, and lowercase "fail"/"verified"
+// in prose are not status declarations.
+const statusRe = /\b(VERIFIED|PENDING_REVIEW|UNVERIFIED|FAIL)\b/;
+if (!readOnly && txText) {
+  let finalText = '';
+  for (const line of txText.split('\n')) {
+    let obj;
+    try { obj = JSON.parse(line); } catch { continue; }
+    if (obj && obj.type === 'assistant' && obj.message && Array.isArray(obj.message.content)) {
+      const t = obj.message.content
+        .filter(c => c && c.type === 'text' && typeof c.text === 'string')
+        .map(c => c.text).join('\n');
+      if (t) finalText = t;
+    }
+  }
+  if (finalText && !statusRe.test(finalText)) {
+    warnings.push('Final report carries no status token. State exactly one of VERIFIED / PENDING_REVIEW / UNVERIFIED / FAIL, with the named gap if not VERIFIED (AGENTS.md S7.3).');
+  }
 }
 
 if (warnings.length) {
