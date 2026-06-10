@@ -1,0 +1,42 @@
+[
+  {
+    "task": "t11-feat-arg-validation",
+    "category": "large-scope-feature",
+    "cli": "claude",
+    "model": "sonnet",
+    "mode": "off",
+    "run": 1,
+    "pass": true,
+    "verify_note": null,
+    "wall_ms": 238403,
+    "agent_ms": 237203,
+    "num_turns": 37,
+    "cost_usd": 0.50660595,
+    "in_tokens": 13,
+    "out_tokens": 12924,
+    "cache_read": 324268,
+    "cache_write": 45905,
+    "is_error": false,
+    "timestamp": "2026-06-10T15:44:26.2963357+01:00"
+  },
+  {
+    "task": "t11-feat-arg-validation",
+    "category": "large-scope-feature",
+    "cli": "claude",
+    "model": "sonnet",
+    "mode": "on",
+    "run": 1,
+    "pass": true,
+    "verify_note": null,
+    "wall_ms": 200794,
+    "agent_ms": 199751,
+    "num_turns": 37,
+    "cost_usd": 0.532911,
+    "in_tokens": 12,
+    "out_tokens": 9905,
+    "cache_read": 294501,
+    "cache_write": 68140,
+    "is_error": false,
+    "timestamp": "2026-06-10T15:48:17.9127198+01:00"
+  }
+]

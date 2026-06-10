@@ -1,0 +1,50 @@
+[
+  {
+    "task": "t09-feat-notification-module",
+    "category": "multi-file-feature-hidden-invariants",
+    "cli": "gemini",
+    "model": "",
+    "mode": "off",
+    "run": 1,
+    "pass": false,
+    "verify_note": "FAIL: src/modules/notifications.js exists",
+    "wall_ms": 23510,
+    "in_tokens": null,
+    "out_tokens": null,
+    "cache_read": null,
+    "agent_error": "EMPTY_OUTPUT",
+    "timestamp": "2026-06-10T15:40:14.3999918+01:00"
+  },
+  {
+    "task": "t09-feat-notification-module",
+    "category": "multi-file-feature-hidden-invariants",
+    "cli": "gemini",
+    "model": "",
+    "mode": "off",
+    "run": 2,
+    "pass": false,
+    "verify_note": "FAIL: src/modules/notifications.js exists",
+    "wall_ms": 4729,
+    "in_tokens": null,
+    "out_tokens": null,
+    "cache_read": null,
+    "agent_error": "EMPTY_OUTPUT",
+    "timestamp": "2026-06-10T15:40:33.8290381+01:00"
+  },
+  {
+    "task": "t09-feat-notification-module",
+    "category": "multi-file-feature-hidden-invariants",
+    "cli": "gemini",
+    "model": "",
+    "mode": "off",
+    "run": 3,
+    "pass": false,
+    "verify_note": "FAIL: src/modules/notifications.js exists",
+    "wall_ms": 4876,
+    "in_tokens": null,
+    "out_tokens": null,
+    "cache_read": null,
+    "agent_error": "EMPTY_OUTPUT",
+    "timestamp": "2026-06-10T15:40:48.3722757+01:00"
+  }
+]

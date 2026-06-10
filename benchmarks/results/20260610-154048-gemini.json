@@ -1,0 +1,16 @@
+{
+  "task": "t08-refactor-error-convention",
+  "category": "cross-cutting-refactor",
+  "cli": "gemini",
+  "model": "",
+  "mode": "on",
+  "run": 1,
+  "pass": false,
+  "verify_note": "FAIL: Cannot find module './src/errors.js'",
+  "wall_ms": 20640,
+  "in_tokens": null,
+  "out_tokens": null,
+  "cache_read": null,
+  "agent_error": "EMPTY_OUTPUT",
+  "timestamp": "2026-06-10T15:41:17.9316587+01:00"
+}
