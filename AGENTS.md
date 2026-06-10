@@ -164,6 +164,12 @@ iterate until passes. Success criteria are the exit condition, not
 post-hoc check. Naive-then-optimize: correct simple version first,
 optimize only after correctness locked.
 
+Status vocabulary. Every completion report carries exactly one of:
+VERIFIED (relevant checks passed) | PENDING_REVIEW (protected surfaces
+touched — instructions, tests, evals, CI — needs human review) |
+UNVERIFIED (check could not run; name the exact gap) | FAIL (checks
+failed; fix the defect, never weaken the oracle).
+
 ### 7.4 Edit Safety
 Text search, not AST. When renaming, search separately: direct calls,
 type refs, string literals, dynamic imports, re-exports/barrels,
@@ -279,6 +285,10 @@ recurring loops, overnight tasks, multi-phase plans.
   stop. No zombie loops.
 - Autonomous runs never block on the user: decide, record why in the
   checkpoint, surface in the final report.
+- Harness mutations (instructions, hooks, evals, scorers, runners,
+  CI): before finishing, name the component, targeted failure mode,
+  predicted improvement, falsifying check, and rollback path. Report
+  PENDING_REVIEW — never count a harness change as green evidence.
 
 ### Loop Engineering
 
