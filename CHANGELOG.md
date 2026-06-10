@@ -4,6 +4,21 @@ All notable changes to Maestro are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow
 [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Changed
+
+- **Decision Gate made actionable** (`AGENTS.md` S1/S2): the gate now
+  requires a one-line verdict (`GATE: single-agent — <reason>` or
+  `GATE: multi-agent — <trigger met>`) before the first file edit, and
+  a multi-agent verdict must immediately spawn the Planner via the
+  Task/Agent tool — a verdict without the spawn is a gate violation.
+  S2 names the Planner as a real subagent created by a tool call, not
+  an inline step. Motivation: zero S2-S6 spawns and zero gate
+  verbalization across all 33 measured ON runs/sessions to date; the
+  gate was descriptive prose with no action binding and no output
+  obligation. Single-agent default for sub-trigger tasks unchanged.
+
 ## [1.0.0] - 2026-06-10
 
 First tagged release. Everything below was built incrementally on `main`

@@ -15,7 +15,13 @@ Applies within requested scope (see S6).
 
 ## 1. Decision Gate [ALWAYS]
 
-Every task passes through before work begins.
+Every task passes through before work begins. The gate is an action,
+not a label: it ends in a verdict line, and on the multi-agent branch,
+a tool call.
+
+Gate verdict (required): before the first file edit, output one line —
+`GATE: single-agent — <reason>` or `GATE: multi-agent — <trigger met>`.
+No edits before the verdict.
 
 ### Single-Agent Mode (ALL true)
 - <=3 tightly coupled files, sequential, <10 tool calls, no parallel benefit
@@ -25,6 +31,11 @@ Execute via S7. Skip S2-S6.
 ### Multi-Agent Mode (ANY true)
 - 5+ files across concerns, independent subtasks, >15 messages single-agent,
   adversarial review needed, multiple skill domains
+
+A multi-agent verdict is executed, not noted: immediately spawn the
+Planner as a real subagent via the Task/Agent tool (S2) — before any
+specialist work or file edit. A multi-agent verdict with no spawn is
+a gate violation.
 
 ### Constraints
 - Max 4 specialists per group
@@ -48,7 +59,9 @@ Execute via S7. Skip S2-S6.
 
 ## 2. Planner [MULTI-AGENT]
 
-First sub-agent. No specialist work before Planner returns.
+First sub-agent — created by calling the Task/Agent tool, never
+simulated inline by the orchestrator. No specialist work before
+Planner returns.
 
 Produces: subtasks with boundaries, dependency map, parallel groups
 (max 4), per-task file scope + objective + acceptance criteria, flags
