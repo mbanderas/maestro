@@ -30,6 +30,25 @@ All notable changes to Maestro are documented here. The format follows
   single-agent by citing "no parallelism needed" while never
   evaluating the file-count trigger.
 
+- **Gate downgrade set closed** (`AGENTS.md` S1, revision 3): a met
+  multi-agent trigger now downgrades only on >60% file overlap between
+  subtasks or <=3 files total in one dependency chain — pattern
+  homogeneity, "simple work", and create-then-wire sequencing are
+  explicitly not downgrades, and the homogeneity constraint is scoped
+  to the Planner's split design. Motivation: revision 2 produced
+  correctly counted verdicts (files=6-7, concerns=3-4, trigger met)
+  that still concluded single-agent by stretching the homogeneity and
+  single-chain constraints into gate escapes.
+
+### Added
+
+- **Gate reminder hook** (`hooks/maestro-gate-reminder.cjs` +
+  `hooks.json` UserPromptSubmit wiring, tests alongside): injects the
+  S1 counted-verdict checklist as additional context on the first
+  prompt of a session, fire-once per session, opt-out via
+  `MAESTRO_GATE_REMINDER=0`. Context injection only — a reminder
+  cannot force a verdict or a spawn.
+
 ## [1.0.0] - 2026-06-10
 
 First tagged release. Everything below was built incrementally on `main`

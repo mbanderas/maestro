@@ -32,8 +32,12 @@ tests). No edits before the verdict.
 
 files>=5 across 2+ concerns is multi-agent by count. "No parallel
 benefit" does not override the count: independent subtasks (separate
-commands, modules, docs) ARE the parallel benefit. Only a Constraint
-below (shared-file overlap, single chain) downgrades a met trigger.
+commands, modules, docs) ARE the parallel benefit. A met trigger
+downgrades ONLY on: >60% file overlap between subtasks, or <=3 files
+total in one dependency chain. Nothing else — pattern homogeneity,
+"simple work", and create-then-wire sequencing are not downgrades.
+How to split (and whether a split is too homogeneous) is the
+Planner's call (S2), made after the spawn — never the gate's.
 
 A multi-agent verdict is executed, not noted: immediately spawn the
 Planner as a real subagent via the Task/Agent tool (S2) — before any
@@ -50,7 +54,8 @@ Execute via S7. Skip S2-S6.
 - >60% shared files or <=3 files in one chain: single-agent
 - Overlapping ownership erases parallelism; high-centrality: bias single
 - Specialists must differ in role or context, not split identical
-  work — homogeneous splits underperform one agent with the same budget
+  work — homogeneous splits underperform one agent with the same
+  budget. Split-design rule for the Planner, not a gate downgrade.
 - Parallelizability first: specialization pays only when subtasks are
   structurally independent. Coupled subtasks: single-agent wins at
   equal token budget — gains that ignore total compute don't count.
