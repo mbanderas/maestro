@@ -18,6 +18,17 @@ All notable changes to Maestro are documented here. The format follows
   verbalization across all 33 measured ON runs/sessions to date; the
   gate was descriptive prose with no action binding and no output
   obligation. Single-agent default for sub-trigger tasks unchanged.
+- **Decision Gate verdict is counted, triggers checked first**
+  (`AGENTS.md` S1, revision 2): the verdict line now carries explicit
+  counts (`GATE: files=<n> concerns=<m> -> ...`), files>=5 across 2+
+  concerns is multi-agent by count ("no parallel benefit" cannot
+  override a met trigger — only the shared-file/single-chain
+  Constraints can), and Multi-Agent Mode is evaluated before the
+  single-agent fallback. Motivation: revision 1 produced verdict
+  lines in 3/3 probe runs (first gate verbalization ever measured)
+  but all three misclassified a 7-file, 3-concern task as
+  single-agent by citing "no parallelism needed" while never
+  evaluating the file-count trigger.
 
 ## [1.0.0] - 2026-06-10
 

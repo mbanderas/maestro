@@ -16,26 +16,34 @@ Applies within requested scope (see S6).
 ## 1. Decision Gate [ALWAYS]
 
 Every task passes through before work begins. The gate is an action,
-not a label: it ends in a verdict line, and on the multi-agent branch,
-a tool call.
+not a label: it ends in a counted verdict line, and on the multi-agent
+branch, a tool call.
 
 Gate verdict (required): before the first file edit, output one line —
-`GATE: single-agent — <reason>` or `GATE: multi-agent — <trigger met>`.
-No edits before the verdict.
+`GATE: files=<n> concerns=<m> -> single-agent — <reason>` or
+`GATE: files=<n> concerns=<m> -> multi-agent — <trigger met>`.
+Count first: files = every file the task will create or modify;
+concerns = distinct areas touched (commands, core, config, docs,
+tests). No edits before the verdict.
 
-### Single-Agent Mode (ALL true)
-- <=3 tightly coupled files, sequential, <10 tool calls, no parallel benefit
-
-Execute via S7. Skip S2-S6.
-
-### Multi-Agent Mode (ANY true)
+### Multi-Agent Mode (ANY true — check FIRST)
 - 5+ files across concerns, independent subtasks, >15 messages single-agent,
   adversarial review needed, multiple skill domains
+
+files>=5 across 2+ concerns is multi-agent by count. "No parallel
+benefit" does not override the count: independent subtasks (separate
+commands, modules, docs) ARE the parallel benefit. Only a Constraint
+below (shared-file overlap, single chain) downgrades a met trigger.
 
 A multi-agent verdict is executed, not noted: immediately spawn the
 Planner as a real subagent via the Task/Agent tool (S2) — before any
 specialist work or file edit. A multi-agent verdict with no spawn is
 a gate violation.
+
+### Single-Agent Mode (fallback when no trigger met)
+- <=3 tightly coupled files, sequential, <10 tool calls, no parallel benefit
+
+Execute via S7. Skip S2-S6.
 
 ### Constraints
 - Max 4 specialists per group
