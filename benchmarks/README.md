@@ -58,6 +58,8 @@ bypass is confined to a throwaway temp dir containing only the fixture.
 | `t09-feat-notification-module` | hidden-invariant feature (m) | add a module to an ops console whose conventions (registry order, strings table, declared events, config schema, docs format) are discoverable but unstated; verify checks them as hidden invariants |
 | `t10-feat-staged-formatter` | staged self-extension (m) | three staged byte-exact contracts in one prompt; regression traps re-check stage 1 after stage 3 |
 | `t11-feat-arg-validation` | large-scope feature (l) | declarative validation layer across 14 command modules + dispatcher + docs (19 files); seeded ad-hoc validation must be removed |
+| `t12-feat-export-subsystem` | multi-concern subsystem (l) | export subsystem (3 commands, 2 formats) for a 16-file CLI; spec deliberately underspecified, resolvable only through docs/conventions.md; built to trip the multi-agent Decision Gate |
+| `t13-feat-retention-purge` | trap-convention purge (l) | destructive purge command whose contract lives in a reference implementation, not docs (dry-run default, exit-3 empty plan, plan-line format); plus code-only stats.json and events.log invariants, archiveDays/retentionDays confusion, a strict-greater-than boundary record, and an archive exempt from purging |
 
 Every `verify.cjs` fails on the pristine fixture and passes on a
 correct solution — verify both directions yourself before trusting a
@@ -111,6 +113,14 @@ hypothesis (docs/research-2026.md, Track D).
 (adds `--verbose`, CLI-required with `-p` + stream output; result-row
 fields are parsed from the final `result` event and are identical to
 the `json` format's). Streams feed the compliance scorer below.
+
+`probe-interactive-s2s6.cjs` (zero-dep node) drives persistent
+two-turn `claude -p` sessions via `--input-format stream-json` with
+the same isolation recipe — the closest autonomously-drivable analog
+to an interactive session (label results interactive-PROXY, never
+interactive). Measured: zero S2-S6 spawns and zero Decision Gate
+verbalization in 3/3 sonnet sessions
+([`results/20260610-summary-followup.md`](results/20260610-summary-followup.md)).
 
 macOS / Linux (requires [`jq`](https://jqlang.github.io/jq/)):
 

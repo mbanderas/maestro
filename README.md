@@ -421,9 +421,10 @@ If you need a standalone multi-agent application with custom tools, APIs, and de
 ## Benchmarks
 
 Maestro ships a reproducible A/B harness in [`benchmarks/`](benchmarks/):
-twelve fixture tasks (single-file fixes through hidden-invariant
-features, a 19-file validation sweep, and a multi-concern subsystem
-with a deliberately underspecified spec), a zero-dependency
+thirteen fixture tasks (single-file fixes through hidden-invariant
+features, a 19-file validation sweep, a multi-concern subsystem
+with a deliberately underspecified spec, and a trap-convention tier
+with code-only invariants), a zero-dependency
 runner for Windows and macOS/Linux, and a deterministic `verify.cjs`
 checker per task. Each task runs with Maestro ON (doctrine files in
 the work dir) vs OFF (absent), under an isolated `CLAUDE_CONFIG_DIR`
@@ -453,51 +454,61 @@ and documented):
 | t10 ON | 5 | 5/5 | 51s | 9 | $0.169 | 2,949 |
 | t11 OFF | 1 | 1/1 | 238s | 37 | $0.507 | 12,924 |
 | t11 ON | 1 | 1/1 | 201s | 37 | $0.533 | 9,905 |
-| t12 OFF | 3 | 3/3 | 198s | 22 | $0.343 | 7,270 |
-| t12 ON | 3 | 3/3 | 137s | 21 | $0.358 | 5,814 |
+| t12 OFF | 9 | 9/9 | 175s | 21 | $0.343 | 6,529 |
+| t12 ON | 9 | 9/9 | 143s | 25 | $0.475 | 6,882 |
 
-Three further claims were measured on 2026-06-10 (haiku weak-model
-cells t07-t11 at n=3 per cell, the t12 multi-agent-trigger cell, and
-a five-behavior compliance scorer over full event streams — 36 valid
-runs, 0 voids):
+Three further claims were measured on 2026-06-10, then re-measured at
+higher n the same evening (t12 topped up to n=9 per mode, a
+purpose-built trap-convention task probed three times on haiku, and a
+two-turn interactive-proxy probe — 60 valid runs across both loops,
+0 voids):
 
-- **Weak-model rescue: not measurable here.** Haiku passes 30/30
-  across t07-t11 in both modes — the suite has no headroom at this
-  tier, so pass-rate rescue cannot be observed. (Haiku cells live in
-  the frontier summary, not the sonnet table above; numbers are never
-  compared across models.)
-- **The multi-agent path (S2-S6) never fires headless.** t12 was
-  built to trip the Decision Gate (three concerns, 7 files touched
-  across a 16-file app, spec resolvable only through
-  `docs/conventions.md`). Every run — ON and
-  OFF alike — spawned exactly one Explore recon subagent and zero
-  Planner/specialist/review agents. Maestro's measured effects come
-  from the universal rules (S7-S10), not orchestration, in `claude -p`
-  runs.
-- **Compliance deltas are null at these tiers.** No run in any mode
-  ever stated a S7.3 status token (0/36, including every ON run);
-  surgical scope and oracle integrity were perfect in both modes;
-  smoke-testing tied 9/15 vs 9/15 on haiku. Prose doctrine alone did
-  not move headless reporting behavior — which is why the
-  verification hook enforces it structurally.
+- **Weak-model rescue: not measurable, now with stronger evidence.**
+  Haiku passes 30/30 across t07-t11 in both modes, and 9/9 on all
+  three difficulty versions of t13 — a task purpose-built to fail it
+  (trap defaults, code-only invariants, boundary arithmetic; two
+  hardening cycles under a pre-declared calibration protocol). A
+  haiku-4.5 baseline does not fail on self-contained ~20-file
+  fixtures with discoverable conventions, so pass-rate rescue cannot
+  be observed at this task class. (Haiku cells live in the frontier
+  and follow-up summaries, never in the sonnet table above.)
+- **The multi-agent path (S2-S6) never fires — headless or
+  interactive-proxy.** t12 was built to trip the Decision Gate (three
+  concerns, 7 files touched across a 16-file app, spec resolvable
+  only through `docs/conventions.md`). All 18 headless runs (n=9 per
+  mode, ON and OFF alike) and all 3 two-turn interactive-proxy
+  sessions spawned exactly one Explore recon subagent and zero
+  Planner/specialist/review agents; Decision Gate verbalization never
+  appeared in assistant text. Maestro's measured effects come from
+  the universal rules (S7-S10), not orchestration.
+- **Compliance deltas are null at these tiers.** One ON run in 57
+  scored streams stated a S7.3 status token (UNVERIFIED, t12 n=9
+  top-up); none did before. Surgical scope and oracle integrity
+  remain perfect in both modes; smoke-testing is near-universal.
+  Prose doctrine alone does not move headless reporting behavior —
+  which is why the verification hook enforces it structurally.
 
 Honest reading: **Maestro ON has never beaten OFF on success rate in
 any measured cell** — at t09's n=9 the modes are exactly tied (8/9
-each). What the data does show is an **efficiency pattern on
-convention-heavy, multi-file work**: t08 ON is -30% wall / -18% turns
-/ -8% cost at equal pass, the t11 pilot is -16% wall / -23%
-out-tokens at identical turns, t12 ON is -31% wall / -20% out-tokens
-at equal pass (+4% cost), and the same t08 win reproduces on
-Gemini (-40% wall at n=3, equal pass). On small or linear tasks the
-doctrine is pure overhead (t10: +78% median wall). t09 separates
-*models* more than modes: gemini-3.1-pro-preview passes 1 of 6 valid
-runs, gpt-5.4-mini passes 4/4, sonnet ~8-in-9. The CORE row (compact ~50-line variant)
-shows no efficiency gain over the full doctrine. Small samples
-throughout; no significance claims. Full analysis and void accounting:
+each), and t12's n=9 is 9/9 both modes. The efficiency story weakened
+under replication: the t12 n=3 readings of -31% wall and -20%
+out-tokens are **retracted** — at n=9 the wall gap is -18% and sits
+inside within-mode spread (run ranges 96-157k ms), out-tokens
+reversed to +5%, and ON pays +38% median cost and +4 median turns.
+What survives: t08 ON -30% wall / -18% turns / -8% cost at equal
+pass (n=3), the same t08 win on Gemini (-40% wall at n=3), and the
+t11 pilot (-16% wall at n=1). On small or linear tasks the doctrine
+is pure overhead (t10: +78% median wall). t09 separates *models* more
+than modes: gemini-3.1-pro-preview passes 1 of 6 valid runs,
+gpt-5.4-mini passes 4/4, sonnet ~8-in-9. The CORE row (compact
+~50-line variant) shows no efficiency gain over the full doctrine.
+Small samples throughout; no significance claims. Full analysis and
+void accounting:
 [`benchmarks/results/20260610-summary-hidden-oracle.md`](benchmarks/results/20260610-summary-hidden-oracle.md),
 [`benchmarks/results/20260610-summary-xcli.md`](benchmarks/results/20260610-summary-xcli.md),
+[`benchmarks/results/20260610-summary-frontier.md`](benchmarks/results/20260610-summary-frontier.md),
 and
-[`benchmarks/results/20260610-summary-frontier.md`](benchmarks/results/20260610-summary-frontier.md).
+[`benchmarks/results/20260610-summary-followup.md`](benchmarks/results/20260610-summary-followup.md).
 
 Post-fix Gemini (`gemini-3.1-pro-preview`) and Codex (`gpt-5.4-mini`,
 exploratory n=1) cells for t08/t09 — including the gemini quota voids
