@@ -1,0 +1,7 @@
+{
+  "id": "t11-feat-arg-validation",
+  "category": "large-scope-feature",
+  "size": "l",
+  "prompt": "Add declarative argument validation across the relay CLI. (1) Create src/validation.js exporting validate(spec, args) where spec is an array of {name, type} entries, type one of 'string'|'int'|'positive-int'; validate returns the parsed args array (ints converted to numbers) or throws an Error whose message is exactly '<name> must be <type>' for the first failing entry; too few or too many args throws 'expected <N> args, got <M>'. (2) Every command module under src/commands/ must export a spec array describing its arguments and stop doing any ad-hoc validation of its own. (3) src/dispatch.js must run validate(cmd.spec, args) before cmd.run and surface thrown messages as 'error: <message>'. (4) run(args) implementations must consume the parsed values (numbers already converted). (5) Document each command's args in docs/COMMANDS.md following the existing format. All existing success-path outputs must remain byte-identical.",
+  "verify": "node verify.cjs"
+}
