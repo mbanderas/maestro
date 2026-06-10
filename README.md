@@ -407,9 +407,10 @@ If you need a standalone multi-agent application with custom tools, APIs, and de
 ## Benchmarks
 
 Maestro ships a reproducible A/B harness in [`benchmarks/`](benchmarks/):
-six fixture tasks (single-file fix, multi-file feature, refactor, audit),
-a zero-dependency runner for Windows and macOS/Linux, and a deterministic
-`verify.cjs` checker per task. Each task runs with Maestro ON
+eight fixture tasks (single-file fix, multi-file feature, refactor,
+audit, plus two medium multi-file cells), a zero-dependency runner for
+Windows and macOS/Linux, and a deterministic `verify.cjs` checker per
+task. Each task runs with Maestro ON
 (doctrine files in the work dir) vs OFF (absent), under an isolated
 `CLAUDE_CONFIG_DIR` so global config cannot contaminate either cell.
 Protocol, scoring rubric, and Codex/Gemini recipes:
@@ -427,15 +428,24 @@ medians, no significance claims**, raw JSON in
 | t04-feat-cli-repeat | 3/3 | 3/3 | $0.087 | $0.105 | 6 | 6 |
 | t05-refactor-rename | 3/3 | 3/3 | $0.104 | $0.153 | 9 | 11 |
 | t06-audit-dead-code | 3/3 | 3/3 | $0.084 | $0.124 | 5 | 7 |
+| t07-feat-report-subsystem | 3/3 | 3/3 | $0.206 | $0.238 | 15 | 16 |
+| t08-refactor-error-convention | 3/3 | 3/3 | $0.209 | $0.225 | 26 | 24 |
 
-Honest reading: on small tasks both cells succeed every run and Maestro
-adds a doctrine-read overhead ($0.016-0.048 median per task, biggest on
-the refactor and audit cells where verification rules add turns) —
+Honest reading: on every cell measured so far both modes succeed every
+run, and Maestro adds a doctrine-read overhead ($0.016-0.048 median per
+task, biggest on cells where verification rules add turns). That is
 exactly what the Decision Gate predicts for work below the multi-agent
-threshold. Full per-cell medians including wall time and tokens:
-[`benchmarks/results/20260610-summary-n3.md`](benchmarks/results/20260610-summary-n3.md).
-Larger multi-file cells and Codex/Gemini rows land only as measured;
-the protocol forbids publishing numbers that were not actually measured.
+threshold — and on the medium cells (t07/t08) it means Maestro did
+**not** earn its overhead in pass-rate terms: sonnet alone already
+solves them 3/3, so success parity is the ceiling. Pass-rate deltas
+would need tasks hard enough that the OFF cell starts failing; until
+those are measured, no capability claim is made. Full per-cell medians
+including wall time and tokens:
+[`benchmarks/results/20260610-summary-n3.md`](benchmarks/results/20260610-summary-n3.md)
+and
+[`benchmarks/results/20260610-summary-t07-t08.md`](benchmarks/results/20260610-summary-t07-t08.md).
+Codex/Gemini rows land only as measured; the protocol forbids
+publishing numbers that were not actually measured.
 
 ## Research Foundation
 

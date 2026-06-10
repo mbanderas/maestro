@@ -44,6 +44,8 @@ bypass is confined to a throwaway temp dir containing only the fixture.
 | `t04-feat-cli-repeat` | multi-file feature | add `--repeat N` CLI flag |
 | `t05-refactor-rename` | refactor | rename across 3 files, 2 import styles |
 | `t06-audit-dead-code` | audit | identify 3 dead functions, write AUDIT.md |
+| `t07-feat-report-subsystem` | multi-file feature (m) | add report module + CLI command + config flag + docs across a 9-file app |
+| `t08-refactor-error-convention` | cross-cutting refactor (m) | introduce `AppError` and convert every throw site across 10 modules |
 
 Every `verify.cjs` fails on the pristine fixture and passes on a
 correct solution — verify both directions yourself before trusting a
