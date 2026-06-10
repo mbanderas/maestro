@@ -86,23 +86,28 @@ Results land in `benchmarks/results/<timestamp>-<cli>-<model>.json`.
 
 ## Other CLIs (Codex, Gemini)
 
-The harness is CLI-agnostic; only step 3 changes. Verified
-non-interactive invocations (flags checked against the installed CLIs,
-2026-06-10):
+The harness is CLI-agnostic; `run-cli-bench.ps1 -Cli codex|gemini`
+runs the same fixture/verify flow through either CLI. Verified
+invocations and isolation (flags and global state checked against the
+installed CLIs, 2026-06-10):
 
-- **Codex** — `codex exec "<prompt>"` in the work dir. ON cell =
-  `AGENTS.md` only (Codex reads it natively; no adapter file).
-  Config overrides via `-c key=value`.
+- **Codex** — `codex exec --json --skip-git-repo-check --ephemeral
+  --dangerously-bypass-approvals-and-sandbox "<prompt>"` with a fresh
+  `CODEX_HOME` containing only `auth.json`, so no global config, MCP
+  servers, plugins, or hooks load. ON cell = `AGENTS.md` only (Codex
+  reads it natively; no adapter file). Pipe stdin (`'' |`) — `codex
+  exec` blocks waiting for stdin EOF otherwise.
 - **Gemini** — `gemini -p "<prompt>" --output-format json
-  --approval-mode yolo` in the work dir. ON cell = `AGENTS.md` +
-  `GEMINI.md`.
+  --approval-mode yolo --skip-trust` in the work dir. ON cell =
+  `AGENTS.md` + `GEMINI.md`. No home-override env exists; the OFF cell
+  is only valid because `~/.gemini` was inspected and carries no
+  instruction files — re-check before trusting an OFF cell on another
+  machine.
 
 Neither CLI reports cost/turn fields identically to Claude Code —
 record at minimum pass/fail and wall time, and whatever usage fields
-the JSON output exposes. Isolation analogs: Codex reads
-`~/.codex/config.toml` (override with `-c`), Gemini reads
-`~/.gemini/` — check for global instruction files before trusting an
-OFF cell.
+the JSON output exposes. Measured rows:
+[`results/20260610-summary-codex-gemini.md`](results/20260610-summary-codex-gemini.md).
 
 ## Results
 

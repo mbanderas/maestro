@@ -444,8 +444,13 @@ including wall time and tokens:
 [`benchmarks/results/20260610-summary-n3.md`](benchmarks/results/20260610-summary-n3.md)
 and
 [`benchmarks/results/20260610-summary-t07-t08.md`](benchmarks/results/20260610-summary-t07-t08.md).
-Codex/Gemini rows land only as measured; the protocol forbids
-publishing numbers that were not actually measured.
+Codex (`gpt-5.5`) and Gemini (`gemini-3.1-pro-preview`) cells for the
+three smallest tasks are measured at n=3 with the same success parity
+and the same overhead-only pattern — per-CLI tables and isolation
+caveats in
+[`benchmarks/results/20260610-summary-codex-gemini.md`](benchmarks/results/20260610-summary-codex-gemini.md)
+(numbers are never compared across CLIs or models). The protocol
+forbids publishing numbers that were not actually measured.
 
 ## Research Foundation
 
