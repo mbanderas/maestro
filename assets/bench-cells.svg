@@ -55,15 +55,15 @@
   <text class="sub" x="324" y="290" text-anchor="middle">3/3 - 3/3</text>
   <text class="sub" x="324" y="305" text-anchor="middle">refactor, 10 files</text>
 
-  <!-- t09 (off, on, core) -->
-  <rect class="off"  x="436" y="108" width="34" height="142"/>
-  <rect class="on"   x="478" y="100" width="34" height="150"/>
+  <!-- t09 (off, on at n=9; core at n=6) -->
+  <rect class="off"  x="436" y="114" width="34" height="136"/>
+  <rect class="on"   x="478" y="101" width="34" height="149"/>
   <rect class="core" x="520" y="86"  width="34" height="164"/>
-  <text class="val" x="453" y="100" text-anchor="middle">.300</text>
-  <text class="val" x="495" y="92" text-anchor="middle">.316</text>
+  <text class="val" x="453" y="106" text-anchor="middle">.287</text>
+  <text class="val" x="495" y="93" text-anchor="middle">.315</text>
   <text class="val" x="537" y="78" text-anchor="middle">.345</text>
   <text class="lbl" x="495" y="274" text-anchor="middle">t09</text>
-  <text class="sub" x="495" y="290" text-anchor="middle">5/6 - 5/6 - 6/6</text>
+  <text class="sub" x="495" y="290" text-anchor="middle">8/9 - 8/9 - 6/6</text>
   <text class="sub" x="495" y="305" text-anchor="middle">hidden invariants</text>
 
   <!-- t10 -->

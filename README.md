@@ -411,8 +411,8 @@ If you need a standalone multi-agent application with custom tools, APIs, and de
 ## Benchmarks
 
 Maestro ships a reproducible A/B harness in [`benchmarks/`](benchmarks/):
-ten fixture tasks (single-file fixes through hidden-invariant
-multi-file features and staged self-extension), a zero-dependency
+eleven fixture tasks (single-file fixes through hidden-invariant
+features and a 19-file validation sweep), a zero-dependency
 runner for Windows and macOS/Linux, and a deterministic `verify.cjs`
 checker per task. Each task runs with Maestro ON (doctrine files in
 the work dir) vs OFF (absent), under an isolated `CLAUDE_CONFIG_DIR`
@@ -435,32 +435,40 @@ and documented):
 | t07 ON | 3 | 3/3 | 71s | 15 | $0.228 | 2,799 |
 | t08 OFF | 3 | 3/3 | 85s | 33 | $0.247 | 6,127 |
 | t08 ON | 3 | 3/3 | 59s | 27 | $0.228 | 4,457 |
-| t09 OFF | 6 | 5/6 | 129s | 19 | $0.300 | 5,211 |
-| t09 ON | 6 | 5/6 | 137s | 18.5 | $0.316 | 5,502 |
+| t09 OFF | 9 | 8/9 | 147s | 19 | $0.287 | 5,160 |
+| t09 ON | 9 | 8/9 | 143s | 18 | $0.315 | 5,478 |
 | t09 CORE | 6 | 6/6 | 137s | 20.5 | $0.345 | 5,231 |
 | t10 OFF | 5 | 5/5 | 29s | 6 | $0.101 | 1,607 |
 | t10 ON | 5 | 5/5 | 51s | 9 | $0.169 | 2,949 |
+| t11 OFF | 1 | 1/1 | 238s | 37 | $0.507 | 12,924 |
+| t11 ON | 1 | 1/1 | 201s | 37 | $0.533 | 9,905 |
 
 Honest reading: **Maestro ON has never beaten OFF on success rate in
-any measured cell.** t09 (hidden-invariant feature) is the first task
-hard enough that both modes drop below 100% — and they drop equally
-(5/6 each; at n=6 one run is ~17 pp, so this is noise territory). The
-one cell where the doctrine measurably pays is t08, a convention-heavy
-cross-cutting refactor: ON is faster (-30% wall), shorter (-18%
-turns), and cheaper (-8%) at equal pass — consistent with the
-verification rules cutting wasted iterations. Elsewhere ON is pure
-overhead (t10: +78% median wall). The CORE row tests the compact
-~50-line doctrine variant: same pass regime, no efficiency gain over
-full ON. Small samples throughout; no significance claims. Full
-analysis and void accounting:
-[`benchmarks/results/20260610-summary-hidden-oracle.md`](benchmarks/results/20260610-summary-hidden-oracle.md).
+any measured cell** — at t09's n=9 the modes are exactly tied (8/9
+each). What the data does show is an **efficiency pattern on
+convention-heavy, multi-file work**: t08 ON is -30% wall / -18% turns
+/ -8% cost at equal pass, the t11 pilot is -16% wall / -23%
+out-tokens at identical turns, and the same t08 direction reproduces
+on Gemini (-38% wall, small n). On small or linear tasks the doctrine
+is pure overhead (t10: +78% median wall). t09 separates *models* more
+than modes: gemini-3.1-pro-preview fails it 0/5, gpt-5.4-mini passes
+4/4, sonnet drops ~1-in-9. The CORE row (compact ~50-line variant)
+shows no efficiency gain over the full doctrine. Small samples
+throughout; no significance claims. Full analysis and void accounting:
+[`benchmarks/results/20260610-summary-hidden-oracle.md`](benchmarks/results/20260610-summary-hidden-oracle.md)
+and
+[`benchmarks/results/20260610-summary-xcli.md`](benchmarks/results/20260610-summary-xcli.md).
 
-Earlier same-day results for t01-t06 (and the Codex `gpt-5.5` /
-Gemini `gemini-3.1-pro-preview` cells) were measured **before** the
-hidden-oracle fix and are kept as labeled upper bounds in
-[`benchmarks/results/`](benchmarks/results/) — same success-parity,
-overhead-only pattern, but the agent could read the checker during
-those runs, so their pass rates are not comparable to the table above.
+Post-fix Gemini (`gemini-3.1-pro-preview`) and Codex (`gpt-5.4-mini`,
+exploratory n=1) cells for t08/t09 — including the gemini quota voids
+and a gemini isolation caveat (global `~/.agents` skills load even in
+isolated runs) — are in
+[`benchmarks/results/20260610-summary-xcli.md`](benchmarks/results/20260610-summary-xcli.md).
+Earlier same-day results for t01-t06 (and the original Codex/Gemini
+small-task cells) were measured **before** the hidden-oracle fix and
+are kept as labeled upper bounds in
+[`benchmarks/results/`](benchmarks/results/) — the agent could read
+the checker during those runs, so their pass rates are not comparable.
 Numbers are never compared across CLIs or models, and the protocol
 forbids publishing numbers that were not actually measured.
 
