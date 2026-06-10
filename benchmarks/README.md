@@ -57,6 +57,7 @@ bypass is confined to a throwaway temp dir containing only the fixture.
 | `t08-refactor-error-convention` | cross-cutting refactor (m) | introduce `AppError` and convert every throw site across 10 modules |
 | `t09-feat-notification-module` | hidden-invariant feature (m) | add a module to an ops console whose conventions (registry order, strings table, declared events, config schema, docs format) are discoverable but unstated; verify checks them as hidden invariants |
 | `t10-feat-staged-formatter` | staged self-extension (m) | three staged byte-exact contracts in one prompt; regression traps re-check stage 1 after stage 3 |
+| `t11-feat-arg-validation` | large-scope feature (l) | declarative validation layer across 14 command modules + dispatcher + docs (19 files); seeded ad-hoc validation must be removed |
 
 Every `verify.cjs` fails on the pristine fixture and passes on a
 correct solution — verify both directions yourself before trusting a
