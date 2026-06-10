@@ -84,7 +84,7 @@ foreach ($taskDir in $taskDirs) {
       Copy-Item (Join-Path $taskDir.FullName 'verify.cjs') $workDir -Force
       Push-Location $workDir
       try {
-        node verify.cjs *> $null
+        $verifyOut = (node verify.cjs 2>&1 | Select-Object -First 1) -join ''
         $pass = ($LASTEXITCODE -eq 0)
       } finally { Pop-Location }
 
@@ -96,6 +96,7 @@ foreach ($taskDir in $taskDirs) {
         mode        = $runMode
         run         = $n
         pass        = $pass
+        verify_note = if ($pass) { $null } else { [string]$verifyOut }
         wall_ms     = $sw.ElapsedMilliseconds
         agent_ms    = $json.duration_ms
         num_turns   = $json.num_turns
