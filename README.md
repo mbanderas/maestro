@@ -415,20 +415,27 @@ a zero-dependency runner for Windows and macOS/Linux, and a deterministic
 Protocol, scoring rubric, and Codex/Gemini recipes:
 [`benchmarks/README.md`](benchmarks/README.md).
 
-First measured rows (Claude Code, `sonnet`, **n=1 — exploratory**, raw
-JSON in [`benchmarks/results/`](benchmarks/results/)):
+Measured rows (Claude Code, `sonnet`, **n=3 per cell — small sample,
+medians, no significance claims**, raw JSON in
+[`benchmarks/results/`](benchmarks/results/)):
 
-| Task | OFF pass | ON pass | OFF cost | ON cost |
-|---|---|---|---|---|
-| t01-fix-inclusive-range | yes | yes | $0.067 | $0.083 |
-| t02-fix-even-median | yes | yes | $0.068 | $0.084 |
-| t06-audit-dead-code | yes | yes | $0.088 | $0.115 |
+| Task | OFF pass | ON pass | OFF med cost | ON med cost | OFF med turns | ON med turns |
+|---|---|---|---|---|---|---|
+| t01-fix-inclusive-range | 3/3 | 3/3 | $0.067 | $0.084 | 4 | 4 |
+| t02-fix-even-median | 3/3 | 3/3 | $0.068 | $0.084 | 4 | 4 |
+| t03-feat-slugify | 3/3 | 3/3 | $0.073 | $0.090 | 5 | 5 |
+| t04-feat-cli-repeat | 3/3 | 3/3 | $0.087 | $0.105 | 6 | 6 |
+| t05-refactor-rename | 3/3 | 3/3 | $0.104 | $0.153 | 9 | 11 |
+| t06-audit-dead-code | 3/3 | 3/3 | $0.084 | $0.124 | 5 | 7 |
 
-Honest reading: on small tasks both cells succeed and Maestro adds a
-small doctrine-read overhead (~$0.02/task) — exactly what the Decision
-Gate predicts for work below the multi-agent threshold. The interesting
-cells (larger tasks, n>=3, Codex/Gemini) are pending; the protocol
-forbids publishing numbers that were not actually measured.
+Honest reading: on small tasks both cells succeed every run and Maestro
+adds a doctrine-read overhead ($0.016-0.048 median per task, biggest on
+the refactor and audit cells where verification rules add turns) —
+exactly what the Decision Gate predicts for work below the multi-agent
+threshold. Full per-cell medians including wall time and tokens:
+[`benchmarks/results/20260610-summary-n3.md`](benchmarks/results/20260610-summary-n3.md).
+Larger multi-file cells and Codex/Gemini rows land only as measured;
+the protocol forbids publishing numbers that were not actually measured.
 
 ## Research Foundation
 
