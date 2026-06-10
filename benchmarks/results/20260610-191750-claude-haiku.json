@@ -1,0 +1,22 @@
+{
+  "task": "t01-fix-inclusive-range",
+  "category": "single-file-fix",
+  "cli": "claude",
+  "model": "haiku",
+  "mode": "off",
+  "run": 1,
+  "pass": true,
+  "verify_note": null,
+  "wall_ms": 13991,
+  "agent_ms": 12613,
+  "num_turns": 4,
+  "cost_usd": 0.0255068,
+  "in_tokens": 30,
+  "out_tokens": 776,
+  "cache_read": 107788,
+  "cache_write": 8204,
+  "is_error": false,
+  "stream_file": "streams\\20260610-191750-claude-haiku\\t01-fix-inclusive-range-off-r1.jsonl",
+  "work_dir": "C:\\Users\\mail\\AppData\\Local\\Temp\\maestro-bench\\t01-fix-inclusive-range-off-r1-20260610-191750",
+  "timestamp": "2026-06-10T19:18:14.8243850+01:00"
+}
