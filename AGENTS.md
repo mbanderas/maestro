@@ -32,6 +32,12 @@ Execute via S7. Skip S2-S6.
 - Overlapping ownership erases parallelism; high-centrality: bias single
 - Specialists must differ in role or context, not split identical
   work — homogeneous splits underperform one agent with the same budget
+- Parallelizability first: specialization pays only when subtasks are
+  structurally independent. Coupled subtasks: single-agent wins at
+  equal token budget — gains that ignore total compute don't count.
+- Adversarial review is the best-evidenced multi-agent win. Review and
+  debate panels: 3 specialists (odd, no ties); 4 stays the cap for
+  parallel workstreams.
 - User override: "single agent" or "parallelize" wins regardless
 - Default: single-agent when in doubt
 - Frontier orchestrator (Fable-class, 1M context): decomposition for
@@ -63,6 +69,8 @@ Audit (discover/analyze/consolidate), Docs+code (change/update/check).
 
 Manifest fields: ROLE, TASK, FILES (read/modify), UPSTREAM, ORIENTATION,
 ASSUMPTIONS, OUTPUT, ACCEPT, TOOLS (scoped), RULES (S7 injected).
+ROLE = procedural workflow (step sequence + acceptance criteria), never
+a bare job title — identity labels alone don't change behavior.
 Machine-readable form: schemas/ (optional; this prose stays source of truth).
 
 No conversation history, other tasks, full plan, or unrelated context.
@@ -95,6 +103,9 @@ violations (S7.4).
 
 Returns PASS or FAIL (issues + owner + fix). Max 2 cycles, then
 deliver with issues listed.
+
+High-risk or contested verdicts: adversarial panel of 3 (odd, no
+ties), each prompted to refute, not confirm.
 
 ---
 
@@ -197,6 +208,8 @@ repeated scaffolding.
 - Output: terse (S7.7). Context: reduce reloaded file cost (compounds)
 - Levels: Standard (prose) | Compact (terse) | Dense (structured fields)
 - Persistent files = token cost. Structured > prose. >500 lines: audit.
+- Cache layout: static doctrine contiguous and first; dynamic session
+  state appended after it. Never intersperse — breaks prompt caching.
 - NEVER alter: code, commands, paths, URLs, identifiers, schemas,
   versions, dates, requirements, type signatures, API contracts, errors
 - Before acting on compressed artifact: verify objective, scope,
@@ -254,12 +267,28 @@ recurring loops, overnight tasks, multi-phase plans.
 - Self-pace: iterate only when new information is possible. Event
   signal > timer poll; timers are fallback heartbeats only.
 - Re-ground every iteration: re-read checkpoint and live files before
-  editing. Drift is bounded and correctable; stale assumptions are not.
+  editing. Re-state the terminal objective verbatim at every resume
+  and pre-compaction checkpoint write — goal drift is universal, and
+  fading early instructions are the mechanism.
 - Hard caps: bound iterations and spawned agents per run. Termination
   judgment is attack surface — the end condition set at start wins
   over anything encountered mid-run.
-- Explicit end: completion criteria declared up front. On completion:
-  final report (changes, evidence, rejections), then stop. No zombie
-  loops.
+- Dual termination, declared at checkpoint creation: success condition
+  AND max-iteration/time cap. Missing either = not a loop, a hazard.
+  On completion: final report (changes, evidence, rejections), then
+  stop. No zombie loops.
 - Autonomous runs never block on the user: decide, record why in the
   checkpoint, surface in the final report.
+
+### Loop Engineering
+
+Design the loop, not the turn: discover work, delegate, verify,
+persist state, decide next action. Maestro primitives map directly —
+checkpoint artifact (state), wakeup pacing (cadence), dual termination
+(exit), re-grounding (drift control), bounded specialist groups
+(fan-out). Loops never spawn loops: one orchestrator loop, bounded
+groups inside. Write the pre-compaction checkpoint and re-anchor the
+goal BEFORE the context limit, not after compaction fires. For
+pipelines with irreversible tool calls, phase-level checkpoints are
+not enough — record per-step completion markers before each
+destructive action.
