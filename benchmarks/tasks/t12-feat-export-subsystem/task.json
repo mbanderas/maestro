@@ -1,0 +1,7 @@
+{
+  "id": "t12-feat-export-subsystem",
+  "category": "multi-concern-subsystem",
+  "size": "l",
+  "prompt": "Add an export subsystem so users can export products, orders, and customers as JSON or CSV files. Follow this repository's documented conventions for how subsystems, commands, file outputs, flags, errors, config, and docs are structured. All existing commands must keep working unchanged.",
+  "verify": "node verify.cjs"
+}

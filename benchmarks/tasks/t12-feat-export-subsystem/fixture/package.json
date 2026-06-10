@@ -1,0 +1,5 @@
+{
+  "name": "orderdesk",
+  "version": "1.0.0",
+  "description": "Small CLI app for managing orders, products, and customers."
+}
