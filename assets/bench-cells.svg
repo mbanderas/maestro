@@ -39,9 +39,9 @@
 
   <!-- t07 -->
   <rect class="off" x="136" y="172" width="34" height="78"/>
-  <rect class="on"  x="178" y="141" width="34" height="109"/>
+  <rect class="on"  x="178" y="142" width="34" height="108"/>
   <text class="val" x="153" y="164" text-anchor="middle">.164</text>
-  <text class="val" x="195" y="133" text-anchor="middle">.230</text>
+  <text class="val" x="195" y="133" text-anchor="middle">.228</text>
   <text class="lbl" x="174" y="274" text-anchor="middle">t07</text>
   <text class="sub" x="174" y="290" text-anchor="middle">3/3 - 3/3</text>
   <text class="sub" x="174" y="305" text-anchor="middle">feature, 9 files</text>
@@ -59,7 +59,7 @@
   <rect class="off"  x="436" y="108" width="34" height="142"/>
   <rect class="on"   x="478" y="100" width="34" height="150"/>
   <rect class="core" x="520" y="86"  width="34" height="164"/>
-  <text class="val" x="453" y="100" text-anchor="middle">.299</text>
+  <text class="val" x="453" y="100" text-anchor="middle">.300</text>
   <text class="val" x="495" y="92" text-anchor="middle">.316</text>
   <text class="val" x="537" y="78" text-anchor="middle">.345</text>
   <text class="lbl" x="495" y="274" text-anchor="middle">t09</text>
