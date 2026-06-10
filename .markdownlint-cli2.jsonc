@@ -1,0 +1,34 @@
+// Markdown checker config — run: npx --yes markdownlint-cli2
+// Scope: doctrine + docs only. Generated data (benchmarks/results/),
+// task fixtures (benchmarks/tasks/), and _* scratch files are excluded.
+// Rules tuned to house style: long lines, compact heading/list spacing,
+// and inline HTML (README badges/centering) are intentional.
+{
+  "globs": [
+    "README.md",
+    "AGENTS.md",
+    "CLAUDE.md",
+    "docs/*.md",
+    "benchmarks/README.md"
+  ],
+  "ignores": [
+    "_*.md",
+    "benchmarks/results/**",
+    "benchmarks/tasks/**",
+    "node_modules/**"
+  ],
+  "config": {
+    "default": true,
+    // House style: prose and tables run long; hard wrap not enforced
+    "MD013": false,
+    // House style: compact sections — heading directly above list/text
+    "MD022": false,
+    "MD032": false,
+    // README uses <p align>/<img> for badges and charts
+    "MD033": false,
+    // Tables mix compact separator rows with padded cells by design
+    "MD060": false,
+    // README opens with a centered HTML banner, not an H1
+    "MD041": false
+  }
+}

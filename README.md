@@ -77,7 +77,7 @@ The specialist manifest (S3) and cross-talk handoff packet (S4/S6) also ship as 
 **Option A — plugin (hooks + context-bar command, one step).** Maestro
 is an installable Claude Code plugin; the repo is its own marketplace:
 
-```
+```text
 /plugin marketplace add mbanderas/maestro
 /plugin install maestro@maestro
 ```
@@ -332,7 +332,7 @@ stays silent.
 
 Maestro ships an optional status line for Claude Code — a context-window progress bar showing how much of the model's context is used.
 
-```
+```text
 ████████░░░░░░░░░░░░ 42% 84k/200k · my-project
 ```
 
@@ -537,6 +537,7 @@ Contributions are welcome. Before opening a PR:
 1. Read the research foundation — Maestro's constraints (4-agent cap, Decision Gate bias toward single-agent) are intentional and research-backed
 2. Keep it zero-dependency — no npm packages, no external imports
 3. Test with real tasks across Claude Code, Gemini, Codex, and Cursor
+4. Docs changes: run `npx --yes markdownlint-cli2` from the repo root (no install footprint; config in `.markdownlint-cli2.jsonc` — covers README, AGENTS.md, CLAUDE.md, docs/, benchmarks/README.md)
 
 If you have benchmarks, case studies, or research that challenges or extends the current architecture, open an issue. The design should evolve with evidence.
 

@@ -62,7 +62,7 @@ next unfinished phase; never redo completed phases.
 
 Paste after `/clear` in the Maestro repo (fill in the current date):
 
-```
+```text
 /loop Maestro research-and-augment loop — fully autonomous, self-paced,
 multi-iteration. Today: <DATE>. Repo: <path to maestro>. Follow
 docs/research-loop.md exactly: phases 1-5, checkpoint
@@ -80,7 +80,7 @@ report.
 One-time setup (creates a billed scheduled agent — run it yourself
 when you want the standing routine):
 
-```
+```text
 /schedule create a quarterly routine named "maestro-research-augment":
 cron "0 9 1 1,4,7,10 *" (09:00 on the 1st of Jan/Apr/Jul/Oct), repo
 mbanderas/maestro, prompt: "Run docs/research-loop.md exactly — phases
