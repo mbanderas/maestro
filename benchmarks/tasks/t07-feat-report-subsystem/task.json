@@ -1,0 +1,7 @@
+{
+  "id": "t07-feat-report-subsystem",
+  "category": "multi-file-feature",
+  "size": "m",
+  "prompt": "Add a reporting subsystem to this small CLI app. (1) New module src/reports/summary.js exporting summaryReport() that returns an array of exactly these four lines computed from the live core data in src/core/ (not hardcoded): 'products: <count>', 'orders: <count>', 'revenue: $<total formatted with 2 decimals>', 'top-customer: <name> ($<that customer's revenue with 2 decimals>)'. Revenue is the sum over all orders of item qty times product price; top customer is the customer whose orders sum highest. (2) New CLI command report-summary, implemented as its own module under src/commands/ and wired into the registry, so that 'node src/cli.js report-summary' prints those four lines. (3) Add 'reports' to the features list in src/config.js. (4) Document the new command in docs/commands.md. All existing commands must keep working unchanged.",
+  "verify": "node verify.cjs"
+}
