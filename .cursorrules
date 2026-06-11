@@ -112,6 +112,8 @@ VERIFIED (relevant checks passed) | PENDING_REVIEW (protected
 surfaces touched — instructions, tests, evals, CI — needs human
 review) | UNVERIFIED (check could not run; name the exact gap) |
 FAIL (checks failed; fix the defect, never weaken the oracle).
+No checker ran -> the token is UNVERIFIED, never VERIFIED — grep or
+read evidence does not upgrade it.
 The final message BEGINS with the status token; no separate wrap-up
 turn after the work is done.
 

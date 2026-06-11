@@ -18,7 +18,7 @@
   specialists, a single writer, or disjoint <=3-file scopes.
 - Hooks > prompt reminders for structural checks; the shipped pack
   (gate-reminder, subagent-guard, loop-guard, phase-scope,
-  gate-telemetry) lives in `hooks/`.
+  gate-telemetry, doctrine-guard) lives in `hooks/`.
 - Read tool: 2,000 lines/call; results >50,000 chars truncate
   silently; a "PARTIAL view" notice means re-issue with offset/limit.
 - S10 mapping: `/loop <interval>` or `/schedule` (durable cloud);

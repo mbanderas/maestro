@@ -8,6 +8,12 @@ All notable changes to Maestro are documented here. The format follows
 
 ### Changed
 
+- **S7.3 overclaim fix** (`AGENTS.md`, `.cursorrules`): one added
+  line — no checker ran means the status token is UNVERIFIED, never
+  VERIFIED; grep or read evidence does not upgrade it. Targets the
+  kernel-branch regression where t08 reported VERIFIED without any
+  checker run in 5 of 6 benchmark runs.
+
 - **Always-on doctrine slimmed to a kernel** (`AGENTS.md`,
   `CLAUDE.md`, new `docs/orchestration.md`): the always-loaded
   surface drops ~41% (16,342 -> 9,596 bytes combined). The five
@@ -70,6 +76,21 @@ All notable changes to Maestro are documented here. The format follows
 
 ### Added
 
+- **Doctrine-read guard hook** (`hooks/maestro-doctrine-guard.cjs`):
+  PreToolUse hook that denies a `Read` of `AGENTS.md`/`CLAUDE.md` when
+  the doctrine is autoloaded (doctrine file present at cwd), replacing
+  the probabilistic S7.2 "never re-read" prose with deterministic
+  zero-token enforcement. Default mode denies with an instructive
+  reason; `MAESTRO_DOCTRINE_GUARD=once` allows the first read per
+  session for runtimes whose subagents lack the doctrine in context;
+  `=0` disables. `docs/orchestration.md` is never guarded. Wired into
+  `hooks/hooks.json`.
+- **Benchmark runner `-InstallHooks` flag**
+  (`benchmarks/run-maestro-bench.ps1`): opt-in staging of the shipped
+  hook pack into a second isolated `CLAUDE_CONFIG_DIR`, used only for
+  doctrine-bearing (on/core) runs. Default OFF keeps every baseline
+  cell hook-free and comparable; off-mode cells never get hooks.
+  Result rows carry a `hooks` boolean.
 - **Gate reminder hook** (`hooks/maestro-gate-reminder.cjs` +
   `hooks.json` UserPromptSubmit wiring, tests alongside): injects the
   S1 counted-verdict checklist as additional context on the first
