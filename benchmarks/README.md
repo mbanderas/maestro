@@ -114,6 +114,15 @@ hypothesis (docs/research-2026.md, Track D).
 fields are parsed from the final `result` event and are identical to
 the `json` format's). Streams feed the compliance scorer below.
 
+`-InstallHooks` (opt-in, default OFF) stages the shipped hook pack
+(`hooks/*.cjs` + `hooks.json` wiring) into a second isolated config
+dir used only for doctrine-bearing (on/core) runs; off cells never
+get hooks, so every baseline cell stays comparable. Result rows carry
+a `hooks` boolean. `-MaxThinkingTokens <n>` sets `MAX_THINKING_TOKENS`
+plus `CLAUDE_CODE_DISABLE_ADAPTIVE_THINKING=1` for every run in the
+invocation (rows carry `think_cap`). Both flags first measured in
+[`results/20260611-summary-hooks.md`](results/20260611-summary-hooks.md).
+
 `probe-interactive-s2s6.cjs` (zero-dep node) drives persistent
 two-turn `claude -p` sessions via `--input-format stream-json` with
 the same isolation recipe — the closest autonomously-drivable analog
