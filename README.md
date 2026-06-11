@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  Research-grounded multi-agent orchestrator for AI coding agents
+  A discipline layer for AI coding agents — verified done-claims, surgical scope, long-run guardrails, and multi-agent orchestration held behind a research-backed gate
 </p>
 
 <p align="center">
@@ -30,6 +30,33 @@ Copy-paste install commands are in [Quick Start](#quick-start) below.
 
 > **Already have a `CLAUDE.md`, `AGENTS.md`, or `.cursorrules`?** Don't overwrite them — you'll lose your project context. See [Quick Start](#quick-start) for how to merge Maestro into your existing setup.
 
+## What You Get
+
+Drop two markdown files into your repo and your agent gains five things:
+
+1. **Done means done.** Completion reports must carry a verification
+   status (`VERIFIED` / `UNVERIFIED` / `FAIL`) backed by an actual
+   type-check, lint, or test run — and an optional hook enforces it
+   structurally. No more "All done!" on code that was never run.
+2. **It stays in its lane.** Surgical-scope rules: every changed line
+   traces back to what you asked for. No drive-by refactors, no
+   formatting sweeps, no "improvements" you didn't request, no
+   deleting code it couldn't verify was dead.
+3. **Long runs that land.** Overnight tasks and recurring loops get
+   checkpoint artifacts, explicit end conditions, iteration caps, and
+   re-grounding rules — the difference between an agent that ships at
+   6am and one that drifted off-goal at 2am. This repo's own benchmark
+   loops run on exactly these rules.
+4. **Multi-agent only when it pays.** A counted Decision Gate routes
+   work single-agent by default and demands an explicit verdict line
+   before the first edit. Orchestration — Planner, Specialists,
+   adversarial Staff-Engineer review — stays behind the gate, reserved
+   for work genuinely too big for one pass.
+5. **Receipts.** A reproducible A/B benchmark harness ships in-repo,
+   and the results below include our own retractions and nulls. You
+   can see exactly what is proven, what is open — and rerun every
+   number yourself.
+
 Maestro is built on [peer-reviewed research](https://marklaursen.com/blog/why-your-multi-agent-ai-system-keeps-failing) showing that **79% of multi-agent failures come from coordination breakdowns, not model capability** — and that **three optimized agents outperform seven**.
 
 ## Why Maestro Exists
@@ -44,7 +71,7 @@ Most multi-agent frameworks add agents to make things faster. The research says 
 | Sequential reasoning degrades 39-70% under multi-agent | [Scaling Agent Systems](https://arxiv.org/abs/2512.08296) (Google/MIT), 2025 |
 | Architecture-task fit, not agent count, predicts multi-agent gains | [Scaling Agent Systems](https://arxiv.org/abs/2512.08296) (Google/MIT), 2025 |
 
-Maestro implements the architecture this research points to — not a framework that wraps agents in boilerplate, but a routing layer that only activates multi-agent coordination when the task actually demands it.
+Maestro is built on that restraint. It makes the single agent you already have rigorous by default — verification, scope, honest reporting — and holds multi-agent coordination behind a counted gate until a task actually demands it. Restraint is not a limitation; per the research above, it is the highest-leverage orchestration decision there is.
 
 ## Architecture
 
@@ -52,7 +79,9 @@ Maestro implements the architecture this research points to — not a framework 
   <img src="assets/maestro-flow.svg" alt="Maestro orchestration flow: task through the S1 decision gate to either a single agent or the planner, specialist group, and staff engineer pipeline, converging on verified delivery" width="780">
 </p>
 
-**Decision Gate** — Routes each task to single-agent or multi-agent execution based on complexity, parallelizability, and token cost. Most tasks stay single-agent.
+**Universal Rules (the discipline core)** — Verification gates, status vocabulary, surgical scope, edit safety, and context economy, applied to every task in both modes. This is the part of Maestro working on every prompt, not just the complex ones.
+
+**Decision Gate** — Routes each task to single-agent or multi-agent execution based on complexity, parallelizability, and token cost. The gate counts the work and emits an explicit verdict line (`GATE: files=<n> concerns=<m> -> ...`) before the first edit. Most tasks stay single-agent.
 
 **Planner** — Decomposes complex tasks into parallel and sequential subtasks with clear boundaries and acceptance criteria.
 
@@ -82,8 +111,8 @@ is an installable Claude Code plugin; the repo is its own marketplace:
 /plugin install maestro@maestro
 ```
 
-The plugin auto-wires all four enforcement hooks (subagent guard, loop
-guard, phase-scope guard, opt-in gate telemetry) and the
+The plugin auto-wires all five enforcement hooks (subagent guard, loop
+guard, phase-scope guard, gate reminder, opt-in gate telemetry) and the
 `/maestro:context-bar` command. Two things it cannot do for you:
 the doctrine files (`AGENTS.md`/`CLAUDE.md`) still go in your project
 root (Option B), and the status line script still needs a one-line
@@ -133,11 +162,11 @@ curl -O https://raw.githubusercontent.com/mbanderas/maestro/main/.cursorrules
 ## How It Works
 
 1. You give your AI coding agent a task as normal
-2. The **Decision Gate** evaluates complexity — simple tasks run single-agent with no overhead
-3. For complex tasks, the **Planner** decomposes work into parallel and sequential subtasks
-4. **Specialists** execute subtasks with scoped context, communicating through structured handoffs
-5. The **Staff Engineer** reviews the combined output adversarially
-6. You get the result — faster for complex tasks, identical for simple ones
+2. The **Decision Gate** counts the work and emits a verdict line — most tasks run single-agent, carrying the full discipline layer with no coordination overhead
+3. Single-agent work follows the **Universal Rules**: scoped edits, verification before any completion claim, an honest status token at the end
+4. For work that crosses the gate's thresholds, the **Planner** decomposes it, **Specialists** execute with scoped context, and the **Staff Engineer** reviews adversarially
+5. Long or recurring runs follow the **Long-Horizon rules**: checkpoint artifacts, explicit end conditions, iteration caps
+6. You get a result with a verification status you can act on — not a vibe
 
 ## Context Architecture
 
@@ -274,7 +303,7 @@ and simply warns less.
 
 ### Claude Code: Hook Pack
 
-Three more optional hooks enforce other Maestro rules structurally.
+Four more optional hooks enforce other Maestro rules structurally.
 Same engineering rules as the verification hook: plain Node `.cjs`,
 zero dependencies, soft warnings only (never block), fire-once guards,
 graceful degradation on missing payload fields. Tests live next to
@@ -284,6 +313,7 @@ each hook (`node hooks/<name>.test.cjs`).
 |---|---|---|
 | `maestro-loop-guard.cjs` | `Stop` | S10 long-horizon: warns when a looping session (session crons or `ScheduleWakeup` calls) has no `_<task>.md` checkpoint artifact in the working directory, or exceeds the iteration cap (`MAESTRO_LOOP_MAX_ITER`, default 50) |
 | `maestro-phase-scope.cjs` | `PostToolUse` | S7.1 phase scope: warns when more than 5 distinct files (`MAESTRO_PHASE_FILE_CAP`) are modified in a single turn |
+| `maestro-gate-reminder.cjs` | `UserPromptSubmit` | S1 gate: injects the counted-verdict checklist on the first prompt of a session (fire-once; opt-out via `MAESTRO_GATE_REMINDER=0`) |
 | `maestro-gate-telemetry.cjs` | `SessionEnd` | S1 audit (opt-in): logs one JSON line per session — gate decision (single/multi), specialist count, end reason |
 
 **Privacy (gate telemetry):** the telemetry hook does nothing unless
@@ -297,6 +327,7 @@ contents, no full paths, no network, ever.
 ```bash
 curl -o ~/.claude/hooks/maestro-loop-guard.cjs https://raw.githubusercontent.com/mbanderas/maestro/main/hooks/maestro-loop-guard.cjs
 curl -o ~/.claude/hooks/maestro-phase-scope.cjs https://raw.githubusercontent.com/mbanderas/maestro/main/hooks/maestro-phase-scope.cjs
+curl -o ~/.claude/hooks/maestro-gate-reminder.cjs https://raw.githubusercontent.com/mbanderas/maestro/main/hooks/maestro-gate-reminder.cjs
 curl -o ~/.claude/hooks/maestro-gate-telemetry.cjs https://raw.githubusercontent.com/mbanderas/maestro/main/hooks/maestro-gate-telemetry.cjs
 ```
 
@@ -313,6 +344,11 @@ block; use absolute paths, escaped backslashes on Windows):
   "PostToolUse": [
     { "matcher": "Edit|Write|NotebookEdit", "hooks": [
       { "type": "command", "command": "node \"/absolute/path/to/.claude/hooks/maestro-phase-scope.cjs\"" }
+    ]}
+  ],
+  "UserPromptSubmit": [
+    { "matcher": "", "hooks": [
+      { "type": "command", "command": "node \"/absolute/path/to/.claude/hooks/maestro-gate-reminder.cjs\"" }
     ]}
   ],
   "SessionEnd": [
@@ -389,19 +425,23 @@ picker, or set `context` in the `[tui].status_line` list in
 
 ## When to Use Maestro
 
-Maestro helps most on tasks that are:
+The discipline layer — verification, scope, honest status — applies to
+every task from a one-line fix upward. The orchestration path helps
+most on tasks that are:
 
 - **Genuinely too complex for one pass** — large refactors, multi-file features, cross-cutting concerns
 - **Parallelizable** — independent subtasks that don't need sequential reasoning
 - **Benefiting from adversarial review** — where a second perspective catches issues
 
-Maestro does **not** help (and intentionally avoids) tasks where:
+The orchestration path is intentionally **avoided** where:
 
 - A single agent already handles it well (the Decision Gate blocks unnecessary multi-agent)
 - The work is purely sequential reasoning (planning, step-by-step proofs)
 - The task involves fewer than ~10 files
 
-This is by design. The research shows coordination overhead makes simple tasks worse, not better.
+This is by design. The research shows coordination overhead makes
+simple tasks worse, not better — on those tasks Maestro contributes
+the discipline layer and deliberately nothing else.
 
 ## Why Not CrewAI / LangGraph / AutoGen?
 
@@ -414,7 +454,7 @@ This is by design. The research shows coordination overhead makes simple tasks w
 | **Default behavior** | Single-agent unless complexity warrants multi | Always multi-agent |
 | **Design philosophy** | Fewer agents, structured coordination | More agents, flexible topologies |
 
-Maestro is not a framework. It's an orchestration layer for AI coding agents that already exist. You don't write agent code — you copy a couple of files and your existing agent gains multi-agent capabilities.
+Maestro is not a framework. It's a discipline-and-orchestration layer for AI coding agents that already exist. You don't write agent code — you copy a couple of files and your existing agent gains verification rigor, scope discipline, and gated multi-agent capabilities.
 
 If you need a standalone multi-agent application with custom tools, APIs, and deployment pipelines, use a framework. If you want your AI coding agent to handle complex tasks better without changing your workflow, use Maestro.
 
