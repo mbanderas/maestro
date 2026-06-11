@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 400" role="img" aria-labelledby="t d">
   <title id="t">Maestro orchestration flow</title>
-  <desc id="d">A task passes the S1 decision gate, routing to either a single agent or the multi-agent pipeline of planner, bounded specialist group, and staff engineer review, converging on verified delivery.</desc>
+  <desc id="d">A task passes the S1 decision gate, which emits a counted verdict line before any edit, routing to either a single agent under the universal rules or the multi-agent pipeline of planner, bounded specialist group, and staff engineer review, converging on verified delivery.</desc>
   <style>
     .node { fill: #121216; stroke: #222228; stroke-width: 1.5; }
     .gate { fill: rgb(245 158 11 / 0.08); stroke: #f59e0b; stroke-width: 2; }
@@ -29,8 +29,8 @@
 
   <!-- decision gate -->
   <path class="gate" d="M260 132 L332 200 L260 268 L188 200 Z"/>
-  <text class="lbl acct" x="260" y="196" text-anchor="middle">gate</text>
-  <text class="sub" x="260" y="212" text-anchor="middle">S1</text>
+  <text class="lbl acct" x="260" y="196" text-anchor="middle">gate S1</text>
+  <text class="sub" x="260" y="212" text-anchor="middle">counted verdict</text>
 
   <path class="edge flow" d="M144 200 H180" marker-end="url(#a)"/>
 
