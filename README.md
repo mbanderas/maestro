@@ -71,14 +71,32 @@ committed benchmark streams:
 The price, measured rather than implied: ON spends about 10% more
 than a clean agent on a 10-module refactor and 38% more on a 16-file
 feature (n=9 medians, t08/t12 below). You are buying verification
-and auditability, not speed.
+and auditability, not speed. Whether that trade pays depends on who
+is watching.
 
-Maestro also runs under its own rules. The two most recent
-maintenance loops ran unattended overnight on the S10 long-horizon
-doctrine: checkpoint artifacts, pre-declared budget ceilings, dual
-termination. Together they made 48 benchmark runs for $17.16 against
-a $25 cap, produced 0 voided runs, and shipped the retractions you
-can read below with no human in the loop.
+Supervised, interactive use: you are already the audit layer. On
+tasks a clean agent passes anyway, the measured data shows no
+outcome difference; the premium buys scope guarantees and honest
+status lines. Worth it when drive-by refactors and false "all done"
+claims cost you review time.
+
+Unattended work is where the premium earns its keep. Overnight
+loops, scheduled runs, CI agents: nobody reads the transcript at
+3am, and the close-out claim is all you have. The alternative,
+auditing a 16-file diff after the fact, costs comparable tokens and
+cannot recover what the run never recorded: whether any check
+actually ran, or whether that unrequested "improvement" was
+deliberate. Maestro spends the same money in-line, while the
+information still exists, and leaves a verdict line, a status token,
+and a checkpoint trail you can trust without replaying the run.
+
+That regime is not hypothetical. Maestro runs under its own rules:
+the two most recent maintenance loops ran unattended overnight on
+the S10 long-horizon doctrine, with checkpoint artifacts,
+pre-declared budget ceilings, and dual termination. Together they
+made 48 benchmark runs for $17.16 against a $25 cap, produced 0
+voided runs, and shipped the retractions you can read below with no
+human in the loop.
 
 Maestro is built on [peer-reviewed research](https://marklaursen.com/blog/why-your-multi-agent-ai-system-keeps-failing) showing that **79% of multi-agent failures come from coordination breakdowns, not model capability**, and that **three optimized agents outperform seven**.
 
