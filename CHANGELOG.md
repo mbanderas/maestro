@@ -104,6 +104,19 @@ All notable changes to Maestro are documented here. The format follows
   prompt of a session, fire-once per session, opt-out via
   `MAESTRO_GATE_REMINDER=0`. Context injection only — a reminder
   cannot force a verdict or a spawn.
+- **Benchmark runner `-Hooks` subset selector**
+  (`benchmarks/run-maestro-bench.ps1`): with `-InstallHooks`, stages
+  only the named hooks (short names, e.g. `-Hooks gate-reminder`) —
+  filters both the staged `.cjs` copies and the `hooks.json` wiring
+  written into the isolated `settings.json`; default stays the whole
+  pack. Result rows carry `hook_set`. Built to attribute pack effects
+  to single hooks; first measurement
+  (`benchmarks/results/20260611-summary-spawns.md`): `gate-reminder`
+  alone reproduces the full pack's t12 spawn increase (multi-agent
+  verdict + specialist spawn in 6/6 runs vs 1/6 unhooked), oracle
+  pass unchanged 6/6, cost gap inside spread (null); a no-guard
+  control saw all 12 doctrine re-read attempts succeed, confirming
+  the guard caused the hook cells' 0 successful re-reads.
 
 ## [1.0.0] - 2026-06-10
 

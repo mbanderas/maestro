@@ -13,7 +13,7 @@
 </p>
 
 <p align="center">
-  <sub>13 fixture tasks &middot; 116 valid A/B runs &middot; 0 voids &middot; 6 hooks, all tested &middot; ~8 KB always-on kernel &middot; 2 files to install</sub>
+  <sub>13 fixture tasks &middot; 123 valid A/B runs &middot; 0 voids &middot; 6 hooks, all tested &middot; ~8 KB always-on kernel &middot; 2 files to install</sub>
 </p>
 
 ---
@@ -98,10 +98,10 @@ information still exists, and leaves a verdict line, a status token,
 and a checkpoint trail you can trust without replaying the run.
 
 That regime is not hypothetical. Maestro runs under its own rules:
-the three most recent maintenance loops ran unattended on the S10
+the four most recent maintenance loops ran unattended on the S10
 long-horizon doctrine, with checkpoint artifacts, pre-declared budget
-ceilings, and dual termination. Together they made 68 benchmark runs
-for $26.22 against $37 in caps, produced 0 voided runs, and shipped
+ceilings, and dual termination. Together they made 75 benchmark runs
+for $30.12 against $47 in caps, produced 0 voided runs, and shipped
 the retractions you can read below with no human in the loop.
 
 A note on what Maestro does *not* optimize: output-style compression
@@ -597,7 +597,15 @@ voids):
   never false-fired. Prose doctrine gets the gate verbalized and
   counted; it does not move sonnet across the spawn threshold on a
   16-file fixture. Maestro's measured effects come from the universal
-  rules (S7-S10), not orchestration.
+  rules (S7-S10), not orchestration. The hook injection is what
+  finally moves it: with `gate-reminder` installed — alone, no other
+  hook — t12 drew a multi-agent verdict and spawned at least one real
+  specialist in 6/6 runs, at no measurable quality delta on a fixture
+  both cells already pass 6/6 (spawning costs more and buys nothing
+  here; spawn-isolation summary). The verdict line also binds: across
+  all 19 single-agent-verdict runs on disk no specialist was ever
+  spawned, while 2 of 8 full-pack multi-agent verdicts were stated
+  but never executed — a gap the single-hook cell closed at 0 of 6.
 - **Compliance deltas are null at these tiers.** Three runs in 69
   scored streams stated a S7.3 status token: one honest UNVERIFIED
   (t12 ON), two t08 ON runs claiming VERIFIED with no check run
@@ -631,8 +639,9 @@ void accounting:
 [`benchmarks/results/20260610-summary-followup.md`](benchmarks/results/20260610-summary-followup.md),
 [`benchmarks/results/20260611-summary-activation.md`](benchmarks/results/20260611-summary-activation.md),
 [`benchmarks/results/20260611-summary-efficiency.md`](benchmarks/results/20260611-summary-efficiency.md),
+[`benchmarks/results/20260611-summary-hooks.md`](benchmarks/results/20260611-summary-hooks.md),
 and
-[`benchmarks/results/20260611-summary-hooks.md`](benchmarks/results/20260611-summary-hooks.md).
+[`benchmarks/results/20260611-summary-spawns.md`](benchmarks/results/20260611-summary-spawns.md).
 
 Post-fix Gemini (`gemini-3.1-pro-preview`) and Codex (`gpt-5.4-mini`,
 exploratory n=1) cells for t08/t09, including the gemini quota voids
