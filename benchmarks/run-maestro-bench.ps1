@@ -8,6 +8,7 @@
 #   pwsh -NoProfile -File run-maestro-bench.ps1                 # all tasks, both modes, 1 run
 #   pwsh -NoProfile -File run-maestro-bench.ps1 -Task t01-fix-inclusive-range,t02-fix-even-median
 #   pwsh -NoProfile -File run-maestro-bench.ps1 -Mode on -Runs 3 -Model sonnet
+#   pwsh -NoProfile -File run-maestro-bench.ps1 -Mode on -InstallHooks   # hooked cell
 #
 # Results land in results/<timestamp>-claude-<model>.json plus a console table.
 
@@ -20,7 +21,12 @@ param(
   [string]$Model = 'sonnet',
   [double]$MaxBudgetUsd = 1.0,    # per task-run cap passed to claude
   [switch]$KeepWork,              # keep temp work dirs for inspection
-  [switch]$SaveStream             # capture full stream-json event log per run
+  [switch]$SaveStream,            # capture full stream-json event log per run
+  [switch]$InstallHooks           # plant hooks/*.cjs + hooks.json wiring into a
+                                  # second isolated config dir, used for on/core
+                                  # runs only. Default OFF: baseline cells stay
+                                  # hook-free and comparable. OFF-mode cells
+                                  # NEVER get hooks, flag or not.
 )
 
 $ErrorActionPreference = 'Stop'
@@ -38,13 +44,33 @@ if ($Task.Count -gt 0) {
 $modes = if ($Mode -eq 'both') { @('off', 'on') } else { @($Mode) }
 
 # Isolated config dir: copied credentials, empty settings. No global
-# CLAUDE.md/AGENTS.md, no hooks, no MCP servers, no auto-memory.
+# CLAUDE.md/AGENTS.md, no hooks (unless -InstallHooks plants the shipped
+# pack into a separate hooked config dir below), no MCP servers, no
+# auto-memory.
 $cfgDir = Join-Path $workRoot 'config'
 New-Item -ItemType Directory -Force $cfgDir | Out-Null
 $creds = Join-Path $env:USERPROFILE '.claude\.credentials.json'
 if (Test-Path $creds) { Copy-Item $creds $cfgDir -Force }
 elseif (-not $env:ANTHROPIC_API_KEY) { throw 'No ~/.claude/.credentials.json and no ANTHROPIC_API_KEY - cannot authenticate isolated runs.' }
 Set-Content (Join-Path $cfgDir 'settings.json') '{}'
+
+# Hooked config dir: same isolation plus the shipped hook pack wired via
+# settings.json. Separate dir so plain and hooked runs can interleave in
+# one invocation without cross-contamination. Rebuilt every invocation so
+# hook edits propagate and stale state never leaks between sessions.
+$cfgHooksDir = Join-Path $workRoot 'config-hooks'
+if ($InstallHooks) {
+  if (Test-Path $cfgHooksDir) { Remove-Item $cfgHooksDir -Recurse -Force }
+  $stagedHooks = Join-Path $cfgHooksDir 'hooks'
+  New-Item -ItemType Directory -Force $stagedHooks | Out-Null
+  if (Test-Path $creds) { Copy-Item $creds $cfgHooksDir -Force }
+  Get-ChildItem (Join-Path $repoRoot 'hooks') -Filter '*.cjs' |
+    Where-Object { $_.Name -notlike '*.test.cjs' } |
+    Copy-Item -Destination $stagedHooks -Force
+  $wiring = Get-Content (Join-Path $repoRoot 'hooks\hooks.json') -Raw
+  $wiring = $wiring.Replace('${CLAUDE_PLUGIN_ROOT}', ($cfgHooksDir -replace '\\', '/'))
+  Set-Content (Join-Path $cfgHooksDir 'settings.json') $wiring
+}
 
 $stamp = Get-Date -Format 'yyyyMMdd-HHmmss'
 $results = [System.Collections.Generic.List[object]]::new()
@@ -74,9 +100,13 @@ foreach ($taskDir in $taskDirs) {
         Set-Content (Join-Path $workDir 'CLAUDE.md') "@AGENTS.md"
       }
 
-      Write-Host "[$($spec.id)] mode=$runMode run=$n model=$Model ..." -NoNewline
+      # Hooks only ever apply to doctrine-bearing modes; off cells always
+      # run against the plain config dir regardless of -InstallHooks.
+      $runHooked = $InstallHooks -and $runMode -ne 'off'
+
+      Write-Host "[$($spec.id)] mode=$runMode run=$n model=$Model hooks=$runHooked ..." -NoNewline
       $prevCfg = $env:CLAUDE_CONFIG_DIR
-      $env:CLAUDE_CONFIG_DIR = $cfgDir
+      $env:CLAUDE_CONFIG_DIR = if ($runHooked) { $cfgHooksDir } else { $cfgDir }
       Push-Location $workDir
       $sw = [Diagnostics.Stopwatch]::StartNew()
       try {
@@ -121,6 +151,7 @@ foreach ($taskDir in $taskDirs) {
         cli         = 'claude'
         model       = $Model
         mode        = $runMode
+        hooks       = $runHooked
         run         = $n
         pass        = $pass
         verify_note = if ($pass) { $null } else { [string]$verifyOut }
