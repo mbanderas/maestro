@@ -28,10 +28,11 @@ Practical consequences for Maestro:
 - **Placement:** put Maestro's `AGENTS.md` at the repository root. If
   you already have a project `AGENTS.md`, append Maestro's content to
   it (Codex concatenates by directory level, not by file).
-- **Budget:** Maestro's doctrine is ~10 KB — roughly a third of the
-  default 32 KiB cap, leaving room for your project instructions. If
-  you layer nested `AGENTS.md` files, watch the cap: Codex silently
-  stops adding files beyond it.
+- **Budget:** Maestro's always-on kernel is ~8 KB — a quarter of the
+  default 32 KiB cap, leaving room for your project instructions
+  (the full S2-S6 protocol lives in `docs/orchestration.md`, read on
+  demand). If you layer nested `AGENTS.md` files, watch the cap:
+  Codex silently stops adding files beyond it.
 - **Global install:** putting Maestro in `~/.codex/AGENTS.md` applies
   the doctrine to every project; per-repo files then layer on top and
   win where they conflict.

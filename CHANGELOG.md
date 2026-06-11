@@ -8,6 +8,33 @@ All notable changes to Maestro are documented here. The format follows
 
 ### Changed
 
+- **Always-on doctrine slimmed to a kernel** (`AGENTS.md`,
+  `CLAUDE.md`, new `docs/orchestration.md`): the always-loaded
+  surface drops ~41% (16,342 -> 9,596 bytes combined). The five
+  discipline signals keep their wording and section numbers: S1
+  counted gate verdict + spawn imperative, S7.3 status vocabulary
+  and FORBIDDEN verification gate, S7.4 surgical scope, oracle
+  integrity, S10 long-horizon rules. The full S2-S6 multi-agent
+  protocol (Planner, Specialists, Cross-Talk, Staff Engineer,
+  Orchestrator Discipline, full routing table) relocates verbatim to
+  `docs/orchestration.md`, read on a multi-agent gate verdict; a
+  compact inline S2-S6 protocol stays in the kernel so the verdict
+  remains actionable on every runtime. New turn-tax rules from t12
+  stream forensics (ON runs spent +3 turns re-reading doctrine
+  already in context and +2 on trailing ceremony): never Read
+  AGENTS.md/CLAUDE.md from disk when already in context, status
+  token opens the final message (no separate wrap-up turn),
+  orientation starts from target files. The blanket post-edit
+  re-read mandate is dropped (zero behavioral delta at t12 n=9);
+  conditional staleness re-reads (10+ messages, 3 edits per file)
+  stay. `.cursorrules` is regenerated from the kernel, fixing drift
+  (it predated the counted gate verdict).
+- **Migration note** for users who appended an older `AGENTS.md`
+  into their own instruction files: re-sync against the new kernel —
+  S2-S6 detail now lives in `docs/orchestration.md`, and stale
+  copies keep the pre-revision-3 gate rules. Diff the dated change
+  in this repo's history (`git log --follow AGENTS.md`).
+
 - **Decision Gate made actionable** (`AGENTS.md` S1/S2): the gate now
   requires a one-line verdict (`GATE: single-agent — <reason>` or
   `GATE: multi-agent — <trigger met>`) before the first file edit, and
