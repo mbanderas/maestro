@@ -15,9 +15,10 @@ All notable changes to Maestro are documented here. The format follows
   Task/Agent tool — a verdict without the spawn is a gate violation.
   S2 names the Planner as a real subagent created by a tool call, not
   an inline step. Motivation: zero S2-S6 spawns and zero gate
-  verbalization across all 33 measured ON runs/sessions to date; the
-  gate was descriptive prose with no action binding and no output
-  obligation. Single-agent default for sub-trigger tasks unchanged.
+  verbalization across all 21 scanned runs/sessions to date (18
+  headless t12 + 3 interactive-proxy); the gate was descriptive prose
+  with no action binding and no output obligation. Single-agent
+  default for sub-trigger tasks unchanged.
 - **Decision Gate verdict is counted, triggers checked first**
   (`AGENTS.md` S1, revision 2): the verdict line now carries explicit
   counts (`GATE: files=<n> concerns=<m> -> ...`), files>=5 across 2+

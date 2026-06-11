@@ -434,7 +434,7 @@ pass rates 20-60%, arXiv:2602.10975). Protocol, scoring rubric, and
 Codex/Gemini recipes: [`benchmarks/README.md`](benchmarks/README.md).
 
 Current cells (Claude Code, `sonnet`, hidden-oracle runner,
-2026-06-10 — medians of valid runs, voided CLI-error runs excluded
+2026-06-10/11 — medians of valid runs, voided CLI-error runs excluded
 and documented):
 
 <p align="center">
@@ -445,8 +445,8 @@ and documented):
 |---|---|---|---|---|---|---|
 | t07 OFF | 3 | 3/3 | 70s | 12 | $0.164 | 2,421 |
 | t07 ON | 3 | 3/3 | 71s | 15 | $0.228 | 2,799 |
-| t08 OFF | 3 | 3/3 | 85s | 33 | $0.247 | 6,127 |
-| t08 ON | 3 | 3/3 | 59s | 27 | $0.228 | 4,457 |
+| t08 OFF | 9 | 9/9 | 80s | 24 | $0.230 | 4,467 |
+| t08 ON | 9 | 9/9 | 59s | 25 | $0.253 | 4,411 |
 | t09 OFF | 9 | 8/9 | 147s | 19 | $0.287 | 5,160 |
 | t09 ON | 9 | 8/9 | 143s | 18 | $0.315 | 5,478 |
 | t09 CORE | 6 | 6/6 | 137s | 20.5 | $0.345 | 5,231 |
@@ -458,10 +458,11 @@ and documented):
 | t12 ON | 9 | 9/9 | 143s | 25 | $0.475 | 6,882 |
 
 Three further claims were measured on 2026-06-10, then re-measured at
-higher n the same evening (t12 topped up to n=9 per mode, a
-purpose-built trap-convention task probed three times on haiku, and a
-two-turn interactive-proxy probe — 60 valid runs across both loops,
-0 voids):
+higher n (t12 and t08 topped up to n=9 per mode, a purpose-built
+trap-convention task probed three times on haiku, a two-turn
+interactive-proxy probe, and three Decision-Gate activation probe
+cycles on 2026-06-11 — 84 valid runs across the three loops, 0
+voids):
 
 - **Weak-model rescue: not measurable, now with stronger evidence.**
   Haiku passes 30/30 across t07-t11 in both modes, and 9/9 on all
@@ -472,43 +473,58 @@ two-turn interactive-proxy probe — 60 valid runs across both loops,
   fixtures with discoverable conventions, so pass-rate rescue cannot
   be observed at this task class. (Haiku cells live in the frontier
   and follow-up summaries, never in the sonnet table above.)
-- **The multi-agent path (S2-S6) never fires — headless or
-  interactive-proxy.** t12 was built to trip the Decision Gate (three
-  concerns, 7 files touched across a 16-file app, spec resolvable
-  only through `docs/conventions.md`). All 18 headless runs (n=9 per
-  mode, ON and OFF alike) and all 3 two-turn interactive-proxy
-  sessions spawned exactly one Explore recon subagent and zero
-  Planner/specialist/review agents; Decision Gate verbalization never
-  appeared in assistant text. Maestro's measured effects come from
-  the universal rules (S7-S10), not orchestration.
-- **Compliance deltas are null at these tiers.** One ON run in 57
-  scored streams stated a S7.3 status token (UNVERIFIED, t12 n=9
-  top-up); none did before. Surgical scope and oracle integrity
-  remain perfect in both modes; smoke-testing is near-universal.
-  Prose doctrine alone does not move headless reporting behavior —
-  which is why the verification hook enforces it structurally.
+- **The multi-agent path (S2-S6) still never fires — but the gate now
+  speaks.** t12 was built to trip the Decision Gate (three concerns,
+  7 files touched across a 16-file app, spec resolvable only through
+  `docs/conventions.md`). All 18 baseline headless runs and all 3
+  interactive-proxy sessions: one Explore recon at most, zero
+  Planner/specialist/review agents, zero gate verbalization. Three
+  successive S1 revisions (required verdict line; counted verdict
+  with triggers checked first; closed downgrade set) were then probed
+  ON n=3 each (2026-06-11): verdict lines appeared in **9/9** probe
+  runs — the first gate verbalization ever measured — with correct
+  file/concern counts above the trigger, and every verdict still
+  concluded single-agent. S2-S6 spawns: **0/9**. Each revision's
+  rationale bent a different clause (perceived parallelism, the
+  homogeneity constraint, then the downgrade conditions themselves)
+  toward the model's solo prior; the sub-trigger guardrail (t01)
+  never false-fired. Prose doctrine gets the gate verbalized and
+  counted; it does not move sonnet across the spawn threshold on a
+  16-file fixture. Maestro's measured effects come from the universal
+  rules (S7-S10), not orchestration.
+- **Compliance deltas are null at these tiers.** Three runs in 69
+  scored streams stated a S7.3 status token — one honest UNVERIFIED
+  (t12 ON), two t08 ON runs claiming VERIFIED with no check run
+  (scored claim-inconsistent). Surgical scope and oracle integrity
+  remain perfect in both modes. Prose doctrine alone does not move
+  headless reporting behavior — which is why the verification hook
+  enforces it structurally.
 
 Honest reading: **Maestro ON has never beaten OFF on success rate in
-any measured cell** — at t09's n=9 the modes are exactly tied (8/9
-each), and t12's n=9 is 9/9 both modes. The efficiency story weakened
-under replication: the t12 n=3 readings of -31% wall and -20%
-out-tokens are **retracted** — at n=9 the wall gap is -18% and sits
-inside within-mode spread (run ranges 96-157k ms), out-tokens
-reversed to +5%, and ON pays +38% median cost and +4 median turns.
-What survives: t08 ON -30% wall / -18% turns / -8% cost at equal
-pass (n=3), the same t08 win on Gemini (-40% wall at n=3), and the
-t11 pilot (-16% wall at n=1). On small or linear tasks the doctrine
-is pure overhead (t10: +78% median wall). t09 separates *models* more
-than modes: gemini-3.1-pro-preview passes 1 of 6 valid runs,
-gpt-5.4-mini passes 4/4, sonnet ~8-in-9. The CORE row (compact
+any measured cell** — at n=9 t09 is exactly tied (8/9 each) and t08
+and t12 are 9/9 both modes. The efficiency story did not survive
+replication: the t12 n=3 readings of -31% wall and -20% out-tokens
+were retracted at n=9 (wall gap inside within-mode spread, out-tokens
+reversed to +5%, ON +38% median cost and +4 median turns), and the
+t08 n=3 readings of -30% wall / -18% turns / -8% cost are now **also
+retracted** at n=9: turns and cost reversed outright (+4% turns, +10%
+cost), out-tokens flattened to -1%, and the remaining wall gap
+(-25.5%, 20.3s) sits inside the OFF cell's own 47.4s run-to-run
+range. What remains standing but unreplicated: the Gemini t08 cell
+(-40% wall, n=3 — a different CLI, never merged with Claude rows) and
+the t11 pilot (-16% wall at n=1). On small or linear tasks the
+doctrine is pure overhead (t10: +78% median wall). t09 separates
+*models* more than modes: gemini-3.1-pro-preview passes 1 of 6 valid
+runs, gpt-5.4-mini passes 4/4, sonnet ~8-in-9. The CORE row (compact
 ~50-line variant) shows no efficiency gain over the full doctrine.
 Small samples throughout; no significance claims. Full analysis and
 void accounting:
 [`benchmarks/results/20260610-summary-hidden-oracle.md`](benchmarks/results/20260610-summary-hidden-oracle.md),
 [`benchmarks/results/20260610-summary-xcli.md`](benchmarks/results/20260610-summary-xcli.md),
 [`benchmarks/results/20260610-summary-frontier.md`](benchmarks/results/20260610-summary-frontier.md),
+[`benchmarks/results/20260610-summary-followup.md`](benchmarks/results/20260610-summary-followup.md),
 and
-[`benchmarks/results/20260610-summary-followup.md`](benchmarks/results/20260610-summary-followup.md).
+[`benchmarks/results/20260611-summary-activation.md`](benchmarks/results/20260611-summary-activation.md).
 
 Post-fix Gemini (`gemini-3.1-pro-preview`) and Codex (`gpt-5.4-mini`,
 exploratory n=1) cells for t08/t09 — including the gemini quota voids

@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 330" role="img" aria-labelledby="t d">
   <title id="t">Maestro benchmark medians, hidden-oracle cells</title>
-  <desc id="d">Median cost in USD per task-run for tasks t07 to t10 and t12 with doctrine OFF, ON, and the compact CORE variant on t09. Pass rates shown per cell. ON never beats OFF on pass rate; t08 is the one cell where ON is cheaper; at n=9 t12 ON costs 38 percent more than OFF.</desc>
+  <desc id="d">Median cost in USD per task-run for tasks t07 to t10 and t12 with doctrine OFF, ON, and the compact CORE variant on t09. Pass rates shown per cell. ON never beats OFF on pass rate; at n=9 t08 ON costs 10 percent more than OFF and t12 ON costs 38 percent more.</desc>
   <style>
     .lbl  { font: 600 13px ui-monospace, SFMono-Regular, Consolas, monospace; fill: #f0f0f4; }
     .sub  { font: 400 11px ui-monospace, SFMono-Regular, Consolas, monospace; fill: #9e9eaa; }
@@ -15,7 +15,7 @@
   <rect width="920" height="330" rx="12" fill="#0a0a0c"/>
 
   <text class="lbl" x="40" y="32">median cost per task-run (USD)</text>
-  <text class="sub" x="40" y="48">claude code, sonnet, hidden-oracle runner, 2026-06-10 - medians of valid runs</text>
+  <text class="sub" x="40" y="48">claude code, sonnet, hidden-oracle runner, 2026-06-10/11 - medians of valid runs</text>
 
   <!-- legend -->
   <rect class="off" x="528" y="24" width="12" height="12" rx="2"/>
@@ -48,13 +48,13 @@
   <text class="sub" x="174" y="290" text-anchor="middle">3/3 - 3/3</text>
   <text class="sub" x="174" y="305" text-anchor="middle">feature, 9 files</text>
 
-  <!-- t08 -->
-  <rect class="off" x="286" y="156.1" width="34" height="93.9"/>
-  <rect class="on"  x="328" y="163.4" width="34" height="86.6"/>
-  <text class="val" x="303" y="148.1" text-anchor="middle">.247</text>
-  <text class="val" x="345" y="155.4" text-anchor="middle">.228</text>
+  <!-- t08 (n=9 per mode) -->
+  <rect class="off" x="286" y="162.6" width="34" height="87.4"/>
+  <rect class="on"  x="328" y="153.9" width="34" height="96.1"/>
+  <text class="val" x="303" y="154.6" text-anchor="middle">.230</text>
+  <text class="val" x="345" y="145.9" text-anchor="middle">.253</text>
   <text class="lbl" x="324" y="274" text-anchor="middle">t08</text>
-  <text class="sub" x="324" y="290" text-anchor="middle">3/3 - 3/3</text>
+  <text class="sub" x="324" y="290" text-anchor="middle">9/9 - 9/9</text>
   <text class="sub" x="324" y="305" text-anchor="middle">refactor, 10 files</text>
 
   <!-- t09 (off, on at n=9; core at n=6) -->
