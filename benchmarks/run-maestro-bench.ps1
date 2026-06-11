@@ -9,6 +9,7 @@
 #   pwsh -NoProfile -File run-maestro-bench.ps1 -Task t01-fix-inclusive-range,t02-fix-even-median
 #   pwsh -NoProfile -File run-maestro-bench.ps1 -Mode on -Runs 3 -Model sonnet
 #   pwsh -NoProfile -File run-maestro-bench.ps1 -Mode on -InstallHooks   # hooked cell
+#   pwsh -NoProfile -File run-maestro-bench.ps1 -Mode on -InstallHooks -Hooks gate-reminder
 #
 # Results land in results/<timestamp>-claude-<model>.json plus a console table.
 
@@ -27,6 +28,12 @@ param(
                                   # runs only. Default OFF: baseline cells stay
                                   # hook-free and comparable. OFF-mode cells
                                   # NEVER get hooks, flag or not.
+  [string[]]$Hooks = @(),         # subset of the pack to stage, by short name
+                                  # (gate-reminder, doctrine-guard, ...). Filters
+                                  # BOTH the staged .cjs copies AND the hooks.json
+                                  # wiring written into settings.json. Empty =
+                                  # whole pack (today's behavior). Only meaningful
+                                  # with -InstallHooks.
   [int]$MaxThinkingTokens = 0     # >0: cap the fixed thinking budget via
                                   # MAX_THINKING_TOKENS for every run in this
                                   # invocation. Also sets
@@ -72,10 +79,36 @@ if ($InstallHooks) {
   $stagedHooks = Join-Path $cfgHooksDir 'hooks'
   New-Item -ItemType Directory -Force $stagedHooks | Out-Null
   if (Test-Path $creds) { Copy-Item $creds $cfgHooksDir -Force }
-  Get-ChildItem (Join-Path $repoRoot 'hooks') -Filter '*.cjs' |
-    Where-Object { $_.Name -notlike '*.test.cjs' } |
-    Copy-Item -Destination $stagedHooks -Force
+  $packFiles = Get-ChildItem (Join-Path $repoRoot 'hooks') -Filter '*.cjs' |
+    Where-Object { $_.Name -notlike '*.test.cjs' }
+  if ($Hooks.Count -gt 0) {
+    $packFiles = foreach ($name in $Hooks) {
+      $hit = $packFiles | Where-Object { $_.BaseName -eq $name -or $_.BaseName -eq "maestro-$name" }
+      if (-not $hit) { throw "-Hooks '$name' matches nothing in hooks/. Available: $((Get-ChildItem (Join-Path $repoRoot 'hooks') -Filter '*.cjs' | Where-Object { $_.Name -notlike '*.test.cjs' }).BaseName -replace '^maestro-', '' -join ', ')" }
+      $hit
+    }
+  }
+  $packFiles | Copy-Item -Destination $stagedHooks -Force
   $wiring = Get-Content (Join-Path $repoRoot 'hooks\hooks.json') -Raw
+  if ($Hooks.Count -gt 0) {
+    # Keep only wiring entries whose command references a selected hook file;
+    # drop emptied matcher groups and event keys so the agent never sees the
+    # unselected hooks at all.
+    $cfg = $wiring | ConvertFrom-Json
+    $stagedNames = @($packFiles | ForEach-Object { $_.Name })
+    foreach ($evt in @($cfg.hooks.PSObject.Properties.Name)) {
+      $keptGroups = @(foreach ($group in @($cfg.hooks.$evt)) {
+        $kept = @($group.hooks | Where-Object {
+          $cmd = $_.command
+          @($stagedNames | Where-Object { $cmd -like "*$_*" }).Count -gt 0
+        })
+        if ($kept.Count -gt 0) { $group.hooks = $kept; $group }
+      })
+      if ($keptGroups.Count -gt 0) { $cfg.hooks.$evt = $keptGroups }
+      else { $cfg.hooks.PSObject.Properties.Remove($evt) }
+    }
+    $wiring = $cfg | ConvertTo-Json -Depth 8
+  }
   $wiring = $wiring.Replace('${CLAUDE_PLUGIN_ROOT}', ($cfgHooksDir -replace '\\', '/'))
   Set-Content (Join-Path $cfgHooksDir 'settings.json') $wiring
 }
@@ -168,6 +201,7 @@ foreach ($taskDir in $taskDirs) {
         model       = $Model
         mode        = $runMode
         hooks       = $runHooked
+        hook_set    = if (-not $runHooked) { $null } elseif ($Hooks.Count -gt 0) { $Hooks -join ',' } else { 'pack' }
         think_cap   = if ($MaxThinkingTokens -gt 0) { $MaxThinkingTokens } else { $null }
         run         = $n
         pass        = $pass

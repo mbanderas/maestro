@@ -118,7 +118,13 @@ the `json` format's). Streams feed the compliance scorer below.
 (`hooks/*.cjs` + `hooks.json` wiring) into a second isolated config
 dir used only for doctrine-bearing (on/core) runs; off cells never
 get hooks, so every baseline cell stays comparable. Result rows carry
-a `hooks` boolean. `-MaxThinkingTokens <n>` sets `MAX_THINKING_TOKENS`
+a `hooks` boolean. `-Hooks <names>` (only meaningful with
+`-InstallHooks`) stages a subset of the pack by short name
+(`gate-reminder`, `doctrine-guard`, ...): both the staged `.cjs`
+copies and the `hooks.json` wiring written into `settings.json` are
+filtered, so the agent never sees unselected hooks; default = whole
+pack, unchanged. Rows carry `hook_set` (`pack`, or the comma-joined
+subset). `-MaxThinkingTokens <n>` sets `MAX_THINKING_TOKENS`
 plus `CLAUDE_CODE_DISABLE_ADAPTIVE_THINKING=1` for every run in the
 invocation (rows carry `think_cap`). Both flags first measured in
 [`results/20260611-summary-hooks.md`](results/20260611-summary-hooks.md).
