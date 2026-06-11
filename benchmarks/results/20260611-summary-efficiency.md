@@ -59,6 +59,10 @@ the median gap clearly exceeds within-mode spread.
   fatter final messages — turn savings did not become cost savings.
   Mechanism note for any future attempt: capping final-message length
   is the untested complement.
+  **Erratum (2026-06-11, same-day forensics):** this attribution was
+  wrong — final messages grew only ~117 chars (~30 tok); the growth
+  was thinking (+36%) plus sidechain billing. Corrected decomposition
+  in `20260611-summary-hooks.md`.
 - Static context tax is real but small: the -41% always-on bytes save
   ~310 cache-read-priced tokens/turn (~10% input price); at these
   task lengths that is cents, swamped by run-to-run noise. This
