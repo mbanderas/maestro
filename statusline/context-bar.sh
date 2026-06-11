@@ -30,15 +30,21 @@ fi
 transcript="$(printf '%s' "$input" | jq -r '.transcript_path // empty')"
 model_id="$(printf '%s' "$input" | jq -r '.model.id // empty')"
 
-# Model context-window cap.
-cap=200000
-shopt -s nocasematch
-case "$model_id" in
-  *1m*|*"[1m]"*) cap=1000000 ;;
-  *opus-4-7*)    cap=1000000 ;;
-  *)             cap=200000 ;;
-esac
-shopt -u nocasematch
+# Model context-window cap. Prefer the cap Claude Code reports; the
+# model-id heuristic is the fallback for older payloads without it.
+cap="$(printf '%s' "$input" | jq -r '.context_window.context_window_size // 0')"
+[[ "$cap" =~ ^[0-9]+$ ]] || cap=0
+if [ "$cap" -le 0 ]; then
+  cap=200000
+  shopt -s nocasematch
+  case "$model_id" in
+    *1m*|*"[1m]"*)     cap=1000000 ;;
+    *fable*|*mythos*)  cap=1000000 ;;
+    *opus-4-6*|*opus-4-7*|*opus-4-8*) cap=1000000 ;;
+    *)                 cap=200000 ;;
+  esac
+  shopt -u nocasematch
+fi
 
 used=0
 if [ -n "$transcript" ] && [ -f "$transcript" ]; then

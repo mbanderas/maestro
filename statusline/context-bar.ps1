@@ -30,14 +30,20 @@ function Get-Cap($id) {
     if (-not $id) { return 200000 }
     $s = $id.ToLower()
     if ($s -match '1m' -or $s -match '\[1m\]') { return 1000000 }
-    if ($s -match 'opus-4-7')   { return 1000000 }
+    if ($s -match 'fable' -or $s -match 'mythos') { return 1000000 }
+    if ($s -match 'opus-4-[678]') { return 1000000 }
     if ($s -match 'sonnet-4-6') { return 200000 }
     if ($s -match 'sonnet')     { return 200000 }
     if ($s -match 'haiku')      { return 200000 }
     if ($s -match 'opus')       { return 200000 }
     return 200000
 }
-$cap = Get-Cap $modelId
+# Prefer the cap Claude Code reports; model-id heuristic is the fallback.
+$cap = 0
+if ($ctx.context_window.context_window_size) {
+    $cap = [int]$ctx.context_window.context_window_size
+}
+if ($cap -le 0) { $cap = Get-Cap $modelId }
 
 $used = 0
 if ($transcript -and (Test-Path $transcript)) {
