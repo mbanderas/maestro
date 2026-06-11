@@ -13,7 +13,7 @@
 </p>
 
 <p align="center">
-  <sub>13 fixture tasks &middot; 84 valid A/B runs &middot; 0 voids &middot; 5 hooks, all tested &middot; ~10 KB doctrine &middot; 2 files to install</sub>
+  <sub>13 fixture tasks &middot; 116 valid A/B runs &middot; 0 voids &middot; 6 hooks, all tested &middot; ~8 KB always-on kernel &middot; 2 files to install</sub>
 </p>
 
 ---
@@ -72,7 +72,14 @@ The price, measured rather than implied: ON spends about 10% more
 than a clean agent on a 10-module refactor and 38% more on a 16-file
 feature (n=9 medians, t08/t12 below). You are buying verification
 and auditability, not speed. Whether that trade pays depends on who
-is watching.
+is watching. A kernel rewrite (2026-06-11) cut always-on bytes 41%
+and fixed status reporting (12/12 vs 3/30) with no measurable cost
+change — the overhead is behavioral, not byte-weight. The same day's
+hook-enforcement loop made the remaining prose rule structural: a
+PreToolUse hook now denies doctrine re-reads outright (24/24 attempts
+denied across 18 runs, oracle pass unchanged), and one added S7.3
+line took unsupported VERIFIED claims from 5/6 to 0/6 on the
+checker-less refactor task — again at no measurable cost change.
 
 Supervised, interactive use: you are already the audit layer. On
 tasks a clean agent passes anyway, the measured data shows no
@@ -91,12 +98,20 @@ information still exists, and leaves a verdict line, a status token,
 and a checkpoint trail you can trust without replaying the run.
 
 That regime is not hypothetical. Maestro runs under its own rules:
-the two most recent maintenance loops ran unattended overnight on
-the S10 long-horizon doctrine, with checkpoint artifacts,
-pre-declared budget ceilings, and dual termination. Together they
-made 48 benchmark runs for $17.16 against a $25 cap, produced 0
-voided runs, and shipped the retractions you can read below with no
-human in the loop.
+the three most recent maintenance loops ran unattended on the S10
+long-horizon doctrine, with checkpoint artifacts, pre-declared budget
+ceilings, and dual termination. Together they made 68 benchmark runs
+for $26.22 against $37 in caps, produced 0 voided runs, and shipped
+the retractions you can read below with no human in the loop.
+
+A note on what Maestro does *not* optimize: output-style compression
+(terse-reply tools of the caveman-mode class) is orthogonal to this
+doctrine and worth little in agentic work — visible prose is roughly
+5% of an agent run's output tokens, and output tokens are roughly a
+quarter of its cost, so style compression touches ~1% of spend. In
+chat-heavy use the same lever is worth 20-40% of total. If your
+workload is conversation, add a style tool on top; Maestro will not
+grow a kernel toggle for it.
 
 Maestro is built on [peer-reviewed research](https://marklaursen.com/blog/why-your-multi-agent-ai-system-keeps-failing) showing that **79% of multi-agent failures come from coordination breakdowns, not model capability**, and that **three optimized agents outperform seven**.
 
@@ -234,16 +249,17 @@ Runtime adapters are thin wrappers that import the shared doctrine and add only 
 | `AGENTS.md` | Portable core | Full orchestration doctrine, runtime-agnostic |
 | `CLAUDE.md` | Claude Code adapter | Subagent/team routing, hooks, context limits, tool scoping, long-horizon mapping (/loop, schedules) |
 | `GEMINI.md` | Gemini adapter | Execution mapping, instruction precedence, verification notes, long-horizon note |
-| `.cursorrules` | Cursor adapter | Full doctrine (Cursor does not support imports) |
+| `.cursorrules` | Cursor adapter | Kernel copy (Cursor does not support imports); full S2-S6 in docs/orchestration.md |
 | [`docs/codex.md`](docs/codex.md) | Codex guide | AGENTS.md precedence and 32 KiB cap, Automations long-horizon mapping (no separate adapter file; Codex reads `AGENTS.md` natively) |
 
 GitHub Copilot, Cline, and Windsurf read `AGENTS.md` directly (verified
 against their official docs, 2026-06-10), so the portable core works
 there with no adapter. Runtime-specific niceties (hooks, context bar,
 long-horizon loop commands) remain Claude Code features. Maestro's
-`AGENTS.md` is ~10 KB, under Windsurf's 12,000-character workspace
-rule limit and roughly a third of Codex's default 32 KiB instruction
-budget.
+always-on kernel (`AGENTS.md`) is ~8 KB, under Windsurf's
+12,000-character workspace rule limit and roughly a quarter of Codex's
+default 32 KiB instruction budget; the full multi-agent protocol loads
+on demand from `docs/orchestration.md`.
 
 **Design principle:** runtime-specific features stay in adapters unless they generalize across environments. This keeps the shared doctrine portable and prevents provider-specific details from bloating the core files.
 
@@ -344,14 +360,17 @@ and simply warns less.
 
 ### Claude Code: Hook Pack
 
-Four more optional hooks enforce other Maestro rules structurally.
+Five more optional hooks enforce other Maestro rules structurally.
 Same engineering rules as the verification hook: plain Node `.cjs`,
-zero dependencies, soft warnings only (never block), fire-once guards,
-graceful degradation on missing payload fields. Tests live next to
-each hook (`node hooks/<name>.test.cjs`).
+zero dependencies, fire-once guards, graceful degradation on missing
+payload fields. All warn softly except the doctrine guard, which
+denies by design — re-reading autoloaded doctrine is never the right
+call, and the deny reason tells the model what to use instead. Tests
+live next to each hook (`node hooks/<name>.test.cjs`).
 
 | Hook | Event | Enforces |
 |---|---|---|
+| `maestro-doctrine-guard.cjs` | `PreToolUse` (Read) | S7.2 context integrity: denies a `Read` of `AGENTS.md`/`CLAUDE.md` while the doctrine is autoloaded (doctrine file present at cwd) with an instructive reason. `MAESTRO_DOCTRINE_GUARD=once` allows the first read per session (for runtimes whose subagents lack the doctrine in context); `=0` disables. `docs/orchestration.md` is never guarded |
 | `maestro-loop-guard.cjs` | `Stop` | S10 long-horizon: warns when a looping session (session crons or `ScheduleWakeup` calls) has no `_<task>.md` checkpoint artifact in the working directory, or exceeds the iteration cap (`MAESTRO_LOOP_MAX_ITER`, default 50) |
 | `maestro-phase-scope.cjs` | `PostToolUse` | S7.1 phase scope: warns when more than 5 distinct files (`MAESTRO_PHASE_FILE_CAP`) are modified in a single turn |
 | `maestro-gate-reminder.cjs` | `UserPromptSubmit` | S1 gate: injects the counted-verdict checklist on the first prompt of a session (fire-once; opt-out via `MAESTRO_GATE_REMINDER=0`) |
@@ -366,6 +385,7 @@ contents, no full paths, no network, ever.
 **Install:** download into `~/.claude/hooks/`:
 
 ```bash
+curl -o ~/.claude/hooks/maestro-doctrine-guard.cjs https://raw.githubusercontent.com/mbanderas/maestro/main/hooks/maestro-doctrine-guard.cjs
 curl -o ~/.claude/hooks/maestro-loop-guard.cjs https://raw.githubusercontent.com/mbanderas/maestro/main/hooks/maestro-loop-guard.cjs
 curl -o ~/.claude/hooks/maestro-phase-scope.cjs https://raw.githubusercontent.com/mbanderas/maestro/main/hooks/maestro-phase-scope.cjs
 curl -o ~/.claude/hooks/maestro-gate-reminder.cjs https://raw.githubusercontent.com/mbanderas/maestro/main/hooks/maestro-gate-reminder.cjs
@@ -377,6 +397,11 @@ block; use absolute paths, escaped backslashes on Windows):
 
 ```jsonc
 "hooks": {
+  "PreToolUse": [
+    { "matcher": "Read", "hooks": [
+      { "type": "command", "command": "node \"/absolute/path/to/.claude/hooks/maestro-doctrine-guard.cjs\"" }
+    ]}
+  ],
   "Stop": [
     { "matcher": "", "hooks": [
       { "type": "command", "command": "node \"/absolute/path/to/.claude/hooks/maestro-loop-guard.cjs\"" }
@@ -604,8 +629,10 @@ void accounting:
 [`benchmarks/results/20260610-summary-xcli.md`](benchmarks/results/20260610-summary-xcli.md),
 [`benchmarks/results/20260610-summary-frontier.md`](benchmarks/results/20260610-summary-frontier.md),
 [`benchmarks/results/20260610-summary-followup.md`](benchmarks/results/20260610-summary-followup.md),
+[`benchmarks/results/20260611-summary-activation.md`](benchmarks/results/20260611-summary-activation.md),
+[`benchmarks/results/20260611-summary-efficiency.md`](benchmarks/results/20260611-summary-efficiency.md),
 and
-[`benchmarks/results/20260611-summary-activation.md`](benchmarks/results/20260611-summary-activation.md).
+[`benchmarks/results/20260611-summary-hooks.md`](benchmarks/results/20260611-summary-hooks.md).
 
 Post-fix Gemini (`gemini-3.1-pro-preview`) and Codex (`gpt-5.4-mini`,
 exploratory n=1) cells for t08/t09, including the gemini quota voids

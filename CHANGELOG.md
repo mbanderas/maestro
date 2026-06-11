@@ -12,7 +12,14 @@ All notable changes to Maestro are documented here. The format follows
   line — no checker ran means the status token is UNVERIFIED, never
   VERIFIED; grep or read evidence does not upgrade it. Targets the
   kernel-branch regression where t08 reported VERIFIED without any
-  checker run in 5 of 6 benchmark runs.
+  checker run in 5 of 6 benchmark runs. Measured effect
+  (`benchmarks/results/20260611-summary-hooks.md`): unsupported
+  VERIFIED 5/6 -> 0/6; doctrine re-reads 24/24 denied across 18
+  hooked runs with oracle pass unchanged; cost null vs baseline.
+  Same summary corrects the efficiency report's "+24% fatter final
+  messages" attribution (real driver: thinking + sidechain billing;
+  erratum added in place) and documents the README run-count and
+  hook-count refresh.
 
 - **Always-on doctrine slimmed to a kernel** (`AGENTS.md`,
   `CLAUDE.md`, new `docs/orchestration.md`): the always-loaded
