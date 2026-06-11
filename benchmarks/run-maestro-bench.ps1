@@ -22,11 +22,19 @@ param(
   [double]$MaxBudgetUsd = 1.0,    # per task-run cap passed to claude
   [switch]$KeepWork,              # keep temp work dirs for inspection
   [switch]$SaveStream,            # capture full stream-json event log per run
-  [switch]$InstallHooks           # plant hooks/*.cjs + hooks.json wiring into a
+  [switch]$InstallHooks,          # plant hooks/*.cjs + hooks.json wiring into a
                                   # second isolated config dir, used for on/core
                                   # runs only. Default OFF: baseline cells stay
                                   # hook-free and comparable. OFF-mode cells
                                   # NEVER get hooks, flag or not.
+  [int]$MaxThinkingTokens = 0     # >0: cap the fixed thinking budget via
+                                  # MAX_THINKING_TOKENS for every run in this
+                                  # invocation. Also sets
+                                  # CLAUDE_CODE_DISABLE_ADAPTIVE_THINKING=1 --
+                                  # on adaptive-reasoning models the fixed
+                                  # budget only applies with adaptive disabled
+                                  # (code.claude.com/docs/en/env-vars). 0 =
+                                  # leave both unset (default; baselines).
 )
 
 $ErrorActionPreference = 'Stop'
@@ -107,6 +115,12 @@ foreach ($taskDir in $taskDirs) {
       Write-Host "[$($spec.id)] mode=$runMode run=$n model=$Model hooks=$runHooked ..." -NoNewline
       $prevCfg = $env:CLAUDE_CONFIG_DIR
       $env:CLAUDE_CONFIG_DIR = if ($runHooked) { $cfgHooksDir } else { $cfgDir }
+      $prevThink = $env:MAX_THINKING_TOKENS
+      $prevAdaptive = $env:CLAUDE_CODE_DISABLE_ADAPTIVE_THINKING
+      if ($MaxThinkingTokens -gt 0) {
+        $env:MAX_THINKING_TOKENS = "$MaxThinkingTokens"
+        $env:CLAUDE_CODE_DISABLE_ADAPTIVE_THINKING = '1'
+      }
       Push-Location $workDir
       $sw = [Diagnostics.Stopwatch]::StartNew()
       try {
@@ -123,6 +137,8 @@ foreach ($taskDir in $taskDirs) {
         $sw.Stop()
         Pop-Location
         $env:CLAUDE_CONFIG_DIR = $prevCfg
+        $env:MAX_THINKING_TOKENS = $prevThink
+        $env:CLAUDE_CODE_DISABLE_ADAPTIVE_THINKING = $prevAdaptive
       }
 
       $json = $null
@@ -152,6 +168,7 @@ foreach ($taskDir in $taskDirs) {
         model       = $Model
         mode        = $runMode
         hooks       = $runHooked
+        think_cap   = if ($MaxThinkingTokens -gt 0) { $MaxThinkingTokens } else { $null }
         run         = $n
         pass        = $pass
         verify_note = if ($pass) { $null } else { [string]$verifyOut }
