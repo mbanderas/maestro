@@ -12,6 +12,10 @@
   <img src="https://img.shields.io/badge/agents-Claude%20Code%20%7C%20Gemini%20%7C%20Codex%20%7C%20Cursor-5b82d6" alt="Claude Code | Gemini | Codex | Cursor">
 </p>
 
+<p align="center">
+  <sub>13 fixture tasks &middot; 84 valid A/B runs &middot; 0 voids &middot; 5 hooks, all tested &middot; ~10 KB doctrine &middot; 2 files to install</sub>
+</p>
+
 ---
 
 Maestro installs as plain markdown files your AI agent reads on startup. No packages, no build steps, no SDK. Download the files for your runtime into the project root and your agent picks them up automatically.
@@ -56,6 +60,25 @@ Drop two markdown files into your repo and your agent gains five things:
    and the results below include our own retractions and nulls. You
    can see exactly what is proven and what is open, then rerun every
    number yourself.
+
+What that looks like at the close of a run, quoted verbatim from the
+committed benchmark streams:
+
+<p align="center">
+  <img src="assets/discipline-demo.svg" alt="Two terminal close-outs quoted verbatim from benchmark streams: a baseline agent declares all done although no check ran, while the Maestro run opens with a counted GATE verdict line and exits with the honest status UNVERIFIED, no type-checker or linter configured in this project" width="860">
+</p>
+
+The price, measured rather than implied: ON spends about 10% more
+than a clean agent on a 10-module refactor and 38% more on a 16-file
+feature (n=9 medians, t08/t12 below). You are buying verification
+and auditability, not speed.
+
+Maestro also runs under its own rules. The two most recent
+maintenance loops ran unattended overnight on the S10 long-horizon
+doctrine: checkpoint artifacts, pre-declared budget ceilings, dual
+termination. Together they made 48 benchmark runs for $17.16 against
+a $25 cap, produced 0 voided runs, and shipped the retractions you
+can read below with no human in the loop.
 
 Maestro is built on [peer-reviewed research](https://marklaursen.com/blog/why-your-multi-agent-ai-system-keeps-failing) showing that **79% of multi-agent failures come from coordination breakdowns, not model capability**, and that **three optimized agents outperform seven**.
 

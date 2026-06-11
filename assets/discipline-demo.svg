@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 312" role="img" aria-labelledby="t d">
+  <title id="t">Baseline agent vs Maestro close-out, verbatim from benchmark streams</title>
+  <desc id="d">Two terminal panels. Baseline agent ends a refactor with "All done. Here's what was changed:" although no type-check, lint, or test ran. The Maestro run opens with a counted gate verdict line before its first edit and exits with the honest status UNVERIFIED: no type-checker or linter configured in this project.</desc>
+  <style>
+    .panel { fill: #121216; stroke: #222228; stroke-width: 1.5; }
+    .bar   { fill: #1a1a20; }
+    .ttl   { font: 600 12px ui-monospace, SFMono-Regular, Consolas, monospace; fill: #f0f0f4; }
+    .ln    { font: 400 11px ui-monospace, SFMono-Regular, Consolas, monospace; fill: #9e9eaa; }
+    .quote { font: 600 11px ui-monospace, SFMono-Regular, Consolas, monospace; fill: #f0f0f4; }
+    .bad   { font: 600 11px ui-monospace, SFMono-Regular, Consolas, monospace; fill: #e85d5d; }
+    .good  { font: 600 11px ui-monospace, SFMono-Regular, Consolas, monospace; fill: #2ecc71; }
+    .gate  { font: 600 11px ui-monospace, SFMono-Regular, Consolas, monospace; fill: #fbbf24; }
+    .cap   { font: 400 10.5px ui-monospace, SFMono-Regular, Consolas, monospace; fill: #9e9eaa; }
+    .dot   { animation: blink 1.4s steps(1) infinite; }
+    @keyframes blink { 50% { opacity: 0; } }
+    @media (prefers-reduced-motion: reduce) { .dot { animation: none; } }
+  </style>
+
+  <rect width="920" height="312" rx="12" fill="#0a0a0c"/>
+
+  <!-- baseline panel -->
+  <rect class="panel" x="28" y="24" width="424" height="216" rx="10"/>
+  <rect class="bar" x="28" y="24" width="424" height="34" rx="10"/>
+  <rect class="bar" x="28" y="44" width="424" height="14"/>
+  <circle cx="48" cy="41" r="5" fill="#e85d5d"/>
+  <circle cx="66" cy="41" r="5" fill="#e8a85d"/>
+  <circle cx="84" cy="41" r="5" fill="#2ecc71"/>
+  <text class="ttl" x="104" y="45">baseline agent &#183; t08 run 4</text>
+
+  <text class="ln" x="48" y="86">$ claude -p "convert every throw site</text>
+  <text class="ln" x="48" y="102">  to the AppError convention..."</text>
+  <text class="ln" x="48" y="130">[26 edits across 10 modules]</text>
+  <text class="quote" x="48" y="166">All done. Here's what was changed:</text>
+  <rect class="dot" x="48" y="178" width="7" height="13" fill="#9e9eaa"/>
+  <text class="bad" x="48" y="216">no type-check, lint, or test was run</text>
+
+  <!-- maestro panel -->
+  <rect class="panel" x="468" y="24" width="424" height="216" rx="10"/>
+  <rect class="bar" x="468" y="24" width="424" height="34" rx="10"/>
+  <rect class="bar" x="468" y="44" width="424" height="14"/>
+  <circle cx="488" cy="41" r="5" fill="#e85d5d"/>
+  <circle cx="506" cy="41" r="5" fill="#e8a85d"/>
+  <circle cx="524" cy="41" r="5" fill="#2ecc71"/>
+  <text class="ttl" x="544" y="45">with Maestro &#183; t12 run 2</text>
+
+  <text class="gate" x="488" y="86">GATE: files=6 concerns=3 -&gt; single-agent &#8230;</text>
+  <text class="ln" x="488" y="114">[gate verdict written before first edit]</text>
+  <text class="ln" x="488" y="142">[edits, then functional check]</text>
+  <text class="good" x="488" y="178">UNVERIFIED: no type-checker or linter</text>
+  <text class="good" x="488" y="194">configured in this project.</text>
+  <rect class="dot" x="488" y="206" width="7" height="13" fill="#9e9eaa"/>
+
+  <!-- footer -->
+  <text class="cap" x="460" y="272" text-anchor="middle">both close-outs quoted verbatim from committed benchmark streams (benchmarks/results/streams/)</text>
+  <text class="cap" x="460" y="290" text-anchor="middle">the honest status is the feature: you learn what was checked, not what the model hopes</text>
+</svg>
