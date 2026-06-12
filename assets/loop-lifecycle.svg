@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 512" role="img" aria-labelledby="t d">
   <title id="t">Maestro loop engineering lifecycle</title>
-  <desc id="d">A bounded autonomous loop: read checkpoint, re-anchor goal, execute phase, verify, write checkpoint, then wait for an event or wakeup — exiting to a final report when the success condition or hard cap is met.</desc>
+  <desc id="d">A bounded autonomous loop: read checkpoint and consult distilled rules, re-anchor goal, execute phase, verify, write checkpoint with findings graduated into rules, then wait for an event or wakeup — exiting to a final report when a fresh-context verifier confirms the success condition or the hard cap is met.</desc>
   <style>
     .node { fill: #121216; stroke: #222228; stroke-width: 1.5; }
     .done { fill: rgb(245 158 11 / 0.08); stroke: #f59e0b; stroke-width: 2; }
@@ -30,6 +30,7 @@
   <text class="lbl" x="240" y="218" text-anchor="middle">S10 loop</text>
   <text class="sub" x="240" y="234" text-anchor="middle">bounded iterations</text>
   <text class="sub" x="240" y="249" text-anchor="middle">never blocks on user</text>
+  <text class="sub" x="240" y="264" text-anchor="middle">structural &gt; scalar bets</text>
 
   <!-- nodes clockwise from top -->
   <rect class="node" x="168" y="56" width="144" height="40" rx="8"/>
@@ -46,11 +47,11 @@
 
   <rect class="node" x="168" y="364" width="144" height="40" rx="8"/>
   <text class="lbl" x="240" y="382" text-anchor="middle">verify</text>
-  <text class="sub" x="240" y="396" text-anchor="middle">success criteria = exit</text>
+  <text class="sub" x="240" y="396" text-anchor="middle">verifier grades exit</text>
 
   <rect class="node" x="36" y="288" width="138" height="40" rx="8"/>
   <text class="lbl" x="105" y="306" text-anchor="middle">write checkpoint</text>
-  <text class="sub" x="105" y="320" text-anchor="middle">before context limit</text>
+  <text class="sub" x="105" y="320" text-anchor="middle">rules, before limit</text>
 
   <rect class="node" x="36" y="132" width="138" height="40" rx="8"/>
   <text class="lbl" x="105" y="150" text-anchor="middle">event / wakeup</text>

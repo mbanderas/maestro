@@ -6,6 +6,18 @@ All notable changes to Maestro are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- **S10 loop-design rules** (`AGENTS.md`): three additions derived
+  from Anthropic's Fable 5 loop-design guidance (RLanceMartin,
+  2026-06). Loop termination is graded by a verifier subagent in a
+  fresh context against checkable criteria, never self-assessed by
+  the loop that did the work. Checkpoint findings graduate failure
+  note -> investigated cause -> verified fact -> distilled rule,
+  with distilled rules consulted before re-deriving. Hillclimbing
+  loops bet on structural changes over scalar tuning; transient
+  regressions inside the iteration cap are data, not stop signals.
+
 ## [1.1.0] - 2026-06-12
 
 ### Added

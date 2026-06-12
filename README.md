@@ -147,10 +147,10 @@ Maestro is built on that restraint. It makes the single agent you already have r
 
 **Staff Engineer Review:** Performs adversarial final verification to catch contradictions, breakage, and architectural drift.
 
-**Long-Horizon Operation:** Checkpoint artifacts, self-pacing, and explicit end conditions govern recurring or multi-session autonomous runs (Section 10 of the doctrine, including the Loop Engineering rules):
+**Long-Horizon Operation:** Checkpoint artifacts, self-pacing, and explicit end conditions govern recurring or multi-session autonomous runs (Section 10 of the doctrine, including the Loop Engineering rules). Loop exits are graded by a verifier subagent in a fresh context, never self-assessed; checkpoint findings graduate failure note → investigated cause → verified fact → distilled rule, with rules consulted before re-deriving; hillclimbing loops bet on structural changes over scalar tuning:
 
 <p align="center">
-  <img src="assets/loop-lifecycle.svg" alt="Loop engineering lifecycle: read checkpoint, re-anchor goal, execute phase, verify, write checkpoint, event or wakeup, exiting to a final report on success or hard cap" width="440">
+  <img src="assets/loop-lifecycle.svg" alt="Loop engineering lifecycle: read checkpoint, re-anchor goal, execute phase, verify with a fresh-context verifier grading the exit, write checkpoint distilling findings into rules, event or wakeup, exiting to a final report on success or hard cap" width="440">
 </p>
 
 The specialist manifest (S3) and cross-talk handoff packet (S4/S6) also ship as optional machine-readable JSON Schemas in [`schemas/`](schemas/) for tooling and validation. The prose doctrine remains the source of truth.

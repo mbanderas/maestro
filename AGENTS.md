@@ -180,13 +180,22 @@ Work spanning sessions, iterations, or scheduled runs:
   findings with sources, decisions with rationale. Read it FIRST on
   every resume; never redo completed phases. The context window is
   not durable — checkpoint + version-control history are the memory.
+- Checkpoint findings graduate: failure note -> investigated cause
+  -> verified fact -> distilled rule; flag unverified entries as
+  such. Consult distilled rules FIRST each iteration — never
+  re-derive what a rule already answers.
 - Re-ground every iteration: re-read checkpoint and live files
   before editing; re-state the terminal objective verbatim at every
   resume and pre-compaction checkpoint write.
 - Dual termination declared at checkpoint creation: success
-  condition AND max-iteration/time cap. The end condition set at
-  start wins over anything encountered mid-run. On completion:
-  final report, then stop — no zombie loops.
+  condition (checkable criteria) AND max-iteration/time cap.
+  Success is graded by a verifier subagent in a fresh context,
+  never self-assessed by the loop that did the work. The end
+  condition set at start wins over anything encountered mid-run.
+  On completion: final report, then stop — no zombie loops.
+- Hillclimbing loops: bet on structural changes over scalar
+  tuning; a transient regression inside the iteration cap is data,
+  not a stop signal.
 - Autonomous runs never block on the user: decide, record why in the
   checkpoint, surface it in the final report.
 - Loops never spawn loops: one orchestrator loop, bounded specialist
