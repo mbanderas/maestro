@@ -6,6 +6,8 @@ All notable changes to Maestro are documented here. The format follows
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-06-12
+
 ### Added
 
 - **Terse mode** (`hooks/maestro-terse-mode.cjs`,

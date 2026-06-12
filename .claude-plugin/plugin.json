@@ -1,8 +1,8 @@
 {
   "name": "maestro",
   "displayName": "Maestro",
-  "version": "1.0.0",
-  "description": "Research-grounded multi-agent orchestration doctrine for AI coding agents: decision-gated routing, 4-specialist cap, structural enforcement hooks, context-bar command.",
+  "version": "1.1.0",
+  "description": "Research-grounded multi-agent orchestration doctrine for AI coding agents: decision-gated routing, 4-specialist cap, structural enforcement hooks, terse mode + compress token tools, context-bar command.",
   "author": {
     "name": "Mark Banderas",
     "url": "https://github.com/mbanderas"
