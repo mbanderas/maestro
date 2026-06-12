@@ -82,7 +82,7 @@ if ($transcript -and (Test-Path $transcript)) {
 }
 
 if ($cap -le 0) { $cap = 200000 }
-$pct = [math]::Min(100, [math]::Round(($used / $cap) * 100))
+$pct = [math]::Min(100, [math]::Floor(($used / $cap) * 100))
 
 $width = 20
 $filled = [math]::Floor(($used / $cap) * $width)
@@ -99,11 +99,11 @@ $bar = ($color + ([string]$full * $filled) + $dim + ([string]$empty * ($width - 
 
 function Format-Tokens($n) {
     if ($n -ge 1000000) {
-        $m = [math]::Round($n / 1000000, 2)
-        return ("{0}M" -f $m)
+        $m = [math]::Floor($n / 1000000 * 100 + 0.5) / 100
+        return ("{0:F2}M" -f $m)
     }
     if ($n -ge 1000) {
-        $k = [math]::Round($n / 1000)
+        $k = [math]::Floor($n / 1000 + 0.5)
         return ("{0}k" -f $k)
     }
     return "$n"
