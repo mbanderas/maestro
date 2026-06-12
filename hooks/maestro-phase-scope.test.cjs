@@ -27,6 +27,7 @@ function runHook(payload, env) {
 const userMsg = text => ({ type: 'user', message: { content: [{ type: 'text', text }] } });
 const toolResult = () => ({ type: 'user', message: { content: [{ type: 'tool_result', tool_use_id: 'x', content: 'ok' }] } });
 const edit = f => ({ type: 'assistant', message: { content: [{ type: 'tool_use', name: 'Edit', input: { file_path: f } }] } });
+const bash = cmd => ({ type: 'assistant', message: { content: [{ type: 'tool_use', name: 'Bash', input: { command: cmd } }] } });
 
 const edits = n => Array.from({ length: n }, (_, i) => edit(`src/f${i}.ts`));
 
@@ -76,6 +77,33 @@ check('already-warned turn -> silent', out === '');
 // 6. Cap override via env.
 out = runHook({ transcript_path: smallTurnTx, tool_name: 'Edit', tool_input: { file_path: 'c.ts' } }, { MAESTRO_PHASE_FILE_CAP: '2' });
 check('cap=2 with 3 files -> warns', out.includes('max-2-files-per-phase'));
+
+// 6b. Bash mutations count toward the file cap (6 distinct files).
+const bashBigTx = transcript('bash-big.jsonl', [
+  userMsg('go'),
+  bash('echo a > f0.txt'),
+  bash('touch f1.txt f2.txt'),
+  bash('mv tmp.txt f3.txt'),
+  bash("sed -i '' 's/x/y/' f4.txt"),
+  edit('f5.ts')
+]);
+out = runHook({ transcript_path: bashBigTx, tool_name: 'Edit', tool_input: { file_path: 'f5.ts' } });
+check('bash mutations count toward cap -> warns', out.includes('6 distinct files'));
+
+// 6c. Triggering Bash call itself counts (5 edits + redirect target).
+const fiveTx2 = transcript('five2.jsonl', [userMsg('go'), ...edits(5)]);
+out = runHook({ transcript_path: fiveTx2, tool_name: 'Bash', tool_input: { command: 'echo x >> notes.md' } });
+check('triggering bash call pushes over cap -> warns', out.includes('6 distinct files'));
+
+// 6d. Unresolvable targets ($VAR, pipes, read-only bash) not counted.
+const bashVagueTx = transcript('bash-vague.jsonl', [
+  userMsg('go'), ...edits(5),
+  bash('echo x > "$OUT"'),
+  bash('cat a.txt | grep b'),
+  bash('git status 2>&1')
+]);
+out = runHook({ transcript_path: bashVagueTx, tool_name: 'Bash', tool_input: { command: 'ls -la' } });
+check('vague/read-only bash targets not counted -> silent', out === '');
 
 // 7. Missing transcript: only the current call counts, silent.
 out = runHook({ transcript_path: path.join(tmp, 'missing.jsonl'), tool_name: 'Edit', tool_input: { file_path: 'a.ts' } });

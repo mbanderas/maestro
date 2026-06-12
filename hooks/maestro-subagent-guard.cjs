@@ -78,14 +78,31 @@ if (active.length && spawnRe.test(txText)) {
 
 // Read-only exemption: known read-only agent types (agent_type, since
 // Claude Code 2.1.69), or no file-mutating activity in the transcript.
-// Mutation = Edit/Write/NotebookEdit tool calls, plus Bash mutations
-// recognizable by pattern (git commit, migrations). Other Bash-only
-// writers slip through; that is the right trade for a soft warning --
-// a missed nag is cheap, a false nag on a research agent eats its report.
+// Mutation = Edit/Write/NotebookEdit tool calls, plus Bash mutations:
+// redirects, sed -i, tee/mv/cp/rm/mkdir/touch, git commit/apply,
+// migrations, package installs. Bash patterns are tested against the
+// parsed command strings only, never raw transcript text -- arrows
+// (->, =>) and redirect-ish chars in prose must not flip a research
+// agent into the writer path (a false nag eats its final report).
 const READ_ONLY_TYPES = new Set(['explore', 'plan']);
 const agentType = String(data.agent_type || '').toLowerCase();
-const mutateRe = /"name"\s*:\s*"(Edit|Write|NotebookEdit)"|git\s+commit|apply_migration/;
-const readOnly = READ_ONLY_TYPES.has(agentType) || (txText !== '' && !mutateRe.test(txText));
+const toolMutRe = /"name"\s*:\s*"(Edit|Write|NotebookEdit)"/;
+const bashMutRe = /(?<![-=<>])>{1,2}\s*[^\s&|<>]|(^|[\s;&|(])(sed\s+(-\S+\s+)*-i|tee\s|mv\s|cp\s|rm\s|mkdir\s|touch\s|git\s+(commit|apply)\b|apply_migration|(npm|pnpm|yarn)\s+(i|install|add)\b)/;
+let bashMutation = false;
+for (const line of txText.split('\n')) {
+  let obj;
+  try { obj = JSON.parse(line); } catch { continue; }
+  if (!obj || obj.type !== 'assistant' || !obj.message || !Array.isArray(obj.message.content)) continue;
+  for (const c of obj.message.content) {
+    if (c && c.type === 'tool_use' && c.name === 'Bash' && c.input &&
+        typeof c.input.command === 'string' && bashMutRe.test(c.input.command)) {
+      bashMutation = true;
+      break;
+    }
+  }
+  if (bashMutation) break;
+}
+const readOnly = READ_ONLY_TYPES.has(agentType) || (txText !== '' && !toolMutRe.test(txText) && !bashMutation);
 
 const verifyRe = /(tsc\s+--noEmit|eslint|pytest|jest|vitest|\bgo\s+test\b|\bcargo\s+test\b|npm\s+(?:run\s+)?test|pnpm\s+test|yarn\s+test|ruff\s+check|mypy|prettier\s+--check|biome\s+check)/i;
 if (!readOnly && txText && !verifyRe.test(txText)) {

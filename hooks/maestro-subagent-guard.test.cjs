@@ -67,6 +67,29 @@ const bashWriterTx = transcript('bash-writer.jsonl', [
   { type: 'assistant', message: { content: [{ type: 'text', text: 'Committed.' }] } }
 ]);
 
+const bashRedirectTx = transcript('bash-redirect.jsonl', [
+  { type: 'assistant', message: { content: [{ type: 'tool_use', name: 'Bash', input: { command: 'echo done > out.txt' } }] } },
+  { type: 'assistant', message: { content: [{ type: 'text', text: 'Output written.' }] } }
+]);
+
+const bashSedTx = transcript('bash-sed.jsonl', [
+  { type: 'assistant', message: { content: [{ type: 'tool_use', name: 'Bash', input: { command: "sed -i '' 's/a/b/' config.yml" } }] } },
+  { type: 'assistant', message: { content: [{ type: 'text', text: 'Patched.' }] } }
+]);
+
+const npmInstallTx = transcript('npm-install.jsonl', [
+  { type: 'assistant', message: { content: [{ type: 'tool_use', name: 'Bash', input: { command: 'npm install lodash' } }] } },
+  { type: 'assistant', message: { content: [{ type: 'text', text: 'Dep added.' }] } }
+]);
+
+// Arrows and redirect-ish chars in PROSE or read-only commands must
+// not flip a research agent into the writer path.
+const arrowProseTx = transcript('arrow-prose.jsonl', [
+  { type: 'assistant', message: { content: [{ type: 'tool_use', name: 'Read', input: { file_path: 'a.ts' } }] } },
+  { type: 'assistant', message: { content: [{ type: 'tool_use', name: 'Bash', input: { command: 'grep -r "foo" src' } }] } },
+  { type: 'assistant', message: { content: [{ type: 'text', text: 'Flow: A -> B -> C. Mapping X => Y. Research done.' }] } }
+]);
+
 const spawnerTx = transcript('spawner.jsonl', [
   { type: 'assistant', message: { content: [{ type: 'tool_use', name: 'Bash', input: { command: 'npm run watch', run_in_background: true } }] } },
   { type: 'assistant', message: { content: [{ type: 'text', text: 'Watcher started, report ready.' }] } }
@@ -128,6 +151,22 @@ check('lowercase token -> warns', out.includes('status token'));
 // 5. Bash-pattern mutation (git commit) counts as writer.
 out = runHook({ agent_transcript_path: bashWriterTx });
 check('bash git-commit writer without verify -> warns', out.includes('No type-check/lint/test'));
+
+// 5b. Bash redirect mutation counts as writer.
+out = runHook({ agent_transcript_path: bashRedirectTx });
+check('bash redirect writer without verify -> warns', out.includes('No type-check/lint/test'));
+
+// 5c. sed -i counts as writer.
+out = runHook({ agent_transcript_path: bashSedTx });
+check('bash sed -i writer without verify -> warns', out.includes('No type-check/lint/test'));
+
+// 5d. npm install counts as writer.
+out = runHook({ agent_transcript_path: npmInstallTx });
+check('bash npm-install writer without verify -> warns', out.includes('No type-check/lint/test'));
+
+// 5e. Arrows in prose / read-only bash: still exempt (no false positive).
+out = runHook({ agent_transcript_path: arrowProseTx });
+check('arrow prose + read-only bash -> silent', out === '');
 
 // 6. Fire once: marker already in transcript -> silent, no loop.
 out = runHook({ agent_transcript_path: alreadyWarnedTx });
