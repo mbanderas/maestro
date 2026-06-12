@@ -13,7 +13,7 @@
 </p>
 
 <p align="center">
-  <sub>13 fixture tasks &middot; 123 valid A/B runs &middot; 0 voids &middot; 6 hooks, all tested &middot; ~8 KB always-on kernel &middot; 2 files to install</sub>
+  <sub>13 fixture tasks &middot; 123 valid A/B runs &middot; 11 voids excluded &amp; re-run &middot; 6 hooks, all tested &middot; ~8 KB always-on kernel &middot; 2 files to install</sub>
 </p>
 
 ---
@@ -530,9 +530,9 @@ Maestro ships a reproducible A/B harness in [`benchmarks/`](benchmarks/):
 thirteen fixture tasks (single-file fixes through hidden-invariant
 features, a 19-file validation sweep, a multi-concern subsystem
 with a deliberately underspecified spec, and a trap-convention tier
-with code-only invariants), a zero-dependency
-runner for Windows and macOS/Linux, and a deterministic `verify.cjs`
-checker per task. Each task runs with Maestro ON (doctrine files in
+with code-only invariants), a runner for Windows and macOS/Linux
+(no npm/package deps; the macOS/Linux script needs `jq`), and a
+deterministic `verify.cjs` checker per task. Each task runs with Maestro ON (doctrine files in
 the work dir) vs OFF (absent), under an isolated `CLAUDE_CONFIG_DIR`
 so global config cannot contaminate either cell, and the checker stays
 **hidden from the agent until the run ends** (visible oracles inflate
