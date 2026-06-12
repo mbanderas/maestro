@@ -8,7 +8,8 @@ description: >
 argument-hint: "[lite|full|ultra|off]"
 ---
 
-<!-- Ported from the Caveman skill (MIT) with attribution. Wenyan
+<!-- Ported from the Caveman skill (MIT,
+github.com/JuliusBrussee/caveman) with attribution. Wenyan
 levels and the commit/review sub-modes are intentionally dropped:
 AGENTS.md S7.7 already covers terse commits/reviews — redundancy is
 token cost. This file is the single source of truth for terse-mode

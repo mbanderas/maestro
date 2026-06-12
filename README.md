@@ -489,6 +489,44 @@ ships a native context-usage indicator. Enable it with the `/statusline`
 picker, or set `context` in the `[tui].status_line` list in
 `~/.codex/config.toml`.
 
+### Claude Code: Terse Mode + Compress
+
+Two token-efficiency tools, adapted from the MIT-licensed
+[Caveman](https://github.com/JuliusBrussee/caveman) plugin with
+attribution.
+
+**Terse mode** cuts output tokens while keeping full technical
+substance. Three levels — `lite` (no filler, full sentences), `full`
+(drop articles, fragments OK), `ultra` (abbreviations, arrows,
+maximum compression). **Off by default**: installing the plugin never
+changes your output style.
+
+- Turn on per session: `/maestro:terse [lite|full|ultra]`; off with
+  `/maestro:terse off`, "stop terse", or "normal mode".
+- Turn on permanently: set `{"terseLevel": "ultra"}` in
+  `~/.config/maestro/config.json` (or `MAESTRO_TERSE_LEVEL` env var;
+  env beats config).
+- The `maestro-terse-mode` hook injects the level-filtered ruleset
+  (single source: `skills/terse/SKILL.md`) at SessionStart and a
+  one-line reminder each turn — per-turn reinforcement survives
+  context compaction, where one-shot instructions drift.
+- Quality guardrails ship with it: code, commits, and PRs are always
+  written normal, and Auto-Clarity drops terseness for security
+  warnings, irreversible-action confirmations, and multi-step
+  sequences.
+- The context bar shows a `[TERSE:ULTRA]` badge while active. The
+  flag file is read symlink-refusing, size-capped, and whitelisted —
+  never rendering attacker-controlled bytes.
+
+**`/maestro:compress <file>`** rewrites a natural-language memory
+file (CLAUDE.md, todos, notes) in terse form to cut input tokens —
+savings compound every turn the file is loaded (S8). Deterministic
+validation (headings, byte-exact code blocks, URLs) with cherry-pick
+repair; the original is kept as `<name>.original.md` and restored on
+persistent failure. Files with secret-looking names (.env,
+credentials, keys, `.ssh`/`.aws` paths) are refused outright —
+compression sends file contents to the Anthropic API.
+
 ## When to Use Maestro
 
 The discipline layer (verification, scope, honest status) applies to

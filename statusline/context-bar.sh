@@ -12,6 +12,25 @@ esc=$'\033'
 dim="${esc}[90m"
 reset="${esc}[0m"
 
+# Terse-mode badge. Reads the .maestro-terse flag written by
+# hooks/maestro-terse-mode.cjs. Hardening ported from Caveman (MIT):
+# refuse symlinks (flag could point at a secret and the statusline
+# would render its bytes every keystroke), 64-byte read cap, strip to
+# [a-z], whitelist — never echo attacker-controlled bytes.
+terse_badge() {
+  local flag="${CLAUDE_CONFIG_DIR:-$HOME/.claude}/.maestro-terse"
+  [ -L "$flag" ] && return
+  [ ! -f "$flag" ] && return
+  local mode
+  mode=$(head -c 64 "$flag" 2>/dev/null | tr -d '\n\r' | tr '[:upper:]' '[:lower:]')
+  mode=$(printf '%s' "$mode" | tr -cd 'a-z')
+  case "$mode" in
+    lite|full|ultra) ;;
+    *) return ;;
+  esac
+  printf ' %s[TERSE:%s]%s' "${esc}[38;5;172m" "$(printf '%s' "$mode" | tr '[:lower:]' '[:upper:]')" "$reset"
+}
+
 have_jq=0
 command -v jq >/dev/null 2>&1 && have_jq=1
 
@@ -23,7 +42,7 @@ folder="?"
 
 # Disabled via flag file, or jq missing -> show folder name only.
 if [ -f "$script_dir/.context-bar-disabled" ] || [ "$have_jq" -eq 0 ]; then
-  printf '%s%s%s' "$dim" "$folder" "$reset"
+  printf '%s%s%s%s' "$dim" "$folder" "$reset" "$(terse_badge)"
   exit 0
 fi
 
@@ -93,7 +112,7 @@ fmt() {
 used_txt="$(fmt "$used")"
 cap_txt="$(fmt "$cap")"
 
-printf '%s %s%s%%%s %s%s/%s%s %s·%s %s' \
+printf '%s %s%s%%%s %s%s/%s%s %s·%s %s%s' \
   "$bar" "$color" "$pct" "$reset" \
   "$dim" "$used_txt" "$cap_txt" "$reset" \
-  "$dim" "$reset" "$folder"
+  "$dim" "$reset" "$folder" "$(terse_badge)"

@@ -2,7 +2,8 @@
 // Maestro /maestro:compress pipeline. Compresses a natural-language
 // memory file (CLAUDE.md, todos, notes) into terse format to cut
 // input tokens (AGENTS.md S8: persistent files are token cost).
-// Ported from the Caveman compress skill (MIT), Python+SDK replaced
+// Ported from the Caveman compress skill (MIT,
+// github.com/JuliusBrussee/caveman), Python+SDK replaced
 // with zero-dependency Node + `claude --print` (desktop auth works,
 // no npm packages, no API key handling here).
 //

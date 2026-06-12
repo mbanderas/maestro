@@ -6,7 +6,57 @@ All notable changes to Maestro are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- **Terse mode** (`hooks/maestro-terse-mode.cjs`,
+  `skills/terse/SKILL.md`, `commands/terse.md`): token-efficient
+  output levels lite/full/ultra, adapted from the MIT-licensed
+  [Caveman](https://github.com/JuliusBrussee/caveman) plugin. Off by
+  default; enable per session with `/maestro:terse` or permanently
+  via `terseLevel` in `~/.config/maestro/config.json`. SessionStart
+  injects the level-filtered ruleset; a per-turn one-line reminder
+  defeats style drift. Flag I/O is symlink-refusing, atomic, 0600,
+  size-capped, whitelisted. Statusline shows a `[TERSE:<LEVEL>]`
+  badge with the same hardening.
+- **`/maestro:compress`** (`scripts/compress.cjs`,
+  `commands/compress.md`): compresses natural-language memory files
+  to cut input tokens (S8), ported from Caveman's Python pipeline to
+  zero-dependency Node + `claude --print`. Deterministic validation
+  (headings, byte-exact code blocks, URLs), `.original.md` backup
+  with abort-if-exists, restore-on-failure, and a hard sensitive-path
+  refusal (.env/credentials/keys/`.ssh`/`.aws`) before anything
+  crosses the API boundary.
+- **CI + npm scripts** (`package.json`, `.github/workflows/ci.yml`,
+  `scripts/run-hook-tests.cjs`, `scripts/bench-verify.cjs`): hook
+  test sweep, bash -n, JSON parse, markdownlint, and static fixture
+  checks on every push/PR. Still zero npm dependencies.
+
 ### Changed
+
+- **SubagentStop guard contract fix**
+  (`hooks/maestro-subagent-guard.cjs`): warnings now use the
+  documented `decision:block` channel — `additionalContext` is not
+  honored on SubagentStop, so S7.3 warnings were silently dropped.
+  Blocks exactly once per agent (marker-file guard unchanged).
+- **Gate telemetry verdict tracking**
+  (`hooks/maestro-gate-telemetry.cjs`): rows now record `verdict`
+  (parsed `GATE:` line), `agent_count`, and `mismatch`, surfacing the
+  measured "multi verdict stated, nothing spawned" failure mode that
+  spawn-count inference recorded as single-agent.
+- **Bash mutation detection** (`hooks/maestro-subagent-guard.cjs`,
+  `hooks/maestro-phase-scope.cjs`): shell writers (redirects,
+  `sed -i`, `tee`/`mv`/`cp`/`rm`/`mkdir`/`touch`, `git commit/apply`,
+  package installs) now trigger the S7.3 verify warning and count
+  toward the S7.1 file cap. Patterns run against parsed Bash command
+  strings only — arrows in prose cannot flag a research agent.
+- **Specialist manifest schema**
+  (`schemas/specialist-manifest.schema.json`): `role` description
+  rewritten to the mandated procedural form (was teaching the
+  identity-label anti-pattern); optional `toolBudget` cap added.
+- **README claims**: "0 voids" corrected to the honest count (11
+  voids excluded & re-run per the void rule); "zero-dependency
+  runner" scoped to "no npm/package deps; macOS/Linux script needs
+  jq".
 
 - **S7.3 overclaim fix** (`AGENTS.md`, `.cursorrules`): one added
   line — no checker ran means the status token is UNVERIFIED, never
