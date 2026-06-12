@@ -1,0 +1,48 @@
+# Benchmark Results Index
+
+Use this file to choose the smallest evidence file for a question.
+Raw JSON and stream logs remain tracked, but default search skips them;
+use `rg --no-ignore` for forensic audits.
+
+## Current Standing
+
+- Maestro ON has not beaten OFF on measured success rate in committed
+  cells; the strongest value is verification discipline, scope control,
+  and honest status reporting.
+- Kernel slimming cut always-on bytes 41% and fixed status reporting,
+  but did not produce a measurable cost reduction.
+- Hook enforcement made doctrine re-reads and unsupported VERIFIED
+  claims structural failures without reducing oracle pass rate.
+- `gate-reminder` increases real specialist spawning on t12, but did
+  not improve quality in cells that already passed; `verdict-only`
+  mode is available for future measurement, not yet proven.
+
+## Which Summary To Read
+
+- `20260611-summary-spawns.md`: gate-reminder isolation, specialist
+  spawn behavior, verdict/spawn gap.
+- `20260611-summary-hooks.md`: hook-pack measurement, doctrine-read
+  guard, unsupported-VERIFIED fix, thinking-cap observations.
+- `20260611-summary-efficiency.md`: kernel slimming, static-byte null,
+  token-efficiency loop accounting.
+- `20260611-summary-activation.md`: Decision Gate verbalization probes
+  and t08 n=9 retraction.
+- `20260610-summary-xcli.md`: Codex/Gemini hidden-oracle cross-CLI
+  cells and isolation caveats.
+- `20260610-summary-hidden-oracle.md`: first hidden-oracle t07-t10
+  cells and CORE compact-doctrine null.
+- `20260610-summary-frontier.md`: weak-model and t12 frontier cells.
+- `20260610-summary-followup.md`: follow-up cells and interactive
+  proxy context.
+- Older `20260610-summary*.md` files are retained as labeled history;
+  check validity notes before citing them.
+
+## Raw Evidence
+
+- `*.json`: runner result rows for each batch.
+- `streams/**`: full stream-json logs for compliance scoring and
+  spawn parsing.
+- `scripts/reduce-trajectory.cjs`: read-only reducer that emits compact
+  per-run facts from raw JSON/JSONL before deeper forensic reads.
+- Prefer summaries for conclusions. Use raw evidence only to re-score,
+  audit, or reproduce a specific claim.

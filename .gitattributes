@@ -1,0 +1,3 @@
+# Raw benchmark artifacts are evidence, not reviewable source.
+benchmarks/results/streams/** linguist-generated=true
+benchmarks/results/*.json linguist-generated=true

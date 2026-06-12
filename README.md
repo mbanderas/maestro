@@ -18,6 +18,9 @@
 
 ---
 
+> **Agents:** start with [`docs/agent-map.md`](docs/agent-map.md) for
+> repo navigation. This README is the user-facing product narrative.
+
 Maestro installs as plain markdown files your AI agent reads on startup. No packages, no build steps, no SDK. Download the files for your runtime into the project root and your agent picks them up automatically.
 
 | Runtime | Files to add |
@@ -228,11 +231,11 @@ curl -O https://raw.githubusercontent.com/mbanderas/maestro/main/.cursorrules
 
 Maestro minimizes token cost through progressive context loading: agents start from the smallest artifact that can orient their work and expand to live code only when needed.
 
-**Orientation artifacts:** Optional project maps or subsystem indexes that give the Planner and Specialists a cheap structural overview before reading code. Workers start from narrow context instead of rediscovering the repo from scratch.
+**Orientation artifacts:** Optional project maps or subsystem indexes that give the Planner and Specialists a cheap structural overview before reading code. This repo ships [`docs/agent-map.md`](docs/agent-map.md) as the first-stop navigation file, so workers start from narrow context instead of rediscovering the repo from scratch.
 
 **Blast-radius-aware routing:** The Decision Gate considers file centrality when choosing execution mode. Tasks touching dependency hubs (shared interfaces, core modules) bias toward single-agent or tighter review. Tasks isolated in narrow subsystems decompose more safely.
 
-**Index-first retrieval:** When a verified orientation artifact exists, agents read it before broad file discovery. This eliminates repeated repo exploration across specialists, one of the largest sources of wasted tokens in multi-agent workflows.
+**Index-first retrieval:** When a verified orientation artifact exists, agents read it before broad file discovery. Default search also skips raw benchmark streams and stale root checkpoints via [`.ignore`](.ignore); use `rg --no-ignore` when a forensic audit needs those files. This eliminates repeated repo exploration across specialists, one of the largest sources of wasted tokens in multi-agent workflows.
 
 **Orientation is not authority:** Generated maps and project indexes are navigation aids, not source of truth. Agents always verify against live code before acting, preventing stale context from becoming silent corruption.
 
@@ -250,7 +253,7 @@ Runtime adapters are thin wrappers that import the shared doctrine and add only 
 | `CLAUDE.md` | Claude Code adapter | Subagent/team routing, hooks, context limits, tool scoping, long-horizon mapping (/loop, schedules) |
 | `GEMINI.md` | Gemini adapter | Execution mapping, instruction precedence, verification notes, long-horizon note |
 | `.cursorrules` | Cursor adapter | Kernel copy (Cursor does not support imports); full S2-S6 in docs/orchestration.md |
-| [`docs/codex.md`](docs/codex.md) | Codex guide | AGENTS.md precedence and 32 KiB cap, Automations long-horizon mapping (no separate adapter file; Codex reads `AGENTS.md` natively) |
+| [`docs/codex.md`](docs/codex.md) | Codex guide | AGENTS.md precedence and 32 KiB cap, Codex subagent mapping, Automations long-horizon mapping (no separate adapter file; Codex reads `AGENTS.md` natively) |
 
 GitHub Copilot, Cline, and Windsurf read `AGENTS.md` directly (verified
 against their official docs, 2026-06-10), so the portable core works
@@ -274,7 +277,7 @@ Claude Code offers two mechanisms for parallel work, subagents and [agent teams]
 
 This routing is automatic. Maestro's Decision Gate evaluates the task, and the Claude adapter selects the execution mode: subagents by default, teams only when the collaboration overhead is justified by the task's complexity.
 
-Agent teams are **experimental and Claude Code-only**; they are not available in Gemini, Codex, Cursor, or other runtimes. Maestro's portable core uses the general concept of "specialists" which each runtime maps to its own execution model.
+Agent teams are **experimental and Claude Code-only**; they are not available in Gemini, Codex, Cursor, or other runtimes. Codex has its own subagent workflows, but Codex only spawns subagents when the user explicitly asks for them; see [`docs/codex.md`](docs/codex.md). Maestro's portable core uses the general concept of "specialists" which each runtime maps to its own execution model.
 
 ### Claude Code: Verification Hook
 
@@ -382,7 +385,7 @@ live next to each hook (`node hooks/<name>.test.cjs`).
 | `maestro-doctrine-guard.cjs` | `PreToolUse` (Read) | S7.2 context integrity: denies a `Read` of `AGENTS.md`/`CLAUDE.md` while the doctrine is autoloaded (doctrine file present at cwd) with an instructive reason. `MAESTRO_DOCTRINE_GUARD=once` allows the first read per session (for runtimes whose subagents lack the doctrine in context); `=0` disables. `docs/orchestration.md` is never guarded |
 | `maestro-loop-guard.cjs` | `Stop` | S10 long-horizon: warns when a looping session (session crons or `ScheduleWakeup` calls) has no `_<task>.md` checkpoint artifact in the working directory, or exceeds the iteration cap (`MAESTRO_LOOP_MAX_ITER`, default 50) |
 | `maestro-phase-scope.cjs` | `PostToolUse` | S7.1 phase scope: warns when more than 5 distinct files (`MAESTRO_PHASE_FILE_CAP`) are modified in a single turn |
-| `maestro-gate-reminder.cjs` | `UserPromptSubmit` | S1 gate: injects the counted-verdict checklist on the first prompt of a session (fire-once; opt-out via `MAESTRO_GATE_REMINDER=0`) |
+| `maestro-gate-reminder.cjs` | `UserPromptSubmit` | S1 gate: injects the counted-verdict checklist on the first prompt of a session (fire-once; opt-out via `MAESTRO_GATE_REMINDER=0`; `MAESTRO_GATE_REMINDER_MODE=verdict-only` omits the spawn imperative for cheaper experiments, default `spawn` preserves current behavior) |
 | `maestro-gate-telemetry.cjs` | `SessionEnd` | S1 audit (opt-in): logs one JSON line per session with gate decision (single/multi), specialist count, end reason |
 
 **Privacy (gate telemetry):** the telemetry hook does nothing unless
@@ -670,6 +673,10 @@ voids):
   all 19 single-agent-verdict runs on disk no specialist was ever
   spawned, while 2 of 8 full-pack multi-agent verdicts were stated
   but never executed — a gap the single-hook cell closed at 0 of 6.
+  A new `MAESTRO_GATE_REMINDER_MODE=verdict-only` setting exists for
+  future measurement of verdict salience without the spawn imperative;
+  the default remains the measured `spawn` behavior until a benchmark
+  justifies changing it.
 - **Compliance deltas are null at these tiers.** Three runs in 69
   scored streams stated a S7.3 status token: one honest UNVERIFIED
   (t12 ON), two t08 ON runs claiming VERIFIED with no check run

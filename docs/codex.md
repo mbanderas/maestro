@@ -4,8 +4,9 @@ Codex reads `AGENTS.md` natively — no adapter file needed. This page
 maps Maestro's concepts onto Codex specifics. All behavior below was
 verified against the official Codex docs
 ([AGENTS.md guide](https://developers.openai.com/codex/guides/agents-md),
-[Automations](https://developers.openai.com/codex/app/automations.md))
-on 2026-06-10.
+[Automations](https://developers.openai.com/codex/app/automations.md),
+[Subagents](https://developers.openai.com/codex/subagents.md))
+on 2026-06-12.
 
 ## AGENTS.md semantics
 
@@ -36,6 +37,23 @@ Practical consequences for Maestro:
 - **Global install:** putting Maestro in `~/.codex/AGENTS.md` applies
   the doctrine to every project; per-repo files then layer on top and
   win where they conflict.
+
+## Multi-agent routing (S2-S6 mapping)
+
+Codex supports subagent workflows in the CLI and app, but current Codex
+docs specify that subagents spawn only when the user explicitly asks for
+them. Practical mapping for Maestro:
+
+- If the user did **not** explicitly ask for subagents, parallel
+  agents, or delegation, emit the counted S1 verdict and continue
+  single-agent even when the portable gate would otherwise route to
+  S2-S6.
+- If the user explicitly asked for subagents/parallel work and the S1
+  gate returns multi-agent, map Maestro's Planner, Specialists, and
+  Staff Engineer to Codex subagents. Keep specialist prompts scoped and
+  cap parallel groups at 4 as usual.
+- Claude Code agent teams do not transfer to Codex. Codex subagents are
+  the only Codex-native mapping for Maestro specialists.
 
 ## Long-horizon operation (S10 mapping)
 

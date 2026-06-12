@@ -1,0 +1,6 @@
+# Keep default searches focused on source, docs, and summary evidence.
+# Use `rg --no-ignore` when auditing raw benchmark artifacts or
+# archived long-run checkpoints.
+benchmarks/results/streams/**
+benchmarks/results/*.json
+_*.md

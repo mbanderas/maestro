@@ -112,7 +112,15 @@ hypothesis (docs/research-2026.md, Track D).
 `results/streams/<stamp>-claude-<model>/<task>-<mode>-r<n>.jsonl`
 (adds `--verbose`, CLI-required with `-p` + stream output; result-row
 fields are parsed from the final `result` event and are identical to
-the `json` format's). Streams feed the compliance scorer below.
+the `json` format's). Streams feed the compliance scorer below. Raw
+streams and raw result JSON files are excluded from default repo search
+by `.ignore`; use `rg --no-ignore` when auditing or re-parsing them.
+For a compact read-only view of raw artifacts, run:
+
+```powershell
+node scripts/reduce-trajectory.cjs benchmarks/results/20260611-144458-claude-sonnet.json
+node scripts/reduce-trajectory.cjs benchmarks/results/streams/20260611-144458-claude-sonnet
+```
 
 `-InstallHooks` (opt-in, default OFF) stages the shipped hook pack
 (`hooks/*.cjs` + `hooks.json` wiring) into a second isolated config
