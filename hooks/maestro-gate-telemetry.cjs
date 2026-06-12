@@ -41,7 +41,7 @@ if (data.transcript_path && fs.existsSync(data.transcript_path)) {
   try {
     const buf = fs.readFileSync(data.transcript_path, 'utf8');
     const text = buf.length > 8000000 ? buf.slice(-8000000) : buf;
-    for (const line of text.split('\n')) {
+    for (const line of text.split(/\r?\n/)) {
       let e;
       try { e = JSON.parse(line); } catch { continue; }
       if (!e || e.type !== 'assistant' || !e.message || !Array.isArray(e.message.content)) continue;

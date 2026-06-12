@@ -33,7 +33,7 @@ function bashTargets(cmd) {
   const files = [];
   if (typeof cmd !== 'string') return files;
   const strip = t => t.replace(/^["']+|["']+$/g, '');
-  const ok = t => t && !t.startsWith('-') && !/[$`*?{}()\[\]<>]/.test(t) && t !== '/dev/null';
+  const ok = t => t && !t.startsWith('-') && !/[$`*?{}()\[\]<>]/.test(t) && t !== '/dev/null' && !/^nul$/i.test(t);
   let m;
   const redir = /(?<![-=<>])>{1,2}\s*([^\s;&|<>]+)/g;
   while ((m = redir.exec(cmd))) { const t = strip(m[1]); if (ok(t)) files.push(t); }
@@ -58,7 +58,7 @@ let lines = [];
 if (data.transcript_path && fs.existsSync(data.transcript_path)) {
   try {
     const buf = fs.readFileSync(data.transcript_path, 'utf8');
-    lines = (buf.length > 4000000 ? buf.slice(-4000000) : buf).split('\n');
+    lines = (buf.length > 4000000 ? buf.slice(-4000000) : buf).split(/\r?\n/);
   } catch {}
 }
 

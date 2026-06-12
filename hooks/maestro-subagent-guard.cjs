@@ -89,7 +89,7 @@ const agentType = String(data.agent_type || '').toLowerCase();
 const toolMutRe = /"name"\s*:\s*"(Edit|Write|NotebookEdit)"/;
 const bashMutRe = /(?<![-=<>])>{1,2}\s*[^\s&|<>]|(^|[\s;&|(])(sed\s+(-\S+\s+)*-i|tee\s|mv\s|cp\s|rm\s|mkdir\s|touch\s|git\s+(commit|apply)\b|apply_migration|(npm|pnpm|yarn)\s+(i|install|add)\b)/;
 let bashMutation = false;
-for (const line of txText.split('\n')) {
+for (const line of txText.split(/\r?\n/)) {
   let obj;
   try { obj = JSON.parse(line); } catch { continue; }
   if (!obj || obj.type !== 'assistant' || !obj.message || !Array.isArray(obj.message.content)) continue;
@@ -116,7 +116,7 @@ if (!readOnly && txText && !verifyRe.test(txText)) {
 const statusRe = /\b(VERIFIED|PENDING_REVIEW|UNVERIFIED|FAIL)\b/;
 if (!readOnly && txText) {
   let finalText = '';
-  for (const line of txText.split('\n')) {
+  for (const line of txText.split(/\r?\n/)) {
     let obj;
     try { obj = JSON.parse(line); } catch { continue; }
     if (obj && obj.type === 'assistant' && obj.message && Array.isArray(obj.message.content)) {

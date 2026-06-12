@@ -69,6 +69,7 @@ function safeWriteFlag(level) {
     const flags = fs.constants.O_WRONLY | fs.constants.O_CREAT | fs.constants.O_EXCL | O_NOFOLLOW;
     let fd;
     try {
+      if (O_NOFOLLOW === 0) { try { if (fs.lstatSync(tempPath).isSymbolicLink()) return; } catch {} }
       fd = fs.openSync(tempPath, flags, 0o600);
       fs.writeSync(fd, String(level));
       try { fs.fchmodSync(fd, 0o600); } catch {}
@@ -88,6 +89,7 @@ function readFlag() {
     const O_NOFOLLOW = typeof fs.constants.O_NOFOLLOW === 'number' ? fs.constants.O_NOFOLLOW : 0;
     let fd, out;
     try {
+      if (O_NOFOLLOW === 0) { try { if (fs.lstatSync(flagPath).isSymbolicLink()) return null; } catch {} }
       fd = fs.openSync(flagPath, fs.constants.O_RDONLY | O_NOFOLLOW);
       const buf = Buffer.alloc(MAX_FLAG_BYTES);
       const n = fs.readSync(fd, buf, 0, MAX_FLAG_BYTES, 0);
