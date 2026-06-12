@@ -99,8 +99,13 @@ out = runHook({ agent_transcript_path: writerNoVerifyTx });
 check('writer without verify -> warns', out.includes('No type-check/lint/test'));
 check('warning tells agent to restate report', out.includes('restate your complete final report'));
 check('warning is valid hook JSON', (() => {
-  try { return JSON.parse(out).hookSpecificOutput.hookEventName === 'SubagentStop'; }
-  catch { return false; }
+  // SubagentStop does not support additionalContext; the only
+  // documented feedback channel is decision:block + reason.
+  try {
+    const p = JSON.parse(out);
+    return p.decision === 'block' && typeof p.reason === 'string' &&
+      p.reason.includes('Maestro guard:') && !('hookSpecificOutput' in p);
+  } catch { return false; }
 })());
 
 // 4. Writer with verification and status token: silent.

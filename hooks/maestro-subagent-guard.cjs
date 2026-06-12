@@ -11,19 +11,21 @@
 // stop extends the agent's turn so its reply to the warning would
 // displace the final report the orchestrator is waiting for.
 //
-// Fires at most once per agent: additionalContext re-prompts the
+// Fires at most once per agent: decision:block re-prompts the
 // agent, which stops again and re-triggers this hook. Without the
 // once-guard the warning loops and pushes the real report out of the
 // final message entirely. The guard is a marker file in the temp dir
-// keyed by the agent transcript path -- additionalContext is injected
+// keyed by the agent transcript path -- the block reason is injected
 // into the conversation, NOT written to the transcript file, so
 // grepping the transcript for our own warning never matches
 // (observed live 2026-06-10). The transcript check is kept as a
 // secondary guard for harness versions that do persist it.
 //
-// Soft warnings via additionalContext. Never blocks. When the warning
-// fires, the agent is told to restate its final report so the
-// orchestrator still receives it.
+// Feedback channel: {"decision":"block","reason":...} -- the only
+// SubagentStop output the harness honors (additionalContext is not
+// supported on this event). Blocks the stop exactly once; the agent
+// is told to restate its final report so the orchestrator still
+// receives it.
 //
 // .cjs so Node treats it as CommonJS regardless of any "type": "module"
 // package.json in a parent directory of the install location.
@@ -114,12 +116,14 @@ if (!readOnly && txText) {
 
 if (warnings.length) {
   if (marker) { try { fs.writeFileSync(marker, String(Date.now())); } catch {} }
+  // SubagentStop supports only decision:block + reason as a feedback
+  // channel (additionalContext is not honored on this event). Blocking
+  // the stop feeds the reason back to the subagent, which addresses it
+  // and stops again; the marker file above keeps that second stop silent.
   const payload = {
-    hookSpecificOutput: {
-      hookEventName: 'SubagentStop',
-      additionalContext: 'Maestro guard:\n- ' + warnings.join('\n- ') +
-        '\nAfter addressing this, restate your complete final report. Only your last message is returned to the orchestrator.'
-    }
+    decision: 'block',
+    reason: 'Maestro guard:\n- ' + warnings.join('\n- ') +
+      '\nAfter addressing this, restate your complete final report. Only your last message is returned to the orchestrator.'
   };
   process.stdout.write(JSON.stringify(payload));
 }
