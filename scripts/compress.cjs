@@ -156,7 +156,11 @@ function stripLlmWrapper(text) {
 
 function callClaude(prompt) {
   const bin = process.env.MAESTRO_CLAUDE_BIN || 'claude';
-  const out = execFileSync(bin, ['--print'], {
+  // Node-script bins (.js/.cjs/.mjs shims, test stubs) rely on a shebang,
+  // which Windows cannot exec directly (EFTYPE) — run them through node.
+  const isNodeScript = /\.[cm]?js$/i.test(bin);
+  const out = execFileSync(isNodeScript ? process.execPath : bin,
+    isNodeScript ? [bin, '--print'] : ['--print'], {
     input: prompt,
     encoding: 'utf8',
     maxBuffer: 4 * MAX_FILE_SIZE

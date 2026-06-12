@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 // Tests for scripts/compress.cjs. Zero dependencies.
 // Run: node scripts/compress.test.cjs
-// E2E cases stub the claude CLI with a chmod-755 node script (POSIX;
-// CI runs ubuntu).
+// E2E cases stub the claude CLI with a node script; compress.cjs runs
+// .js/.cjs/.mjs bins through node, so the stubs work on Windows too.
 
 const { execFileSync } = require('child_process');
 const fs = require('fs');
