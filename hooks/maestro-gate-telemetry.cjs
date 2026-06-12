@@ -29,7 +29,14 @@ if (process.env.MAESTRO_TELEMETRY !== '1') process.exit(0);
 let data = {};
 try { data = JSON.parse(fs.readFileSync(0, 'utf8')); } catch { process.exit(0); }
 
+// Spawn count alone misses the measured failure mode: a multi-agent
+// verdict stated in text but no specialist ever spawned. Parse the S1
+// verdict line too and record verdict vs spawned separately; mismatch
+// flags either direction (multi verdict with 0 spawns, single verdict
+// with spawns). Last verdict line wins (re-gated mid-session).
+const verdictRe = /GATE:\s*files=\S+\s+concerns=\S+\s*->\s*(single|multi)-agent/;
 let agentCount = 0;
+let verdict = null;
 if (data.transcript_path && fs.existsSync(data.transcript_path)) {
   try {
     const buf = fs.readFileSync(data.transcript_path, 'utf8');
@@ -39,7 +46,12 @@ if (data.transcript_path && fs.existsSync(data.transcript_path)) {
       try { e = JSON.parse(line); } catch { continue; }
       if (!e || e.type !== 'assistant' || !e.message || !Array.isArray(e.message.content)) continue;
       for (const item of e.message.content) {
-        if (item && item.type === 'tool_use' && (item.name === 'Task' || item.name === 'Agent')) agentCount++;
+        if (!item) continue;
+        if (item.type === 'tool_use' && (item.name === 'Task' || item.name === 'Agent')) agentCount++;
+        if (item.type === 'text' && typeof item.text === 'string') {
+          const m = item.text.match(verdictRe);
+          if (m) verdict = m[1];
+        }
       }
     }
   } catch {}
@@ -49,7 +61,9 @@ const row = {
   ts: new Date().toISOString(),
   session_id: data.session_id || null,
   gate: agentCount > 0 ? 'multi' : 'single',
+  verdict,
   agent_count: agentCount,
+  mismatch: verdict !== null && ((verdict === 'multi') !== (agentCount > 0)),
   reason: data.reason || null,
   project: data.cwd ? path.basename(data.cwd) : null
 };
