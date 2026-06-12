@@ -1,0 +1,40 @@
+# CI: hook tests, shell syntax, JSON parse, markdownlint, fixture checks.
+# Zero npm dependencies; node/npx/bash/jq are preinstalled on the runner.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Hook tests
+        run: npm test
+
+      - name: Shell syntax (bash -n)
+        run: git ls-files '*.sh' -z | xargs -0 -r -n1 bash -n
+
+      - name: JSON parse check
+        run: |
+          git ls-files '*.json' -z | xargs -0 node -e '
+            const fs = require("fs");
+            for (const f of process.argv.slice(1)) {
+              try { JSON.parse(fs.readFileSync(f, "utf8")); }
+              catch (e) { console.error("FAIL " + f + ": " + e.message); process.exitCode = 1; }
+            }
+            if (!process.exitCode) console.log("all JSON parses");
+          '
+
+      - name: Markdownlint
+        run: npm run lint
+
+      - name: Benchmark fixture checks
+        run: npm run bench-verify

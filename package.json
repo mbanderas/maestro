@@ -1,0 +1,12 @@
+{
+  "name": "maestro",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Orchestration discipline layer for AI coding agents. Zero npm dependencies; scripts wrap the ad-hoc node/npx checks.",
+  "license": "MIT",
+  "scripts": {
+    "test": "node scripts/run-hook-tests.cjs",
+    "lint": "npx --yes markdownlint-cli2",
+    "bench-verify": "node scripts/bench-verify.cjs"
+  }
+}
