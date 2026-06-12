@@ -10,7 +10,10 @@ on:
 
 jobs:
   checks:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
     permissions:
       contents: read
     steps:
@@ -20,9 +23,11 @@ jobs:
         run: npm test
 
       - name: Shell syntax (bash -n)
+        if: runner.os == 'Linux'
         run: git ls-files '*.sh' -z | xargs -0 -r -n1 bash -n
 
       - name: JSON parse check
+        shell: bash
         run: |
           git ls-files '*.json' -z | xargs -0 node -e '
             const fs = require("fs");
@@ -38,3 +43,6 @@ jobs:
 
       - name: Benchmark fixture checks
         run: npm run bench-verify
+
+      - name: Compress tests
+        run: node scripts/compress.test.cjs
