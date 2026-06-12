@@ -9,7 +9,7 @@
   "properties": {
     "role": {
       "type": "string",
-      "description": "What this specialist is (e.g. 'API refactor specialist'). One role per specialist; specialists in a group must differ in role or context, not split identical work (S1 diversity constraint).",
+      "description": "Procedural workflow the specialist executes -- a step sequence with its verification, never a bare job title (AGENTS.md S3: identity labels alone don't change behavior). E.g. 'Refactor HTTP layer call sites to async/await, file-by-file, verifying each with tsc', not 'API refactor specialist'. One role per specialist; specialists in a group must differ in role or context, not split identical work (S1 diversity constraint).",
       "minLength": 1
     },
     "task": {
@@ -73,6 +73,11 @@
     "model": {
       "type": "string",
       "description": "Model tier per S9 routing (haiku | sonnet | opus | fable). Cheapest model that handles the task; explicit tier beats accidental frontier inheritance."
+    },
+    "toolBudget": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Max tool calls for this task (S9 action cap; default ~20 for routine subtasks). Read-first-write-once; one diagnostic read per failure, then the S7.3 two-attempt rule applies."
     }
   }
 }
