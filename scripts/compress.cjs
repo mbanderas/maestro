@@ -81,7 +81,7 @@ function extractHeadings(text) {
 // are skipped -- malformed markdown must not cause false failures.
 function extractCodeBlocks(text) {
   const blocks = [];
-  const lines = text.split('\n');
+  const lines = text.split(/\r?\n/);
   let i = 0;
   while (i < lines.length) {
     const m = lines[i].match(FENCE_OPEN_RE);
@@ -159,11 +159,13 @@ function callClaude(prompt) {
   // Node-script bins (.js/.cjs/.mjs shims, test stubs) rely on a shebang,
   // which Windows cannot exec directly (EFTYPE) — run them through node.
   const isNodeScript = /\.[cm]?js$/i.test(bin);
+  const needsShell = !isNodeScript && process.platform === 'win32' && !path.extname(bin);
   const out = execFileSync(isNodeScript ? process.execPath : bin,
     isNodeScript ? [bin, '--print'] : ['--print'], {
     input: prompt,
     encoding: 'utf8',
-    maxBuffer: 4 * MAX_FILE_SIZE
+    maxBuffer: 4 * MAX_FILE_SIZE,
+    shell: needsShell
   });
   // trim() drops the trailing newline markdown files end with; restore it.
   const body = stripLlmWrapper(out.trim());
