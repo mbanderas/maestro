@@ -325,6 +325,15 @@ The file ships as `.cjs` so Node treats it as CommonJS even if a
 **Install:** download into `~/.claude/hooks/` and wire into
 `~/.claude/settings.json`:
 
+**Install** on Windows / PowerShell:
+
+```powershell
+mkdir ~/.claude/hooks -Force
+curl.exe -o ~/.claude/hooks/maestro-subagent-guard.cjs https://raw.githubusercontent.com/mbanderas/maestro/main/hooks/maestro-subagent-guard.cjs
+```
+
+**Install** on macOS / Linux:
+
 ```bash
 mkdir -p ~/.claude/hooks
 curl -o ~/.claude/hooks/maestro-subagent-guard.cjs https://raw.githubusercontent.com/mbanderas/maestro/main/hooks/maestro-subagent-guard.cjs
@@ -382,7 +391,18 @@ you set `MAESTRO_TELEMETRY=1`. When enabled it appends to
 reason, and the project folder *name* only. No prompts, no file
 contents, no full paths, no network, ever.
 
-**Install:** download into `~/.claude/hooks/`:
+**Install** on Windows / PowerShell:
+
+```powershell
+mkdir ~/.claude/hooks -Force
+curl.exe -o ~/.claude/hooks/maestro-doctrine-guard.cjs https://raw.githubusercontent.com/mbanderas/maestro/main/hooks/maestro-doctrine-guard.cjs
+curl.exe -o ~/.claude/hooks/maestro-loop-guard.cjs https://raw.githubusercontent.com/mbanderas/maestro/main/hooks/maestro-loop-guard.cjs
+curl.exe -o ~/.claude/hooks/maestro-phase-scope.cjs https://raw.githubusercontent.com/mbanderas/maestro/main/hooks/maestro-phase-scope.cjs
+curl.exe -o ~/.claude/hooks/maestro-gate-reminder.cjs https://raw.githubusercontent.com/mbanderas/maestro/main/hooks/maestro-gate-reminder.cjs
+curl.exe -o ~/.claude/hooks/maestro-gate-telemetry.cjs https://raw.githubusercontent.com/mbanderas/maestro/main/hooks/maestro-gate-telemetry.cjs
+```
+
+**Install** on macOS / Linux:
 
 ```bash
 curl -o ~/.claude/hooks/maestro-doctrine-guard.cjs https://raw.githubusercontent.com/mbanderas/maestro/main/hooks/maestro-doctrine-guard.cjs
@@ -503,9 +523,15 @@ changes your output style.
 
 - Turn on per session: `/maestro:terse [lite|full|ultra]`; off with
   `/maestro:terse off`, "stop terse", or "normal mode".
-- Turn on permanently: set `{"terseLevel": "ultra"}` in
-  `~/.config/maestro/config.json` (or `MAESTRO_TERSE_LEVEL` env var;
-  env beats config).
+- Turn on permanently: set `{"terseLevel": "ultra"}` in the config
+  file for your OS (key: `terseLevel`; `MAESTRO_TERSE_LEVEL` env var
+  overrides the file):
+  - **Windows:** `%APPDATA%\maestro\config.json`
+  - **macOS / Linux:** `$XDG_CONFIG_HOME/maestro/config.json`,
+    falling back to `~/.config/maestro/config.json`
+  - The config file is **never created automatically**. Until it
+    exists, terse mode stays off — two machines with identical hook
+    installs can behave differently if only one has the file.
 - The `maestro-terse-mode` hook injects the level-filtered ruleset
   (single source: `skills/terse/SKILL.md`) at SessionStart and a
   one-line reminder each turn — per-turn reinforcement survives

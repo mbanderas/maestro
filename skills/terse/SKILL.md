@@ -25,6 +25,12 @@ ACTIVE EVERY RESPONSE. No revert after many turns. No filler drift. Still active
 
 Switch: `/maestro:terse lite|full|ultra|off`.
 
+Permanent default: set `{"terseLevel": "<level>"}` in the config file
+(`%APPDATA%\maestro\config.json` on Windows;
+`$XDG_CONFIG_HOME/maestro/config.json` or `~/.config/maestro/config.json`
+on macOS/Linux). `MAESTRO_TERSE_LEVEL` env var overrides the file. The
+file is never created automatically — off until it exists.
+
 ## Rules
 
 Drop: articles (a/an/the), filler (just/really/basically/actually/simply), pleasantries (sure/certainly/of course/happy to), hedging. Fragments OK. Short synonyms (big not extensive, fix not "implement a solution for"). Technical terms exact. Code blocks unchanged. Errors quoted exact.
