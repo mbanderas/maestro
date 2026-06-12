@@ -9,9 +9,9 @@
 //
 // Fire-once: a marker file keyed by session_id under the OS temp dir.
 // Opt-out: MAESTRO_GATE_REMINDER=0 disables entirely.
-// Mode: MAESTRO_GATE_REMINDER_MODE=verdict-only injects the counted
-// verdict reminder without the spawn imperative. Default "spawn"
-// preserves the original measured behavior.
+// The measured default includes the spawn imperative. A shorter
+// verdict-only variant was tested and removed after increasing turns
+// and cost in a 2026-06-12 smoke run.
 //
 // Payload fields verified against code.claude.com/docs/en/hooks
 // (UserPromptSubmit input: session_id, transcript_path, cwd, prompt;
@@ -26,9 +26,6 @@ const os = require('os');
 const path = require('path');
 
 if (process.env.MAESTRO_GATE_REMINDER === '0') process.exit(0);
-const mode = process.env.MAESTRO_GATE_REMINDER_MODE === 'verdict-only'
-  ? 'verdict-only'
-  : 'spawn';
 
 let data = {};
 try { data = JSON.parse(fs.readFileSync(0, 'utf8')); } catch { process.exit(0); }
@@ -45,22 +42,11 @@ const checklistLines = [
   'Maestro Decision Gate (S1): before the first file edit, output the',
   'counted verdict line `GATE: files=<n> concerns=<m> -> single-agent',
   '| multi-agent — <reason>`. files>=5 across 2+ concerns = multi-agent:',
-];
-if (mode === 'spawn') {
-  checklistLines.push(
-    'spawn the Planner via the Agent/Task tool BEFORE any edit. A met'
-  );
-} else {
-  checklistLines.push(
-    'this reminder is verdict-only and intentionally omits the spawn',
-    'imperative. A met'
-  );
-}
-checklistLines.push(
+  'spawn the Planner via the Agent/Task tool BEFORE any edit. A met',
   'trigger downgrades ONLY on >60% file overlap between subtasks or',
   '<=3 files total in one dependency chain. Sub-trigger tasks stay',
   'single-agent.'
-);
+];
 const checklist = checklistLines.join('\n');
 
 process.stdout.write(JSON.stringify({

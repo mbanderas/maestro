@@ -15,12 +15,14 @@ use `rg --no-ignore` for forensic audits.
   claims structural failures without reducing oracle pass rate.
 - `gate-reminder` increases real specialist spawning on t12, but did
   not improve quality in cells that already passed; `verdict-only`
-  mode is available for future measurement, not yet proven.
+  was tested and removed after a failed n=3 smoke.
 
 ## Which Summary To Read
 
 - `20260611-summary-spawns.md`: gate-reminder isolation, specialist
   spawn behavior, verdict/spawn gap.
+- `20260612-summary-verdict-only.md`: failed verdict-only smoke and
+  why the mode was removed without a published cost-regression claim.
 - `20260611-summary-hooks.md`: hook-pack measurement, doctrine-read
   guard, unsupported-VERIFIED fix, thinking-cap observations.
 - `20260611-summary-efficiency.md`: kernel slimming, static-byte null,

@@ -385,7 +385,7 @@ live next to each hook (`node hooks/<name>.test.cjs`).
 | `maestro-doctrine-guard.cjs` | `PreToolUse` (Read) | S7.2 context integrity: denies a `Read` of `AGENTS.md`/`CLAUDE.md` while the doctrine is autoloaded (doctrine file present at cwd) with an instructive reason. `MAESTRO_DOCTRINE_GUARD=once` allows the first read per session (for runtimes whose subagents lack the doctrine in context); `=0` disables. `docs/orchestration.md` is never guarded |
 | `maestro-loop-guard.cjs` | `Stop` | S10 long-horizon: warns when a looping session (session crons or `ScheduleWakeup` calls) has no `_<task>.md` checkpoint artifact in the working directory, or exceeds the iteration cap (`MAESTRO_LOOP_MAX_ITER`, default 50) |
 | `maestro-phase-scope.cjs` | `PostToolUse` | S7.1 phase scope: warns when more than 5 distinct files (`MAESTRO_PHASE_FILE_CAP`) are modified in a single turn |
-| `maestro-gate-reminder.cjs` | `UserPromptSubmit` | S1 gate: injects the counted-verdict checklist on the first prompt of a session (fire-once; opt-out via `MAESTRO_GATE_REMINDER=0`; `MAESTRO_GATE_REMINDER_MODE=verdict-only` omits the spawn imperative for cheaper experiments, default `spawn` preserves current behavior) |
+| `maestro-gate-reminder.cjs` | `UserPromptSubmit` | S1 gate: injects the counted-verdict checklist and spawn reminder on the first prompt of a session (fire-once; opt-out via `MAESTRO_GATE_REMINDER=0`) |
 | `maestro-gate-telemetry.cjs` | `SessionEnd` | S1 audit (opt-in): logs one JSON line per session with gate decision (single/multi), specialist count, end reason |
 
 **Privacy (gate telemetry):** the telemetry hook does nothing unless
@@ -673,10 +673,10 @@ voids):
   all 19 single-agent-verdict runs on disk no specialist was ever
   spawned, while 2 of 8 full-pack multi-agent verdicts were stated
   but never executed — a gap the single-hook cell closed at 0 of 6.
-  A new `MAESTRO_GATE_REMINDER_MODE=verdict-only` setting exists for
-  future measurement of verdict salience without the spawn imperative;
-  the default remains the measured `spawn` behavior until a benchmark
-  justifies changing it.
+  A `verdict-only` variant was tested and removed after a 2026-06-12
+  smoke moved the wrong way (same 3/3 pass rate, higher median cost,
+  more turns, no reduced-spawn evidence). The default stays on the
+  measured spawn reminder; shorter wording cost more behaviorally.
 - **Compliance deltas are null at these tiers.** Three runs in 69
   scored streams stated a S7.3 status token: one honest UNVERIFIED
   (t12 ON), two t08 ON runs claiming VERIFIED with no check run
