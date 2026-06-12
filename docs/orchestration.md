@@ -138,6 +138,25 @@ bloat parent context and trigger compaction.
 | Explore | 200 words | Always, regardless of model |
 
 Explore agents: "report in under 200 words" in every prompt.
+
+### Tool-call budgets
+
+Action tokens are the third cost lever, beside output caps (above)
+and S8 input compression. Every subagent prompt carries a tool-call
+budget (manifest field `toolBudget`); idea adapted from
+claude-token-efficient (MIT).
+
+| Task type | Budget |
+|-----------|--------|
+| Routine subtask, known scope | ~20 calls |
+| Read-only research / Explore | ~10 calls |
+| Multi-file implementation | scale with file count; state it explicitly |
+
+Discipline inside the budget: read-first-write-once (read each
+needed file once, then edit — no re-read loops); one diagnostic read
+per failure, then the S7.3 two-attempt rule applies (stop, re-read
+from scratch, change approach). Budget exhausted: report progress
+and the named gap, never burn calls polling.
 Research agents returning raw dumps waste more tokens than they save.
 
 ---

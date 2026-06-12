@@ -164,8 +164,11 @@ reversal cost. Frontier tier (Fable-class): orchestration,
 orchestrator's model when none is specified — set an explicit
 cheaper tier for routine subtasks. Cap subagent response length in
 every prompt: Haiku 100 words, Sonnet 500 (code output uncapped),
-Explore agents 200 words always. Full routing table:
-[docs/orchestration.md](docs/orchestration.md).
+Explore agents 200 words always. Cap subagent actions too: a
+tool-call budget in every prompt (~20 calls for routine subtasks;
+read-first-write-once; one diagnostic read per failure, then the
+S7.3 two-attempt rule). Manifest field: `toolBudget`. Full routing
+table: [docs/orchestration.md](docs/orchestration.md).
 
 ---
 
