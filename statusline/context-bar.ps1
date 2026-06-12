@@ -19,10 +19,33 @@ $esc   = [char]27
 $dim   = "$esc[90m"
 $reset = "$esc[0m"
 
+# Terse-mode badge. Reads the .maestro-terse flag written by
+# hooks/maestro-terse-mode.cjs. Hardening mirrors context-bar.sh:
+# refuse symlinks (flag could point at a secret and the statusline
+# would render its bytes every keystroke), 64-byte read cap, strip to
+# [a-z], whitelist -- never echo attacker-controlled bytes.
+function Get-TerseBadge {
+    $cfg = if ($env:CLAUDE_CONFIG_DIR) { $env:CLAUDE_CONFIG_DIR } else { Join-Path $HOME '.claude' }
+    $item = Get-Item -LiteralPath (Join-Path $cfg '.maestro-terse') -Force -ErrorAction SilentlyContinue
+    if (-not $item -or $item.PSIsContainer) { return '' }
+    if ($item.Attributes -band [IO.FileAttributes]::ReparsePoint) { return '' }
+    try {
+        $fs = [IO.File]::OpenRead($item.FullName)
+        try {
+            $buf = New-Object byte[] 64
+            $n = $fs.Read($buf, 0, 64)
+            $mode = [Text.Encoding]::ASCII.GetString($buf, 0, $n)
+        } finally { $fs.Dispose() }
+    } catch { return '' }
+    $mode = $mode.ToLower() -replace '[^a-z]', ''
+    if ($mode -notin @('lite', 'full', 'ultra')) { return '' }
+    return " $esc[38;5;172m[TERSE:$($mode.ToUpper())]$reset"
+}
+
 # Disabled via flag file -> show folder name only, skip the bar.
 $flag = Join-Path $PSScriptRoot '.context-bar-disabled'
 if (Test-Path -LiteralPath $flag) {
-    [Console]::Out.Write("$dim$folder$reset")
+    [Console]::Out.Write("$dim$folder$reset$(Get-TerseBadge)")
     return
 }
 
@@ -89,4 +112,4 @@ $usedTxt = Format-Tokens $used
 $capTxt  = Format-Tokens $cap
 
 $sep = [char]0x00B7
-[Console]::Out.Write("$bar $color$pct%$reset $dim$usedTxt/$capTxt$reset $dim$sep$reset $folder")
+[Console]::Out.Write("$bar $color$pct%$reset $dim$usedTxt/$capTxt$reset $dim$sep$reset $folder$(Get-TerseBadge)")
