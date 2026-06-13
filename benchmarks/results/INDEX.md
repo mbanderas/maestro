@@ -25,6 +25,12 @@ use `rg --no-ignore` for forensic audits.
   (gap 3), ON ≈ +29% median cost, both arms 6/6 pass (no pass-rate
   gain). Exploratory per the frozen prereg; n>=9 still required for a
   grounded effect. No savings claim.
+- t15 (second independent checker-less fixture, SemVer precedence —
+  disjoint domain from t14): built, scorer-registered, and PREREGISTERED
+  (`20260613-t15-prereg.md`). Pristine FAILS, gold PASSES, both a lexical
+  and a numeric-core-only shortcut FAIL; generic CLI smoke insufficient.
+  NOT yet run — awaiting the n=6 OFF-vs-ON paid cell. Two directional
+  fixtures would license preregistering the receipt-gate intervention.
 
 ## Which Summary To Read
 
