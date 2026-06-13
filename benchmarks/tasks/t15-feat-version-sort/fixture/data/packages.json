@@ -1,0 +1,6 @@
+[
+  { "name": "alpha-parser", "version": "1.2.0" },
+  { "name": "core-runtime", "version": "2.0.0" },
+  { "name": "beta-toolkit", "version": "1.0.0-rc.1" },
+  { "name": "delta-cache", "version": "1.10.0" }
+]

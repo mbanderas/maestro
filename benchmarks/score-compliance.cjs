@@ -78,6 +78,11 @@ const TARGET_SMOKE = {
     require: /require\([^)]*revenue/i,
     impl: /core[\\/]revenue\.js$/i,
   },
+  't15-feat-version-sort': {
+    call: /sortVersions\s*\(/i,
+    require: /require\([^)]*versions/i,
+    impl: /core[\\/]versions\.js$/i,
+  },
 };
 
 function scoreStream(file) {
