@@ -82,7 +82,12 @@ hook-enforcement loop made the remaining prose rule structural: a
 PreToolUse hook now denies doctrine re-reads outright (24/24 attempts
 denied across 18 runs, oracle pass unchanged), and one added S7.3
 line took unsupported VERIFIED claims from 5/6 to 0/6 on the
-checker-less refactor task — again at no measurable cost change.
+checker-less refactor task — again at no measurable cost change. A
+later checker-less trap task (t14) adds the first directional sign
+the premium is *earned* behavior, not vocabulary: Maestro buys more
+honest completion behavior at about +29% median cost (n=6,
+directional only — no token saving, no success-rate gain, no proven
+honesty effect; numbers under Benchmarks).
 
 Supervised, interactive use: you are already the audit layer. On
 tasks a clean agent passes anyway, the measured data shows no
@@ -702,7 +707,29 @@ doctrine is pure overhead (t10: +78% median wall). t09 separates
 *models* more than modes: gemini-3.1-pro-preview passes 1 of 6 valid
 runs, gpt-5.4-mini passes 4/4, sonnet ~8-in-9. The CORE row (compact
 ~50-line variant) shows no efficiency gain over the full doctrine.
-Small samples throughout; no significance claims. Full analysis and
+Small samples throughout; no significance claims.
+
+A first directional signal on a different axis. **t14**
+(`t14-feat-revenue-rollup`, a checker-less trap task with a
+non-obvious correctness property, n=6 OFF vs ON, Claude Code
+`sonnet`) holds both arms at **6/6 pass** — so no pass-rate or
+capability claim — while the primary honesty metric
+`claim_consistent` runs **OFF 1/6 vs ON 4/6** and
+`target_smoke_tested` **OFF 0/6 vs ON 2/6**, at ON median cost
+**$0.1930** vs OFF **$0.1501** (ON about **+29%**). The
+`status_token` axis is **excluded**: OFF was never taught the S7.3
+vocabulary, so scoring it there measures lexicon, not discipline.
+Per the frozen prereg this is **directional only, not confirmatory**
+— a grounded effect still needs at least n=9, so n=6 is exploratory
+by construction. Read narrowly: Maestro buys more honest completion
+behavior on a checker-less trap task, at higher cost — not a token
+saving, not a higher success rate, not a proven honesty effect. The
+older corpus could not demonstrate this earned overhead at all
+(capability-ceilinged, scope and oracle already clean in both modes);
+t14 is the first directional honesty-axis signal, and it is paid for,
+not recovered, by the cost premium.
+
+Full analysis and
 void accounting:
 [`benchmarks/results/20260610-summary-hidden-oracle.md`](benchmarks/results/20260610-summary-hidden-oracle.md),
 [`benchmarks/results/20260610-summary-xcli.md`](benchmarks/results/20260610-summary-xcli.md),
@@ -711,8 +738,11 @@ void accounting:
 [`benchmarks/results/20260611-summary-activation.md`](benchmarks/results/20260611-summary-activation.md),
 [`benchmarks/results/20260611-summary-efficiency.md`](benchmarks/results/20260611-summary-efficiency.md),
 [`benchmarks/results/20260611-summary-hooks.md`](benchmarks/results/20260611-summary-hooks.md),
-and
-[`benchmarks/results/20260611-summary-spawns.md`](benchmarks/results/20260611-summary-spawns.md).
+[`benchmarks/results/20260611-summary-spawns.md`](benchmarks/results/20260611-summary-spawns.md),
+the t14 honesty-axis result
+[`benchmarks/results/20260613-summary-t14.md`](benchmarks/results/20260613-summary-t14.md),
+and the earned-overhead re-score
+[`benchmarks/results/20260613-summary-earned-overhead.md`](benchmarks/results/20260613-summary-earned-overhead.md).
 
 Post-fix Gemini (`gemini-3.1-pro-preview`) and Codex (`gpt-5.4-mini`,
 exploratory n=1) cells for t08/t09, including the gemini quota voids
