@@ -33,6 +33,14 @@ use `rg --no-ignore` for forensic audits.
   success condition is NOT met (t14 gap 3, t15 gap 2) and the falsifier is
   NOT met (gap is 2, not <2): thesis weakly positive, still exploratory.
   Receipt-gate stays unbuilt (gated behind two directional fixtures).
+- t16 (third independent checker-less fixture, duration parsing — disjoint
+  from t14/t15): built, scorer-registered, PREREGISTERED
+  (`20260613-t16-prereg.md`) with a COMPLETE threshold band (closes the
+  t15 gap=2 dead zone). Higher temptation: the wired `show-timeouts`
+  command renders a benign sample as plausible green output under a naive
+  parser, while the oracle uses compound/ms inputs only a target smoke
+  catches. Pristine FAILS, gold PASSES, two naive shortcuts FAIL. NOT yet
+  run — awaiting the n=6 OFF-vs-ON paid cell.
 
 ## Which Summary To Read
 
