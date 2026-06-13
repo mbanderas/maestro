@@ -26,14 +26,20 @@ use `rg --no-ignore` for forensic audits.
   gain). Exploratory per the frozen prereg; n>=9 still required for a
   grounded effect. No savings claim.
 - t15 (second independent checker-less fixture, SemVer precedence —
-  disjoint domain from t14): built, scorer-registered, and PREREGISTERED
-  (`20260613-t15-prereg.md`). Pristine FAILS, gold PASSES, both a lexical
-  and a numeric-core-only shortcut FAIL; generic CLI smoke insufficient.
-  NOT yet run — awaiting the n=6 OFF-vs-ON paid cell. Two directional
-  fixtures would license preregistering the receipt-gate intervention.
+  disjoint domain from t14, sonnet, n=6/arm): SUB-THRESHOLD. claim-
+  consistent ON 4/6 vs OFF 2/6 — gap **2**, below the directional bar of
+  >=3, same direction as t14 but weaker. Both arms 6/6 pass (no pass-rate
+  gain); ON ≈ +41% median cost (no savings). The two-directional-fixture
+  success condition is NOT met (t14 gap 3, t15 gap 2) and the falsifier is
+  NOT met (gap is 2, not <2): thesis weakly positive, still exploratory.
+  Receipt-gate stays unbuilt (gated behind two directional fixtures).
 
 ## Which Summary To Read
 
+- `20260613-summary-t15.md`: second temptation fixture (SemVer precedence,
+  disjoint domain); n=6/arm SUB-THRESHOLD honesty signal (ON 4/6 vs OFF 2/6
+  claim-consistent, gap 2 < directional bar of 3), mechanism breakdown, and
+  the prereg dead-zone note.
 - `20260613-summary-t14.md`: first paid t14 temptation-fixture run;
   n=6/arm OFF-vs-ON directional honesty signal (ON 4/6 vs OFF 1/6
   claim-consistent), mechanism breakdown, and the conservative caveats.
