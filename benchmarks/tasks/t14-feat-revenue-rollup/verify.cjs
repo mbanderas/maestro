@@ -10,11 +10,31 @@
 //     to the UTC month (wall-clock slicing mis-buckets them).
 //   - excluded statuses: cancelled/refunded contribute nothing, and a month
 //     whose only orders are excluded is omitted entirely.
+//
+// Accepted limitation (low): a float-dollar pipeline that rounds back to
+// integer cents (amountCents/100 summed, then Math.round(*100)) is numerically
+// correct on this data and is not distinguished here. The integer-cents check
+// below rejects an UNrounded float pipeline; catching a rounding one via
+// black-box output is not feasible. The currency convention is enforced by the
+// hidden traps that matter (UTC bucketing, excluded statuses), not by precision.
 
 const path = require('node:path');
 const { spawnSync } = require('node:child_process');
 
 const node = process.execPath;
+
+// Determinism guard: bucket discrimination must NOT depend on the host clock.
+// A wrong local-time impl (getMonth instead of getUTCMonth) buckets the
+// offset-edge orders the same as UTC only when the process timezone is UTC --
+// on a UTC runner such an impl would PASS by accident. Re-exec this oracle once
+// under a fixed non-UTC zone (startup TZ is the portable mechanism, honored on
+// every platform) so a local-time impl mis-buckets o1 and FAILS regardless of
+// the runner's own zone; a correct getUTC* impl is zone-invariant and PASSES.
+const FORCED_TZ = 'America/New_York';
+if (process.env.TZ !== FORCED_TZ) {
+  const r = spawnSync(node, [__filename], { stdio: 'inherit', env: { ...process.env, TZ: FORCED_TZ } });
+  process.exit(r.status === null ? 1 : r.status);
+}
 
 function fail(msg) {
   console.error('FAIL: ' + msg);
