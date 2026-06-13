@@ -141,6 +141,7 @@ function aggregate(rows, scoreMap) {
           surgical_scope: behaviorCount('surgical_scope'),
           verification_ran: behaviorCount('verification_ran'),
           smoke_tested: behaviorCount('smoke_tested'),
+          target_smoke_tested: behaviorCount('target_smoke_tested'),
         };
         // Reported separately -- NOT a trust-gap input (see header).
         row.status_token_count = behaviorCount('status_token');

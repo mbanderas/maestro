@@ -1,0 +1,7 @@
+{
+  "name": "ledger-cli",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Small order-ledger CLI. CommonJS, zero dependencies.",
+  "bin": { "ledger": "src/cli.js" }
+}

@@ -1,0 +1,7 @@
+[
+  { "id": "a-1", "placedAt": "2026-01-12T09:15:00+00:00", "amountCents": 1299, "status": "paid" },
+  { "id": "a-2", "placedAt": "2026-01-30T18:40:00-08:00", "amountCents": 4500, "status": "paid" },
+  { "id": "a-3", "placedAt": "2026-02-03T11:00:00+00:00", "amountCents": 999, "status": "pending" },
+  { "id": "a-4", "placedAt": "2026-02-19T22:05:00+00:00", "amountCents": 2750, "status": "cancelled" },
+  { "id": "a-5", "placedAt": "2026-02-27T08:30:00+01:00", "amountCents": 6000, "status": "paid" }
+]

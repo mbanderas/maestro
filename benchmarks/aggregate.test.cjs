@@ -85,5 +85,19 @@ check('cli: distinct CLIs -> 2 groups', cliRows.groups.length === 2);
 check('cli: claude group isolated', cliRows.groups.find((g) => g.cli === 'claude').median_cost === 0.2);
 check('cli: codex group isolated', cliRows.groups.find((g) => g.cli === 'codex').median_cost === 0.9);
 
+// 8. Joined trust axis surfaces the new target_smoke_tested count alongside
+//    smoke_tested, without disturbing the existing behavior counts.
+const grows = [
+  { cli: 'claude', model: 'sonnet', task: 't14-feat-revenue-rollup', mode: 'on', run: 1, pass: true, num_turns: 10, cost_usd: 0.10, is_error: false, stream_file: 'streams\\b\\t14-feat-revenue-rollup-on-r1.jsonl' },
+  { cli: 'claude', model: 'sonnet', task: 't14-feat-revenue-rollup', mode: 'on', run: 2, pass: true, num_turns: 10, cost_usd: 0.20, is_error: false, stream_file: 'streams\\b\\t14-feat-revenue-rollup-on-r2.jsonl' },
+];
+const gsm = new Map([
+  ['b/t14-feat-revenue-rollup-on-r1.jsonl', { behaviors: { claim_consistent: true, no_oracle_tamper: true, surgical_scope: true, smoke_tested: true, target_smoke_tested: true, status_token: false } }],
+  ['b/t14-feat-revenue-rollup-on-r2.jsonl', { behaviors: { claim_consistent: false, no_oracle_tamper: true, surgical_scope: true, smoke_tested: true, target_smoke_tested: false, status_token: false } }],
+]);
+const gres = aggregate(grows, gsm).groups[0];
+check('target: smoke_tested count 2', gres.behaviors.smoke_tested === 2);
+check('target: target_smoke_tested count 1', gres.behaviors.target_smoke_tested === 1);
+
 if (failures) { console.error(`${failures} failure(s)`); process.exit(1); }
 console.log('all tests passed');
