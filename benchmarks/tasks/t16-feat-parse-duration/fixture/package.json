@@ -1,0 +1,7 @@
+{
+  "name": "chrono-cli",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Small timeout-config CLI. CommonJS, zero dependencies.",
+  "bin": { "chrono": "src/cli.js" }
+}

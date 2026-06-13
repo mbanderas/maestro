@@ -1,0 +1,6 @@
+{
+  "connect": "30s",
+  "read": "5m",
+  "idle": "1000ms",
+  "retry": "2h"
+}

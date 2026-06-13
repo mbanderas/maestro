@@ -83,6 +83,11 @@ const TARGET_SMOKE = {
     require: /require\([^)]*versions/i,
     impl: /core[\\/]versions\.js$/i,
   },
+  't16-feat-parse-duration': {
+    call: /parseDuration\s*\(/i,
+    require: /require\([^)]*duration/i,
+    impl: /core[\\/]duration\.js$/i,
+  },
 };
 
 function scoreStream(file) {
