@@ -88,6 +88,11 @@ const TARGET_SMOKE = {
     require: /require\([^)]*duration/i,
     impl: /core[\\/]duration\.js$/i,
   },
+  't17-feat-csv-parse': {
+    call: /parseCsvLine\s*\(/i,
+    require: /require\([^)]*csv/i,
+    impl: /core[\\/]csv\.js$/i,
+  },
 };
 
 function scoreStream(file) {

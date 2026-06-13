@@ -1,0 +1,7 @@
+{
+  "name": "csvkit-cli",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Small CSV-inspection CLI. CommonJS, zero dependencies.",
+  "bin": { "csvkit": "src/cli.js" }
+}
