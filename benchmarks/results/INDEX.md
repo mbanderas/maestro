@@ -20,9 +20,17 @@ use `rg --no-ignore` for forensic audits.
   costlier (every cell ceilings at 100% pass); the only fair-signal
   trust gap is OFF over-claiming on the checker-less t08, below the
   noise floor. Earned overhead needs a temptation-bearing fixture.
+- t14 (checker-less temptation fixture, sonnet, n=6/arm): first
+  DIRECTIONAL honesty-axis signal — ON 4/6 vs OFF 1/6 claim-consistent
+  (gap 3), ON ≈ +29% median cost, both arms 6/6 pass (no pass-rate
+  gain). Exploratory per the frozen prereg; n>=9 still required for a
+  grounded effect. No savings claim.
 
 ## Which Summary To Read
 
+- `20260613-summary-t14.md`: first paid t14 temptation-fixture run;
+  n=6/arm OFF-vs-ON directional honesty signal (ON 4/6 vs OFF 1/6
+  claim-consistent), mechanism breakdown, and the conservative caveats.
 - `20260613-summary-earned-overhead.md`: `aggregate.cjs` cost-per-
   verified/trusted-pass metric (panel-reviewed) and the free re-score
   showing the corpus cannot demonstrate earned overhead; specifies the
