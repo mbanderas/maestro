@@ -16,9 +16,17 @@ use `rg --no-ignore` for forensic audits.
 - `gate-reminder` increases real specialist spawning on t12, but did
   not improve quality in cells that already passed; `verdict-only`
   was tested and removed after a failed n=3 smoke.
+- On a cost-per-verified-pass denominator ON is uniformly equal-or-
+  costlier (every cell ceilings at 100% pass); the only fair-signal
+  trust gap is OFF over-claiming on the checker-less t08, below the
+  noise floor. Earned overhead needs a temptation-bearing fixture.
 
 ## Which Summary To Read
 
+- `20260613-summary-earned-overhead.md`: `aggregate.cjs` cost-per-
+  verified/trusted-pass metric (panel-reviewed) and the free re-score
+  showing the corpus cannot demonstrate earned overhead; specifies the
+  Phase-3 temptation fixture.
 - `20260611-summary-spawns.md`: gate-reminder isolation, specialist
   spawn behavior, verdict/spawn gap.
 - `20260612-summary-verdict-only.md`: failed verdict-only smoke and
