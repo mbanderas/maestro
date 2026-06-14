@@ -10,7 +10,7 @@ fails:
 
 1. Are there orphaned `background_tasks` still active? If so, the
    subagent is declaring complete while work is still running. Scoped
-   to agents whose transcript shows they spawned background work —
+   to agents whose transcript shows they spawned background work,
    the payload field is machine-wide, and unrelated sessions' tasks
    must not nag an agent that spawned nothing.
 2. Did a file-modifying subagent run a type-checker, linter, or test
@@ -97,7 +97,7 @@ Five more optional hooks enforce other Maestro rules structurally.
 Same engineering rules as the verification hook: plain Node `.cjs`,
 zero dependencies, fire-once guards, graceful degradation on missing
 payload fields. All warn softly except the doctrine guard, which
-denies by design — re-reading autoloaded doctrine is never the right
+denies by design, re-reading autoloaded doctrine is never the right
 call, and the deny reason tells the model what to use instead. Tests
 live next to each hook (`node hooks/<name>.test.cjs`).
 

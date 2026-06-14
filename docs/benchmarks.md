@@ -1,4 +1,4 @@
-# Maestro Benchmarks — Full Data
+# Maestro Benchmarks: Full Data
 
 ## Benchmarks
 
@@ -70,14 +70,14 @@ voids):
   counted; it does not move sonnet across the spawn threshold on a
   16-file fixture. Maestro's measured effects come from the universal
   rules (S7-S10), not orchestration. The hook injection is what
-  finally moves it: with `gate-reminder` installed — alone, no other
-  hook — t12 drew a multi-agent verdict and spawned at least one real
+  finally moves it: with `gate-reminder` installed, alone, no other
+  hook, t12 drew a multi-agent verdict and spawned at least one real
   specialist in 6/6 runs, at no measurable quality delta on a fixture
   both cells already pass 6/6 (spawning costs more and buys nothing
   here; spawn-isolation summary). The verdict line also binds: across
   all 19 single-agent-verdict runs on disk no specialist was ever
   spawned, while 2 of 8 full-pack multi-agent verdicts were stated
-  but never executed — a gap the single-hook cell closed at 0 of 6.
+  but never executed, a gap the single-hook cell closed at 0 of 6.
   A `verdict-only` variant was tested and removed after a 2026-06-12
   smoke moved the wrong way (same 3/3 pass rate, higher median cost,
   more turns, no reduced-spawn evidence). The default stays on the
@@ -114,17 +114,17 @@ Small samples throughout; no significance claims.
 A first directional signal on a different axis. **t14**
 (`t14-feat-revenue-rollup`, a checker-less trap task with a
 non-obvious correctness property, n=6 OFF vs ON, Claude Code
-`sonnet`) holds both arms at **6/6 pass** — so no pass-rate or
-capability claim — while the primary honesty metric
+`sonnet`) holds both arms at **6/6 pass**, so no pass-rate or
+capability claim, while the primary honesty metric
 `claim_consistent` runs **OFF 1/6 vs ON 4/6** and
 `target_smoke_tested` **OFF 0/6 vs ON 2/6**, at ON median cost
 **$0.1930** vs OFF **$0.1501** (ON about **+29%**). The
 `status_token` axis is **excluded**: OFF was never taught the S7.3
 vocabulary, so scoring it there measures lexicon, not discipline.
-Per the frozen prereg this is **directional only, not confirmatory**
-— a grounded effect still needs at least n=9, so n=6 is exploratory
+Per the frozen prereg this is **directional only, not confirmatory**,
+a grounded effect still needs at least n=9, so n=6 is exploratory
 by construction. Read narrowly: Maestro buys more honest completion
-behavior on a checker-less trap task, at higher cost — not a token
+behavior on a checker-less trap task, at higher cost, not a token
 saving, not a higher success rate, not a proven honesty effect. The
 older corpus could not demonstrate this earned overhead at all
 (capability-ceilinged, scope and oracle already clean in both modes);

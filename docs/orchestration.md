@@ -1,10 +1,10 @@
-# Maestro Multi-Agent Orchestration — Full Protocol (S2-S6)
+# Maestro Multi-Agent Orchestration, Full Protocol (S2-S6)
 
 Loaded on demand: read this file when the Decision Gate
 ([AGENTS.md](../AGENTS.md) S1) returns a multi-agent verdict. The
 kernel's compact protocol is a subset of this document and suffices
 when this file is unavailable. Relocated verbatim from the always-on
-doctrine in v1.2 — content here extends the kernel, never overrides
+doctrine in v1.2, content here extends the kernel, never overrides
 it.
 
 ---
@@ -16,22 +16,22 @@ it.
 - Overlapping ownership erases parallelism; high-centrality: bias
   single.
 - Specialists must differ in role or context, not split identical
-  work — homogeneous splits underperform one agent with the same
+  work, homogeneous splits underperform one agent with the same
   budget. Split-design rule for the Planner, not a gate downgrade.
 - Parallelizability first: specialization pays only when subtasks are
   structurally independent. Coupled subtasks: single-agent wins at
-  equal token budget — gains that ignore total compute don't count.
+  equal token budget, gains that ignore total compute don't count.
 - Adversarial review is the best-evidenced multi-agent win. Review
   and debate panels: 3 specialists (odd, no ties); 4 stays the cap
   for parallel workstreams.
 - How to split (and whether a split is too homogeneous) is the
-  Planner's call (S2), made after the spawn — never the gate's.
+  Planner's call (S2), made after the spawn, never the gate's.
 
 ---
 
 ## 2. Planner [MULTI-AGENT]
 
-First sub-agent — created by calling the Task/Agent tool, never
+First sub-agent, created by calling the Task/Agent tool, never
 simulated inline by the orchestrator. No specialist work before
 Planner returns.
 
@@ -56,7 +56,7 @@ Audit (discover/analyze/consolidate), Docs+code (change/update/check).
 Manifest fields: ROLE, TASK, FILES (read/modify), UPSTREAM,
 ORIENTATION, ASSUMPTIONS, OUTPUT, ACCEPT, TOOLS (scoped), RULES (S7
 injected). ROLE = procedural workflow (step sequence + acceptance
-criteria), never a bare job title — identity labels alone don't
+criteria), never a bare job title, identity labels alone don't
 change behavior.
 
 No conversation history, other tasks, full plan, or unrelated
@@ -110,7 +110,7 @@ ties), each prompted to refute, not confirm.
 
 ---
 
-## 9. Model Routing — full table
+## 9. Model Routing, full table
 
 Pick the cheapest model that handles the task. Orchestrator decides
 at spawn time; Planner (S2) assigns per subtask.
@@ -131,10 +131,10 @@ bloat parent context and trigger compaction.
 
 | Agent tier | Cap | Exception |
 |------------|-----|-----------|
-| Haiku | 100 words | — |
+| Haiku | 100 words |, |
 | Sonnet | 500 words | Code output (uncapped) |
-| Opus | Uncapped | — |
-| Frontier | Uncapped | — |
+| Opus | Uncapped |, |
+| Frontier | Uncapped |, |
 | Explore | 200 words | Always, regardless of model |
 
 Explore agents: "report in under 200 words" in every prompt.
@@ -153,7 +153,7 @@ claude-token-efficient (MIT).
 | Multi-file implementation | scale with file count; state it explicitly |
 
 Discipline inside the budget: read-first-write-once (read each
-needed file once, then edit — no re-read loops); one diagnostic read
+needed file once, then edit, no re-read loops); one diagnostic read
 per failure, then the S7.3 two-attempt rule applies (stop, re-read
 from scratch, change approach). Budget exhausted: report progress
 and the named gap, never burn calls polling.

@@ -66,7 +66,7 @@ Two token-efficiency tools, adapted from the MIT-licensed
 attribution.
 
 **Terse mode** cuts output tokens while keeping full technical
-substance. Three levels — `lite` (no filler, full sentences), `full`
+substance. Three levels, `lite` (no filler, full sentences), `full`
 (drop articles, fragments OK), `ultra` (abbreviations, arrows,
 maximum compression). **Off by default**: installing the plugin never
 changes your output style.
@@ -80,25 +80,25 @@ changes your output style.
   - **macOS / Linux:** `$XDG_CONFIG_HOME/maestro/config.json`,
     falling back to `~/.config/maestro/config.json`
   - The config file is **never created automatically**. Until it
-    exists, terse mode stays off — two machines with identical hook
+    exists, terse mode stays off, two machines with identical hook
     installs can behave differently if only one has the file.
 - The `maestro-terse-mode` hook injects the level-filtered ruleset
   (single source: `skills/terse/SKILL.md`) at SessionStart and a
-  one-line reminder each turn — per-turn reinforcement survives
+  one-line reminder each turn, per-turn reinforcement survives
   context compaction, where one-shot instructions drift.
 - Quality guardrails ship with it: code, commits, and PRs are always
   written normal, and Auto-Clarity drops terseness for security
   warnings, irreversible-action confirmations, and multi-step
   sequences.
 - The context bar shows a `[TERSE:ULTRA]` badge while active. The
-  flag file is read symlink-refusing, size-capped, and whitelisted —
+  flag file is read symlink-refusing, size-capped, and whitelisted,
   never rendering attacker-controlled bytes.
 
 **`/maestro:compress <file>`** rewrites a natural-language memory
-file (CLAUDE.md, todos, notes) in terse form to cut input tokens —
+file (CLAUDE.md, todos, notes) in terse form to cut input tokens,
 savings compound every turn the file is loaded (S8). Deterministic
 validation (headings, byte-exact code blocks, URLs) with cherry-pick
 repair; the original is kept as `<name>.original.md` and restored on
 persistent failure. Files with secret-looking names (.env,
-credentials, keys, `.ssh`/`.aws` paths) are refused outright —
+credentials, keys, `.ssh`/`.aws` paths) are refused outright,
 compression sends file contents to the Anthropic API.

@@ -1,6 +1,6 @@
 # Maestro on Codex
 
-Codex reads `AGENTS.md` natively — no adapter file needed. This page
+Codex reads `AGENTS.md` natively, no adapter file needed. This page
 maps Maestro's concepts onto Codex specifics. All behavior below was
 verified against the official Codex docs
 ([AGENTS.md guide](https://developers.openai.com/codex/guides/agents-md),
@@ -29,7 +29,7 @@ Practical consequences for Maestro:
 - **Placement:** put Maestro's `AGENTS.md` at the repository root. If
   you already have a project `AGENTS.md`, append Maestro's content to
   it (Codex concatenates by directory level, not by file).
-- **Budget:** Maestro's always-on kernel is ~8 KB — a quarter of the
+- **Budget:** Maestro's always-on kernel is ~8 KB, a quarter of the
   default 32 KiB cap, leaving room for your project instructions
   (the full S2-S6 protocol lives in `docs/orchestration.md`, read on
   demand). If you layer nested `AGENTS.md` files, watch the cap:
@@ -64,8 +64,8 @@ weekly, or cron schedules.
 
 | Maestro S10 concept | Codex mechanism |
 |---|---|
-| Self-paced session loop | **Thread automations** — heartbeat-style recurring wake-up calls attached to the current thread, preserving conversation context |
-| Durable scheduled routine | **Standalone/project automations** — independent runs; findings land in the Triage inbox (auto-archived when there is nothing to report) |
+| Self-paced session loop | **Thread automations**, heartbeat-style recurring wake-up calls attached to the current thread, preserving conversation context |
+| Durable scheduled routine | **Standalone/project automations**, independent runs; findings land in the Triage inbox (auto-archived when there is nothing to report) |
 | Checkpoint artifact | Same convention: one `_<task>.md` in the repo root (gitignore `_*`), read first on every run, holding phase status, findings with sources, decisions with rationale |
 | Scripted/CI iteration | `codex exec "<prompt>"` non-interactive runs |
 
