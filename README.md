@@ -283,6 +283,7 @@ Optional Claude Code machinery; full install steps in the linked docs.
 - **Hook Pack**: five more zero-dependency hooks (doctrine guard, loop guard, phase-scope, gate reminder, opt-in gate telemetry) enforcing the rest of the doctrine. [`docs/hooks.md`](docs/hooks.md)
 - **Context Bar**: a status-line context-window progress bar that shifts green to amber to red and detects the model's window (including the 1M Opus tier). [`docs/context-bar.md`](docs/context-bar.md)
 - **Terse Mode + Compress**: opt-in output-token reduction (`/maestro:terse`) and a memory-file compressor (`/maestro:compress`), adapted from the MIT-licensed Caveman plugin. [`docs/context-bar.md`](docs/context-bar.md)
+- **Settings**: a unified `/maestro:settings` picker (keyboard-driven, like `/model`) plus a portable `node settings/cli.cjs status|set` for Codex and any other CLI, over the terse, frontier, and context-bar toggles. [`docs/settings.md`](docs/settings.md)
 
 ## When to Use Maestro
 
