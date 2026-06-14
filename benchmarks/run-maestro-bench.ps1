@@ -34,7 +34,7 @@ param(
                                   # wiring written into settings.json. Empty =
                                   # whole pack (today's behavior). Only meaningful
                                   # with -InstallHooks.
-  [int]$MaxThinkingTokens = 0     # >0: cap the fixed thinking budget via
+  [int]$MaxThinkingTokens = 0,    # >0: cap the fixed thinking budget via
                                   # MAX_THINKING_TOKENS for every run in this
                                   # invocation. Also sets
                                   # CLAUDE_CODE_DISABLE_ADAPTIVE_THINKING=1 --
@@ -42,6 +42,15 @@ param(
                                   # budget only applies with adaptive disabled
                                   # (code.claude.com/docs/en/env-vars). 0 =
                                   # leave both unset (default; baselines).
+  [switch]$HookOffToo,            # also apply the staged hook pack to OFF
+                                  # cells (default: OFF is hook-free). Requires
+                                  # -InstallHooks. OFF still copies NO doctrine
+                                  # into the work dir, so this yields the "OFF
+                                  # doctrine + selected hook" arm the receipt-
+                                  # gate experiment needs.
+  [switch]$DryRun                 # skip the claude call AND the oracle; build
+                                  # and print one config row per cell. Free way
+                                  # to confirm mode/hooks/hook_set without spend.
 )
 
 $ErrorActionPreference = 'Stop'
@@ -57,6 +66,7 @@ if ($Task.Count -gt 0) {
   if (-not $taskDirs) { throw "No matching tasks. Available: $((Get-ChildItem $tasksRoot -Directory).Name -join ', ')" }
 }
 $modes = if ($Mode -eq 'both') { @('off', 'on') } else { @($Mode) }
+if ($HookOffToo -and -not $InstallHooks) { throw '-HookOffToo requires -InstallHooks (it applies the staged hooks to OFF cells).' }
 
 # Isolated config dir: copied credentials, empty settings. No global
 # CLAUDE.md/AGENTS.md, no hooks (unless -InstallHooks plants the shipped
@@ -141,11 +151,31 @@ foreach ($taskDir in $taskDirs) {
         Set-Content (Join-Path $workDir 'CLAUDE.md') "@AGENTS.md"
       }
 
-      # Hooks only ever apply to doctrine-bearing modes; off cells always
-      # run against the plain config dir regardless of -InstallHooks.
-      $runHooked = $InstallHooks -and $runMode -ne 'off'
+      # Hooks normally apply only to doctrine-bearing modes; off cells run
+      # against the plain config dir. -HookOffToo opts OFF cells into the
+      # staged hooks as well (still NO doctrine copied into the OFF work dir
+      # below) -- the "OFF doctrine + selected hook" arm.
+      $runHooked = $InstallHooks -and ($runMode -ne 'off' -or $HookOffToo)
 
       Write-Host "[$($spec.id)] mode=$runMode run=$n model=$Model hooks=$runHooked ..." -NoNewline
+
+      # Dry run: no claude call, no oracle. Emit one row showing the cell's
+      # resolved config so an operator can confirm (free) that an OFF+hook arm
+      # reads mode=off, hooks=true, hook_set=<name>, with NO doctrine copied.
+      if ($DryRun) {
+        $dryHookSet = if (-not $runHooked) { $null } elseif ($Hooks.Count -gt 0) { $Hooks -join ',' } else { 'pack' }
+        $dryDoctrine = ($runMode -eq 'on' -or $runMode -eq 'core')
+        $dryCfg = if ($runHooked) { 'config-hooks' } else { 'config' }
+        Write-Host (" DRYRUN | hooks={0} | hook_set={1} | cfg={2} | doctrine_copied={3}" -f $runHooked, ($dryHookSet ?? '<none>'), $dryCfg, $dryDoctrine)
+        $results.Add([pscustomobject]([ordered]@{
+          task = $spec.id; category = $spec.category; cli = 'claude'; model = $Model
+          mode = $runMode; hooks = $runHooked; hook_set = $dryHookSet
+          doctrine_copied = $dryDoctrine; config_dir = $dryCfg; dry_run = $true
+        }))
+        if (-not $KeepWork) { Remove-Item $workDir -Recurse -Force -ErrorAction SilentlyContinue }
+        continue
+      }
+
       $prevCfg = $env:CLAUDE_CONFIG_DIR
       $env:CLAUDE_CONFIG_DIR = if ($runHooked) { $cfgHooksDir } else { $cfgDir }
       $prevThink = $env:MAX_THINKING_TOKENS
