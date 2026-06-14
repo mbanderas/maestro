@@ -97,6 +97,10 @@ CommonJS under [`frontier/`](frontier/); each CLI is resolved from your
 operational reference are in
 [`commands/frontier.md`](commands/frontier.md#binary-overrides).
 
+<p align="center">
+  <img src="assets/frontier-stack.svg" alt="Maestro Frontier fusion engine sitting on the discipline layer foundation; an amber data-flow connects the two" width="820">
+</p>
+
 ## What You Get
 
 <p align="center">

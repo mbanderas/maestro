@@ -1,0 +1,73 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 860 360" role="img" aria-labelledby="t d">
+  <title id="t">Maestro Frontier fusion engine on the discipline layer</title>
+  <desc id="d">Maestro Frontier fusion engine sitting on the discipline layer foundation; an amber data-flow connects the two. The top tier is the fusion engine (parallel panel, Opus judge, grounded synthesis); the bottom tier is the discipline layer (decision gate, verified status, surgical scope) that every task runs on.</desc>
+  <style>
+    .bg    { fill: #0a0a0c; }
+    .tierT { fill: rgb(245 158 11 / 0.06); stroke: #f59e0b; stroke-width: 2; }
+    .tierB { fill: #121216; stroke: #222228; stroke-width: 1.5; }
+    .node  { fill: #1a1a20; stroke: #222228; stroke-width: 1.5; }
+    .nodeA { fill: rgb(245 158 11 / 0.10); stroke: #f59e0b; stroke-width: 1.5; }
+    .lbl   { font: 600 13px ui-monospace, SFMono-Regular, Consolas, monospace; fill: #f0f0f4; }
+    .sub   { font: 400 10px ui-monospace, SFMono-Regular, Consolas, monospace; fill: #9e9eaa; }
+    .cap   { font: 600 10px ui-monospace, SFMono-Regular, Consolas, monospace; fill: #9e9eaa; letter-spacing: 1px; }
+    .capA  { font: 700 10px ui-monospace, SFMono-Regular, Consolas, monospace; fill: #fbbf24; letter-spacing: 1px; }
+    .acct  { fill: #fbbf24; }
+    .edge  { stroke: #44444e; stroke-width: 1.5; fill: none; }
+    .flow  { stroke: #f59e0b; stroke-width: 2; fill: none; stroke-dasharray: 6 7; animation: dash 1.6s linear infinite; }
+    @keyframes dash { to { stroke-dashoffset: -26; } }
+    @media (prefers-reduced-motion: reduce) { .flow { animation: none; } }
+  </style>
+  <defs>
+    <marker id="g" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#44444e"/>
+    </marker>
+    <marker id="up" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#f59e0b"/>
+    </marker>
+  </defs>
+
+  <rect class="bg" width="860" height="360" rx="14"/>
+
+  <!-- ── top tier: the fusion engine (star) ── -->
+  <rect class="tierT" x="70" y="40" width="720" height="100" rx="12"/>
+  <text class="capA" x="88" y="60">FUSION ENGINE</text>
+
+  <rect class="node" x="92" y="74" width="180" height="52" rx="8"/>
+  <text class="lbl" x="182" y="100" text-anchor="middle">parallel panel</text>
+  <text class="sub" x="182" y="116" text-anchor="middle">Opus 4.8 / GPT-5.5 / Gemini</text>
+
+  <path class="edge" d="M272 100 H338" marker-end="url(#g)"/>
+
+  <rect class="nodeA" x="340" y="74" width="160" height="52" rx="8"/>
+  <text class="lbl acct" x="420" y="100" text-anchor="middle">Opus judge</text>
+  <text class="sub" x="420" y="116" text-anchor="middle">compare, not merge</text>
+
+  <path class="edge" d="M500 100 H566" marker-end="url(#g)"/>
+
+  <rect class="nodeA" x="568" y="74" width="180" height="52" rx="8"/>
+  <text class="lbl acct" x="658" y="100" text-anchor="middle">grounded synthesis</text>
+  <text class="sub" x="658" y="116" text-anchor="middle">no majority vote</text>
+
+  <!-- ── amber dash-flow: engine runs on the foundation (only animated motion) ── -->
+  <path class="flow" d="M215 222 V140" marker-end="url(#up)"/>
+  <path class="flow" d="M430 222 V140" marker-end="url(#up)"/>
+  <path class="flow" d="M645 222 V140" marker-end="url(#up)"/>
+
+  <!-- ── bottom tier: the discipline layer (proven foundation) ── -->
+  <rect class="tierB" x="70" y="222" width="720" height="100" rx="12"/>
+  <text class="cap" x="88" y="242">DISCIPLINE LAYER · THE PROVEN FOUNDATION</text>
+
+  <rect class="node" x="92" y="256" width="180" height="52" rx="8"/>
+  <text class="lbl" x="182" y="282" text-anchor="middle">decision gate</text>
+  <text class="sub" x="182" y="298" text-anchor="middle">counted verdict</text>
+
+  <rect class="node" x="340" y="256" width="160" height="52" rx="8"/>
+  <text class="lbl" x="420" y="282" text-anchor="middle">verified status</text>
+  <text class="sub" x="420" y="298" text-anchor="middle">VERIFIED / UNVERIFIED</text>
+
+  <rect class="node" x="568" y="256" width="180" height="52" rx="8"/>
+  <text class="lbl" x="658" y="282" text-anchor="middle">surgical scope</text>
+  <text class="sub" x="658" y="298" text-anchor="middle">every line traces back</text>
+
+  <text class="sub" x="430" y="346" text-anchor="middle">the fusion engine runs on the discipline layer this repo benchmarks</text>
+</svg>
