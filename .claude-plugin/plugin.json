@@ -1,8 +1,8 @@
 {
   "name": "maestro",
   "displayName": "Maestro",
-  "version": "1.1.0",
-  "description": "Research-grounded multi-agent orchestration doctrine for AI coding agents: decision-gated routing, 4-specialist cap, structural enforcement hooks, terse mode + compress token tools, context-bar command.",
+  "version": "1.2.0",
+  "description": "Maestro Frontier: research-grounded multi-agent orchestration doctrine for AI coding agents (decision-gated routing, 4-specialist cap, structural enforcement hooks, terse mode + compress token tools, context-bar command) plus an opt-in zero-dependency local multi-CLI fusion engine via /maestro:frontier (off/single/fusion modes).",
   "author": {
     "name": "Mark Banderas",
     "url": "https://github.com/mbanderas"

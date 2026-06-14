@@ -1,8 +1,8 @@
 {
   "name": "maestro",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "private": true,
-  "description": "Orchestration discipline layer for AI coding agents. Zero npm dependencies; scripts wrap the ad-hoc node/npx checks.",
+  "description": "Maestro Frontier: orchestration discipline layer for AI coding agents + a zero-dependency local multi-CLI Frontier engine (off/single/fusion modes). Scripts wrap the ad-hoc node/npx checks.",
   "license": "MIT",
   "scripts": {
     "test": "node scripts/run-hook-tests.cjs",

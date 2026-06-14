@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  A discipline layer for AI coding agents: verified done-claims, surgical scope, long-run guardrails, and multi-agent orchestration held behind a research-backed gate
+  A discipline layer for AI coding agents: verified done-claims, surgical scope, long-run guardrails, and multi-agent orchestration held behind a research-backed gate — plus Maestro Frontier, an opt-in, zero-dependency local multi-CLI fusion engine
 </p>
 
 <p align="center">
@@ -560,6 +560,68 @@ repair; the original is kept as `<name>.original.md` and restored on
 persistent failure. Files with secret-looking names (.env,
 credentials, keys, `.ssh`/`.aws` paths) are refused outright —
 compression sends file contents to the Anthropic API.
+
+### Claude Code: Frontier Engine (off / single / fusion)
+
+Maestro Frontier adds an opt-in local **multi-CLI engine**: a
+zero-dependency reproduction of [OpenRouter
+Fusion](https://openrouter.ai/docs/guides/features/server-tools/fusion)
+built from the AI CLIs already on your machine. It fans a prompt out to
+a parallel **panel** of local models, has Opus 4.8 **judge** their
+answers into a structured analysis (consensus, contradictions, unique
+insights, blind spots — compare, not merge), then has Opus write a
+**grounded synthesis** that explicitly does not majority-vote. It is the
+new default identity of the project; the existing doctrine, hooks,
+skills, and benchmarks are unchanged.
+
+It ships with the plugin and is driven by `/maestro:frontier`. Three
+modes, switched at will, **`off` by default** so installing or upgrading
+changes nothing until you opt in:
+
+| Mode | Behavior |
+|---|---|
+| `off` | Normal Maestro. Engine never invoked; zero behavior change. The default. |
+| `single <model>` | Route the prompt to one local CLI and return its answer. No panel, no judge, no synth. |
+| `fusion <preset>` | Full panel -> Opus judge analysis -> grounded Opus synthesis, with Fusion's degradation and one-level recursion bounds reproduced. |
+
+```text
+/maestro:frontier status                       # show current mode
+/maestro:frontier single opus                  # one-CLI mode
+/maestro:frontier fusion opus-gpt              # panel = Opus + GPT-5.5
+/maestro:frontier run "your prompt here"       # run under the current mode
+/maestro:frontier off                          # back to normal Maestro
+```
+
+Presets define the panel; the judge and synthesizer are always Opus 4.8
+(`claude -p`): `opus-duo` (two independent Opus runs — isolates the
+synthesis lift), `opus-gpt` (Opus + GPT-5.5 via `codex exec`),
+`frontier-trio` (Opus + GPT-5.5 + Gemini 3.1 Pro via `gemini -p`), and
+`custom` (1-8 of the known models). Degradation is faithful to Fusion: a
+partial panel failure still returns a synthesis plus `failed_models`; a
+judge failure omits the analysis and synthesizes from the raw responses;
+a hard failure returns a typed `failure_reason`. A `FUSION_DEPTH`
+environment guard bounds recursion to one level.
+
+Honest scope, measured rather than implied: the **engine is built,
+unit-tested (degradation, recursion, budget, anti-majority all
+covered), and verified end-to-end on real runs of `single` mode plus all
+three fusion presets (`opus-gpt`, `opus-duo`, `frontier-trio`)**. The quality
+*lift* of local fusion is **not yet benchmarked in this repo** — the
+68.3% DRACO figure is OpenRouter's hosted result and is cited as
+motivation, not as a Maestro measurement. Operational caveats found
+empirically on this machine and recorded in the risk burndown: headless
+web access differs per CLI (Codex confirmed live; Claude and Gemini are
+gated `webTools:false` in this build and documented as divergences), and
+each cold `claude -p` panel/judge/synth call is non-trivial in cost —
+use small prompts, and prefer `opus-gpt` to bound spend. The budget cap
+is opt-in (`tokenBudget`, default disabled).
+
+The engine is zero-dependency CommonJS under [`frontier/`](frontier/);
+its tests run with the rest of the suite via `npm test`. Each CLI is
+resolved from your `PATH` (`claude`, `codex`, `gemini`) — portable across
+macOS, Linux, and Windows, where the npm shims are invoked through
+`cmd.exe`. Point the engine at a non-`PATH` binary with `MAESTRO_CLAUDE_BIN`,
+`MAESTRO_CODEX_BIN`, or `MAESTRO_GEMINI_BIN`.
 
 ## When to Use Maestro
 

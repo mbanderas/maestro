@@ -9,7 +9,7 @@ const path = require('path');
 
 let failed = 0;
 
-for (const dir of ['hooks', 'scripts']) {
+for (const dir of ['hooks', 'scripts', 'frontier']) {
   const abs = path.join(__dirname, '..', dir);
   for (const f of fs.readdirSync(abs).filter(f => f.endsWith('.test.cjs')).sort()) {
     console.log(`== ${dir}/${f}`);
