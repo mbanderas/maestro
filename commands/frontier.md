@@ -1,12 +1,12 @@
 ---
-description: Maestro Frontier local multi-CLI engine — switch mode (off/single/fusion), pick a model/preset, or run a prompt
+description: Maestro Frontier local multi-CLI engine: switch mode (off/single/fusion), pick a model/preset, or run a prompt
 argument-hint: "<off | single <model> | fusion <preset> | status | run <prompt>>"
 allowed-tools: Bash, Read
 ---
 
 Drive the Maestro Frontier engine: a zero-dependency local multi-CLI
 fusion engine (parallel panel of local CLIs -> Opus judge analysis ->
-grounded synthesis). Default mode is `off` — the engine is opt-in and
+grounded synthesis). Default mode is `off`: the engine is opt-in and
 never runs until you switch it on.
 
 Requested action: `$ARGUMENTS`
@@ -27,8 +27,8 @@ self-contained; do not edit its state file yourself.
    Models: `opus` (Claude Opus 4.8), `gpt-5.5` (Codex), `gemini`
    (Gemini 3.1 Pro). Presets: `opus-duo`, `opus-gpt`, `gpt-duo`,
    `frontier-trio`, `custom`. The judge + synthesizer default to Opus,
-   but `gpt-duo` runs them on GPT-5.5 — a Codex-only fusion that needs no
-   `claude` — and `--judge`/`--synth` override the model for any preset,
+   but `gpt-duo` runs them on GPT-5.5 (a Codex-only fusion that needs no
+   `claude`), and `--judge`/`--synth` override the model for any preset,
    so you can mix freely (e.g. `--judge opus --synth gpt-5.5`).
 
 2. Show current mode/preset:
@@ -44,12 +44,12 @@ self-contained; do not edit its state file yourself.
    node "${CLAUDE_PLUGIN_ROOT}/frontier/cli.cjs" run "<prompt>"
    ```
 
-   - `off`: prints a notice and exits without spawning anything —
+   - `off`: prints a notice and exits without spawning anything;
      normal Maestro behavior is unchanged.
    - `single`: dispatches the one selected CLI and prints its answer.
    - `fusion`: runs the panel in parallel, then the Opus judge and
-     synthesizer; prints the final answer (a one-line run meta —
-     preset, models, analysis present, failed models — goes to stderr).
+     synthesizer; prints the final answer (a one-line run meta of
+     preset, models, analysis present, and failed models goes to stderr).
 
 4. Report the engine's stdout verbatim. On an error the engine prints
    `ERROR [<failure_reason>]: <detail>` to stderr and exits non-zero;
@@ -66,7 +66,7 @@ Notes:
 - `gemini` works well as a panel member, but on Windows it is a poor
   `--judge`/`--synth` choice: it takes its prompt as an argument and the
   judge/synth prompts contain newlines, which the win32 arg-safety guard
-  refuses — the stage then degrades (judge omitted, synth falls back).
+  refuses, so the stage then degrades (judge omitted, synth falls back).
   Use `opus` or `gpt-5.5` for judge/synth on Windows. (No such limit on
   macOS/Linux, where args are passed directly.)
 
