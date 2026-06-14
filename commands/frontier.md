@@ -69,3 +69,14 @@ Notes:
   refuses — the stage then degrades (judge omitted, synth falls back).
   Use `opus` or `gpt-5.5` for judge/synth on Windows. (No such limit on
   macOS/Linux, where args are passed directly.)
+
+## Binary overrides
+
+The engine is zero-dependency CommonJS under `frontier/`. Each CLI is
+resolved from your `PATH`: `claude` (Opus 4.8), `codex` (GPT-5.5), and
+`gemini` (Gemini 3.1 Pro). When a binary is not on `PATH`, or you want a
+specific build, point at it with an environment variable:
+
+- `MAESTRO_CLAUDE_BIN` sets the `claude` binary path.
+- `MAESTRO_CODEX_BIN` sets the `codex` binary path.
+- `MAESTRO_GEMINI_BIN` sets the `gemini` binary path.

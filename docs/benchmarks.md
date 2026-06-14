@@ -90,6 +90,8 @@ voids):
   headless reporting behavior, which is why the verification hook
   enforces it structurally.
 
+### Retractions
+
 Honest reading: **Maestro ON has never beaten OFF on success rate in
 any measured cell**: at n=9 t09 is exactly tied (8/9 each) and t08
 and t12 are 9/9 both modes. The efficiency story did not survive

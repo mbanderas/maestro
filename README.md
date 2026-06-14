@@ -95,7 +95,7 @@ prefer `opus-gpt` to bound spend. The budget cap is opt-in
 CommonJS under [`frontier/`](frontier/); each CLI is resolved from your
 `PATH` (`claude`, `codex`, `gemini`). Binary overrides and the full
 operational reference are in
-[`docs/fusion-local-design.md`](docs/fusion-local-design.md#binary-overrides).
+[`commands/frontier.md`](commands/frontier.md#binary-overrides).
 
 ## What You Get
 
