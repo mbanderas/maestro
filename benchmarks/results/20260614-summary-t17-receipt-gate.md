@@ -88,7 +88,20 @@ node benchmarks/aggregate.cjs benchmarks/results/20260614-025602-claude-sonnet.j
 node benchmarks/aggregate.cjs benchmarks/results/20260614-031602-claude-sonnet.json --streams benchmarks/results/streams/20260614-031602-claude-sonnet --md
 ```
 
+## Postscript — runtime rolled back (2026-06-14)
+
+Following this NULL result, the unvalidated receipt-gate RUNTIME was removed
+from Maestro in a follow-up commit: `hooks/maestro-receipt-gate.cjs` and its
+test deleted, the receipt-gate Stop wiring removed from `hooks/hooks.json`, and
+the receipt-gate-specific runner plumbing (`-HookOffToo`, the
+`MAESTRO_RECEIPT_GATE` env handling, the `receipt_gate_env` dry-run field)
+removed from `run-maestro-bench.ps1`. The generic `-DryRun` switch was kept.
+This benchmark evidence (raw JSON, streams, metrics, this summary) is preserved
+unchanged; only the shipped hook/runner runtime was reverted. Receipt-gate:
+tested on t17, result NULL, gate not validated, runtime not shipped.
+
 ## Rollback
 
-Delete this summary, drop the two raw JSON files + two stream dirs, revert the
-INDEX line. The receipt-gate hook/runner switches are unchanged by this commit.
+This summary and its raw evidence are the permanent record of the experiment.
+The runtime rollback above is already applied; re-testing requires a fresh
+prereg (pre-screen OFF for false-completion; add firing logging to the hook).

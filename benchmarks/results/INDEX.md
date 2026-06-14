@@ -40,7 +40,9 @@ use `rg --no-ignore` for forensic audits.
   gate no headroom. Key boundary finding: the honesty gap is fixture-
   dependent — present only when the task tempts a visible false "done".
   Gate firing was active (staging confirmed) but not stream-verifiable.
-  Receipt gate stays wired-but-dormant; see `20260614-summary-t17-receipt-gate.md`.
+  Runtime hook ROLLED BACK after this NULL (hook + test + Stop wiring +
+  receipt-gate runner plumbing removed); evidence preserved. See
+  `20260614-summary-t17-receipt-gate.md`.
 - t16 (third independent checker-less fixture, duration parsing — disjoint
   from t14/t15, sonnet, n=6/arm): DIRECTIONAL, the cleanest separation in
   the corpus. claim-consistent ON 5/6 vs OFF 1/6 — gap **4** (frozen band
