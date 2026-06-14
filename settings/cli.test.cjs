@@ -71,6 +71,19 @@ function main() {
   check('status terse ultra', /terse\s+ultra/.test(s2));
   check('status context-bar off', /context-bar\s+off/.test(s2));
 
+  // no-desync: the REAL terse hook reads what the CLI wrote (not just the
+  // settings module). This is the central constraint for the terse store.
+  const HOOK = path.join(__dirname, '..', 'hooks', 'maestro-terse-mode.cjs');
+  function hookSees() {
+    return execFileSync(process.execPath, [HOOK], {
+      env, encoding: 'utf8', input: '{"hook_event_name":"SessionStart"}',
+    });
+  }
+  run(['set', 'terse', 'full']);
+  check('terse hook reads CLI write', /level:\s*full/.test(hookSees()));
+  run(['set', 'terse', 'off']);
+  check('terse hook sees off (no injection)', hookSees().trim() === '');
+
   // judge/synth flags
   run(['set', 'frontier', 'fusion:opus-gpt', '--judge', 'opus', '--synth', 'gpt-5.5']);
   const j2 = JSON.parse(run(['status', '--json']));
