@@ -1,0 +1,75 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 820 240" role="img" aria-labelledby="t d">
+  <title id="t">Maestro Frontier fusion presets</title>
+  <desc id="d">A dark reference card listing the five Maestro Frontier fusion presets: opus-duo, opus-gpt, gpt-duo (amber-highlighted as the Codex-only option), frontier-trio, and custom. Each row shows the preset name, panel composition, and judge plus synthesis model.</desc>
+  <style>
+    .bg    { fill: #0a0a0c; }
+    .lbl   { font: 600 13px ui-monospace, SFMono-Regular, Consolas, monospace; fill: #f0f0f4; }
+    .hdr   { font: 700 11px ui-monospace, SFMono-Regular, Consolas, monospace; fill: #9e9eaa; letter-spacing: 1px; }
+    .cell  { font: 400 12px ui-monospace, SFMono-Regular, Consolas, monospace; fill: #9e9eaa; }
+    .name  { font: 600 12px ui-monospace, SFMono-Regular, Consolas, monospace; fill: #f0f0f4; }
+    .amber { fill: #f59e0b; }
+    .amb-c { font: 600 12px ui-monospace, SFMono-Regular, Consolas, monospace; fill: #f59e0b; }
+    .divider { stroke: #222228; stroke-width: 1; }
+    .row-amb { fill: rgb(245 158 11 / 0.07); }
+    /* dash-flow accent under header */
+    .flow-line {
+      stroke: #f59e0b;
+      stroke-width: 1.5;
+      stroke-dasharray: 8 10;
+      stroke-dashoffset: 0;
+      fill: none;
+      animation: dash 1.6s linear infinite;
+    }
+    @keyframes dash { to { stroke-dashoffset: -36; } }
+    @media (prefers-reduced-motion: reduce) { .flow-line { animation: none; } }
+  </style>
+
+  <!-- card background -->
+  <rect class="bg" width="820" height="240" rx="14"/>
+
+  <!-- column guide lines (subtle) -->
+  <line class="divider" x1="24" y1="38" x2="796" y2="38"/>
+  <!-- vertical dividers -->
+  <line class="divider" x1="210" y1="14" x2="210" y2="226"/>
+  <line class="divider" x1="540" y1="14" x2="540" y2="226"/>
+  <!-- bottom border -->
+  <line class="divider" x1="24" y1="226" x2="796" y2="226"/>
+
+  <!-- animated amber underline under header row -->
+  <line class="flow-line" x1="24" y1="38" x2="796" y2="38"/>
+
+  <!-- ── HEADER ROW ── -->
+  <text class="hdr" x="36" y="28">PRESET</text>
+  <text class="hdr" x="222" y="28">PANEL</text>
+  <text class="hdr" x="552" y="28">JUDGE + SYNTH</text>
+
+  <!-- ── ROW 1: opus-duo ── y-band 38..78 -->
+  <text class="name" x="36" y="63" dominant-baseline="middle" dy="0">opus-duo</text>
+  <text class="cell" x="222" y="63" dominant-baseline="middle">Opus 4.8 ×2</text>
+  <text class="cell" x="552" y="63" dominant-baseline="middle">Opus 4.8</text>
+  <line class="divider" x1="24" y1="78" x2="796" y2="78"/>
+
+  <!-- ── ROW 2: opus-gpt ── y-band 78..118 -->
+  <text class="name" x="36" y="98" dominant-baseline="middle">opus-gpt</text>
+  <text class="cell" x="222" y="98" dominant-baseline="middle">Opus 4.8 + GPT-5.5</text>
+  <text class="cell" x="552" y="98" dominant-baseline="middle">Opus 4.8</text>
+  <line class="divider" x1="24" y1="118" x2="796" y2="118"/>
+
+  <!-- ── ROW 3: gpt-duo (amber highlight) ── y-band 118..158 -->
+  <rect class="row-amb" x="1" y="119" width="818" height="38" rx="0"/>
+  <text class="amb-c" x="36" y="138" dominant-baseline="middle">gpt-duo</text>
+  <text class="amb-c" x="222" y="138" dominant-baseline="middle">GPT-5.5 ×2</text>
+  <text class="amb-c" x="552" y="138" dominant-baseline="middle">GPT-5.5</text>
+  <line class="divider" x1="24" y1="158" x2="796" y2="158"/>
+
+  <!-- ── ROW 4: frontier-trio ── y-band 158..198 -->
+  <text class="name" x="36" y="178" dominant-baseline="middle">frontier-trio</text>
+  <text class="cell" x="222" y="178" dominant-baseline="middle">Opus 4.8 + GPT-5.5 + Gemini 3.1 Pro</text>
+  <text class="cell" x="552" y="178" dominant-baseline="middle">Opus 4.8</text>
+  <line class="divider" x1="24" y1="198" x2="796" y2="198"/>
+
+  <!-- ── ROW 5: custom ── y-band 198..226 -->
+  <text class="name" x="36" y="212" dominant-baseline="middle">custom</text>
+  <text class="cell" x="222" y="212" dominant-baseline="middle">1–8 of any models</text>
+  <text class="cell" x="552" y="212" dominant-baseline="middle">any  (--judge / --synth)</text>
+</svg>

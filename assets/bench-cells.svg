@@ -10,6 +10,11 @@
     .off  { fill: #44444e; }
     .on   { fill: #f59e0b; }
     .core { fill: rgb(245 158 11 / 0.16); stroke: #f59e0b; stroke-width: 1.5; }
+    /* Animated baseline only — dash-flow carries no data (bar values stay
+       static), so a frozen social-preview frame never misreads. */
+    .axis { stroke: #f59e0b; stroke-width: 1.5; fill: none; stroke-dasharray: 6 7; animation: dash 1.6s linear infinite; }
+    @keyframes dash { to { stroke-dashoffset: -26; } }
+    @media (prefers-reduced-motion: reduce) { .axis { animation: none; } }
   </style>
 
   <rect width="920" height="330" rx="12" fill="#0a0a0c"/>
@@ -26,7 +31,7 @@
   <text class="sub" x="658" y="34">core</text>
 
   <!-- gridlines: 0 to 0.50, 380 px per USD -->
-  <line class="grid" x1="70" y1="250" x2="880" y2="250"/>
+  <line class="axis" x1="70" y1="250" x2="880" y2="250"/>
   <line class="grid" x1="70" y1="212" x2="880" y2="212"/>
   <line class="grid" x1="70" y1="174" x2="880" y2="174"/>
   <line class="grid" x1="70" y1="136" x2="880" y2="136"/>

@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 860 200" role="img" aria-labelledby="t d">
+  <title id="t">What Maestro gives you — five capabilities</title>
+  <desc id="d">A dark card listing the five core Maestro capabilities: Done means done (verified status tokens, no false all done), Stays in its lane (surgical scope, no drive-by refactors), Long runs that land (checkpoints, caps, honest exits), Multi-agent only when it pays (a counted decision gate), and Receipts (a reproducible in-repo A/B benchmark).</desc>
+  <style>
+    .bg   { fill: #0a0a0c; }
+    .chip { fill: rgb(245 158 11 / 0.12); stroke: #f59e0b; stroke-width: 1.5; }
+    .num  { font: 700 11px ui-monospace, SFMono-Regular, Consolas, monospace; fill: #f59e0b; }
+    .lbl  { font: 600 13px ui-monospace, SFMono-Regular, Consolas, monospace; fill: #f0f0f4; }
+    .sub  { font: 400 11px ui-monospace, SFMono-Regular, Consolas, monospace; fill: #9e9eaa; }
+    .cap  { font: 600 10px ui-monospace, SFMono-Regular, Consolas, monospace; fill: #9e9eaa; letter-spacing: 1px; }
+    .rail { stroke: #f59e0b; stroke-width: 1.5; fill: none; stroke-dasharray: 6 7; animation: dash 1.6s linear infinite; }
+    @keyframes dash { to { stroke-dashoffset: -26; } }
+    @media (prefers-reduced-motion: reduce) { .rail { animation: none; } }
+  </style>
+
+  <!-- card background -->
+  <rect class="bg" width="860" height="200" rx="14"/>
+
+  <!-- amber dash-flow rail on left edge -->
+  <line class="rail" x1="20" y1="20" x2="20" y2="180"/>
+
+  <!-- header label -->
+  <text class="cap" x="42" y="22">WHAT YOU GET</text>
+
+  <!-- row 1: Done means done — y baseline 52 -->
+  <rect class="chip" x="42" y="34" width="22" height="22" rx="5"/>
+  <text class="num" x="53" y="50" text-anchor="middle">1</text>
+  <text class="lbl" x="76" y="50">Done means done</text>
+  <text class="sub" x="330" y="50">— verified status tokens, no false "all done"</text>
+
+  <!-- row 2: Stays in its lane — y baseline 82 -->
+  <rect class="chip" x="42" y="64" width="22" height="22" rx="5"/>
+  <text class="num" x="53" y="80" text-anchor="middle">2</text>
+  <text class="lbl" x="76" y="80">Stays in its lane</text>
+  <text class="sub" x="330" y="80">— surgical scope, no drive-by refactors</text>
+
+  <!-- row 3: Long runs that land — y baseline 112 -->
+  <rect class="chip" x="42" y="94" width="22" height="22" rx="5"/>
+  <text class="num" x="53" y="110" text-anchor="middle">3</text>
+  <text class="lbl" x="76" y="110">Long runs that land</text>
+  <text class="sub" x="330" y="110">— checkpoints, caps, honest exits</text>
+
+  <!-- row 4: Multi-agent only when it pays — y baseline 142 -->
+  <rect class="chip" x="42" y="124" width="22" height="22" rx="5"/>
+  <text class="num" x="53" y="140" text-anchor="middle">4</text>
+  <text class="lbl" x="76" y="140">Multi-agent only when it pays</text>
+  <text class="sub" x="330" y="140">— a counted decision gate</text>
+
+  <!-- row 5: Receipts — y baseline 172 -->
+  <rect class="chip" x="42" y="154" width="22" height="22" rx="5"/>
+  <text class="num" x="53" y="170" text-anchor="middle">5</text>
+  <text class="lbl" x="76" y="170">Receipts</text>
+  <text class="sub" x="330" y="170">— a reproducible in-repo A/B benchmark</text>
+</svg>

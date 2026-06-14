@@ -1,9 +1,9 @@
 <p align="center">
-  <img src="assets/maestro-frontier-banner.png" width="100%" alt="Maestro Frontier — frontier AI, conducted into one answer: the mascot conducts a panel of Opus 4.8, GPT-5.5, and Gemini 3.1 Pro through a judge into a grounded synthesis">
+  <img src="assets/maestro-frontier-banner.png" width="100%" alt="Maestro Frontier, frontier AI, conducted into one answer: the mascot conducts a panel of Opus 4.8, GPT-5.5, and Gemini 3.1 Pro through a judge into a grounded synthesis">
 </p>
 
 <p align="center">
-  <strong>Maestro Frontier</strong> is a local multi-CLI fusion engine: fan a prompt to Opus 4.8, GPT-5.5, and Gemini 3.1 Pro in parallel, have Opus 4.8 judge their answers into a structured analysis (consensus, contradictions, unique insights, blind spots — compare, not merge), then synthesize a grounded response that does not majority-vote. Built on Maestro's proven discipline layer: verified done-claims, surgical scope, long-run guardrails, and a research-backed multi-agent gate.
+  <strong>Maestro Frontier</strong> is a local multi-CLI fusion engine: fan one prompt to Opus 4.8, GPT-5.5, and Gemini 3.1 Pro in parallel, have Opus judge their answers into a structured analysis, then synthesize a grounded response that does not majority-vote. It runs on Maestro's proven discipline layer: verified done-claims, surgical scope, and a research-backed multi-agent gate.
 </p>
 
 <p align="center">
@@ -37,105 +37,119 @@ Copy-paste install commands are in [Quick Start](#quick-start) below.
 
 > **Already have a `CLAUDE.md`, `AGENTS.md`, or `.cursorrules`?** Don't overwrite them, you'll lose your project context. See [Quick Start](#quick-start) for how to merge Maestro into your existing setup.
 
+## Maestro Frontier: Local AI Fusion
+
+Maestro Frontier is an opt-in, zero-dependency **multi-CLI fusion
+engine** built from the AI CLIs already on your machine. It fans a
+prompt out to a parallel **panel** of local models, has Opus 4.8
+**judge** their answers into a structured analysis (consensus,
+contradictions, unique insights, blind spots (compare, not merge),
+then has Opus write a **grounded synthesis** that explicitly does not
+majority-vote. It is the project's new default identity; the doctrine,
+hooks, skills, and benchmarks are unchanged; the discipline layer is
+its proven foundation.
+
+<p align="center">
+  <img src="assets/frontier-pipeline.svg" alt="Maestro Frontier fusion pipeline: prompt fans out to parallel CLI panel (Opus 4.8, GPT-5.5, Gemini 3.1 Pro), Opus 4.8 judge produces structured analysis (consensus, contradictions, unique insights, blind spots), then Opus 4.8 synthesizer writes a grounded response" width="900">
+</p>
+
+It ships with the plugin and is driven by `/maestro:frontier`. Three
+modes, switched at will, **`off` by default** so installing or
+upgrading changes nothing until you opt in:
+
+| Mode | Behavior |
+|---|---|
+| `off` | Normal Maestro. Engine never invoked; zero behavior change. The default. |
+| `single <model>` | Route the prompt to one local CLI and return its answer. No panel, no judge, no synth. |
+| `fusion <preset>` | Full panel -> Opus judge analysis -> grounded Opus synthesis, with graceful degradation and one-level recursion bounds. |
+
+```text
+/maestro:frontier status                       # show current mode
+/maestro:frontier single opus                  # one-CLI mode
+/maestro:frontier fusion opus-gpt              # panel = Opus + GPT-5.5
+/maestro:frontier run "your prompt here"       # run under the current mode
+/maestro:frontier off                          # back to normal Maestro
+```
+
+<p align="center">
+  <img src="assets/frontier-presets.svg" width="820" alt="Maestro Frontier fusion presets reference card">
+</p>
+
+Presets define the panel; the judge and synthesizer default to Opus 4.8
+(`claude -p`):
+
+- **`opus-duo`**: two independent Opus runs, isolating the synthesis lift.
+- **`opus-gpt`**: Opus + GPT-5.5 (via `codex exec`); the recommended default for bounded spend.
+- **`gpt-duo`**: two GPT-5.5 runs whose judge and synthesizer also run on GPT-5.5: a Codex-only fusion that needs no `claude`.
+- **`frontier-trio`**: Opus + GPT-5.5 + Gemini 3.1 Pro (via `gemini -p`).
+- **`custom`**: 1-8 of the known models.
+
+Pass `--judge <model>` / `--synth <model>` to run those stages on any
+model for any preset (e.g. `--judge opus --synth gpt-5.5`), so you can mix
+the panel and the judge/synth freely. Degradation is graceful: a partial
+panel failure still returns a synthesis plus `failed_models`; a judge
+failure synthesizes from the raw responses; a hard failure returns a typed
+`failure_reason`. A `FUSION_DEPTH` guard bounds recursion to one level.
+
+Honest scope, measured rather than implied: the **engine is built,
+unit-tested (degradation, recursion, budget, anti-majority all covered),
+and verified end-to-end on real runs of `single` mode and the
+`opus-gpt`, `opus-duo`, and `frontier-trio` presets**. The `gpt-duo`
+preset and `--judge`/`--synth` selection share that same code path and
+are unit-tested, but not yet live-run. The quality *lift* of local fusion
+is **not yet benchmarked in this repo**; no proven lift is claimed.
+Operational caveats recorded in the risk burndown: headless web access
+differs per CLI (Codex confirmed live; Claude and Gemini are gated
+`webTools:false` in this build), and each cold `claude -p`
+panel/judge/synth call is non-trivial in cost; use small prompts, and
+prefer `opus-gpt` to bound spend. The budget cap is opt-in
+(`tokenBudget`, default disabled). The engine is zero-dependency
+CommonJS under [`frontier/`](frontier/); each CLI is resolved from your
+`PATH` (`claude`, `codex`, `gemini`), overridable with `MAESTRO_CLAUDE_BIN`,
+`MAESTRO_CODEX_BIN`, or `MAESTRO_GEMINI_BIN`.
+
 ## What You Get
+
+<p align="center">
+  <img src="assets/what-you-get.svg" width="860" alt="What Maestro gives you: five capabilities on a dark card">
+</p>
 
 Drop two markdown files into your repo and your agent gains five things:
 
-1. **Done means done.** Completion reports must carry a verification
-   status (`VERIFIED` / `UNVERIFIED` / `FAIL`) backed by an actual
-   type-check, lint, or test run, and an optional hook enforces it
-   structurally. No more "All done!" on code that was never run.
-2. **It stays in its lane.** Surgical-scope rules: every changed line
-   traces back to what you asked for. No drive-by refactors, no
-   formatting sweeps, no "improvements" you didn't request, no
-   deleting code it couldn't verify was dead.
-3. **Long runs that land.** Overnight tasks and recurring loops get
-   checkpoint artifacts, explicit end conditions, iteration caps, and
-   re-grounding rules: the difference between an agent that ships at
-   6am and one that drifted off-goal at 2am. This repo's own benchmark
-   loops run on exactly these rules.
-4. **Multi-agent only when it pays.** A counted Decision Gate routes
-   work single-agent by default and demands an explicit verdict line
-   before the first edit. Orchestration (Planner, Specialists,
-   adversarial Staff-Engineer review) stays behind the gate, reserved
-   for work genuinely too big for one pass.
-5. **Receipts.** A reproducible A/B benchmark harness ships in-repo,
-   and the results below include our own retractions and nulls. You
-   can see exactly what is proven and what is open, then rerun every
-   number yourself.
-
-What that looks like at the close of a run, quoted verbatim from the
-committed benchmark streams:
+1. **Done means done.** Completion reports carry a verification status (`VERIFIED` / `UNVERIFIED` / `FAIL`) backed by an actual type-check, lint, or test run, with an optional hook enforcing it structurally.
+2. **It stays in its lane.** Surgical-scope rules: every changed line traces back to what you asked for: no drive-by refactors, no formatting sweeps, no deleting code it couldn't verify was dead.
+3. **Long runs that land.** Overnight tasks and recurring loops get checkpoint artifacts, explicit end conditions, iteration caps, and re-grounding rules. This repo's own benchmark loops run on exactly these rules.
+4. **Multi-agent only when it pays.** A counted Decision Gate routes work single-agent by default and demands an explicit verdict line before the first edit; orchestration stays behind it.
+5. **Receipts.** A reproducible A/B benchmark harness ships in-repo, with our own retractions and nulls. Rerun every number yourself.
 
 <p align="center">
   <img src="assets/discipline-demo.svg" alt="Two terminal close-outs quoted verbatim from benchmark streams: a baseline agent declares all done although no check ran, while the Maestro run opens with a counted GATE verdict line and exits with the honest status UNVERIFIED, no type-checker or linter configured in this project" width="860">
 </p>
 
-The price, measured rather than implied: ON spends about 10% more
-than a clean agent on a 10-module refactor and 38% more on a 16-file
-feature (n=9 medians, t08/t12 below). You are buying verification
-and auditability, not speed. Whether that trade pays depends on who
-is watching. A kernel rewrite (2026-06-11) cut always-on bytes 41%
-and fixed status reporting (12/12 vs 3/30) with no measurable cost
-change — the overhead is behavioral, not byte-weight. The same day's
-hook-enforcement loop made the remaining prose rule structural: a
-PreToolUse hook now denies doctrine re-reads outright (24/24 attempts
-denied across 18 runs, oracle pass unchanged), and one added S7.3
-line took unsupported VERIFIED claims from 5/6 to 0/6 on the
-checker-less refactor task — again at no measurable cost change. A
-later checker-less trap task (t14) adds the first directional sign
-the premium is *earned* behavior, not vocabulary: Maestro buys more
-honest completion behavior at about +29% median cost (n=6,
-directional only — no token saving, no success-rate gain, no proven
-honesty effect; numbers under Benchmarks).
+The price, measured rather than implied: ON spends about 10% more than a
+clean agent on a 10-module refactor and 38% more on a 16-file feature
+(n=9 medians, t08/t12 below); you are buying verification and
+auditability, not speed. The overhead is behavioral, not byte-weight: a
+kernel rewrite cut always-on bytes 41% and fixed status reporting
+(12/12 vs 3/30) with no measurable cost change. The premium earns its
+keep on unattended work (overnight loops, scheduled runs, CI agents)
+where nobody reads the 3am transcript and the close-out claim is all you
+have.
 
-Supervised, interactive use: you are already the audit layer. On
-tasks a clean agent passes anyway, the measured data shows no
-outcome difference; the premium buys scope guarantees and honest
-status lines. Worth it when drive-by refactors and false "all done"
-claims cost you review time.
-
-Unattended work is where the premium earns its keep. Overnight
-loops, scheduled runs, CI agents: nobody reads the transcript at
-3am, and the close-out claim is all you have. The alternative,
-auditing a 16-file diff after the fact, costs comparable tokens and
-cannot recover what the run never recorded: whether any check
-actually ran, or whether that unrequested "improvement" was
-deliberate. Maestro spends the same money in-line, while the
-information still exists, and leaves a verdict line, a status token,
-and a checkpoint trail you can trust without replaying the run.
-
-That regime is not hypothetical. Maestro runs under its own rules:
-the four most recent maintenance loops ran unattended on the S10
-long-horizon doctrine, with checkpoint artifacts, pre-declared budget
-ceilings, and dual termination. Together they made 75 benchmark runs
-for $30.12 against $47 in caps, produced 0 voided runs, and shipped
-the retractions you can read below with no human in the loop.
-
-A note on what Maestro does *not* optimize: output-style compression
-(terse-reply tools of the caveman-mode class) is orthogonal to this
-doctrine and worth little in agentic work — visible prose is roughly
-5% of an agent run's output tokens, and output tokens are roughly a
-quarter of its cost, so style compression touches ~1% of spend. In
-chat-heavy use the same lever is worth 20-40% of total. If your
-workload is conversation, add a style tool on top; Maestro will not
-grow a kernel toggle for it.
-
-Maestro is built on [peer-reviewed research](https://marklaursen.com/blog/why-your-multi-agent-ai-system-keeps-failing) showing that **79% of multi-agent failures come from coordination breakdowns, not model capability**, and that **three optimized agents outperform seven**.
-
-## Why Maestro Exists
-
-Most multi-agent frameworks add agents to make things faster. The research says the opposite: adding agents usually makes things worse.
-
-| Finding | Source |
-|---|---|
-| Multi-agent systems fail 41-87% of the time | [MAST](https://arxiv.org/abs/2503.13657), NeurIPS 2025 |
-| 79% of failures come from coordination, not capability | [MAST](https://arxiv.org/abs/2503.13657), NeurIPS 2025 |
-| 3 optimized agents outperform 7 (53-68% cost reduction) | [DyLAN](https://arxiv.org/abs/2310.02170), COLM 2024 |
-| Sequential reasoning degrades 39-70% under multi-agent | [Scaling Agent Systems](https://arxiv.org/abs/2512.08296) (Google/MIT), 2025 |
-| Architecture-task fit, not agent count, predicts multi-agent gains | [Scaling Agent Systems](https://arxiv.org/abs/2512.08296) (Google/MIT), 2025 |
-
-Maestro is built on that restraint. It makes the single agent you already have rigorous by default (verification, scope, honest reporting) and holds multi-agent coordination behind a counted gate until a task actually demands it. Per the research above, restraint is the orchestration decision with the most evidence behind it.
+That regime is not hypothetical: Maestro runs under its own rules. The
+four most recent maintenance loops ran unattended on the S10 long-horizon
+doctrine, with checkpoint artifacts and pre-declared budget ceilings, and
+together made 75 benchmark runs for $30.12 against $47 in caps, produced 0
+voided runs, and shipped the retractions you can read below with no human
+in the loop. Output-style compression (terse-reply tools) is orthogonal
+and worth ~1% of agentic spend; Maestro will not grow a kernel toggle for
+it. The whole design rests on [peer-reviewed
+research](https://marklaursen.com/blog/why-your-multi-agent-ai-system-keeps-failing)
+showing **79% of multi-agent failures come from coordination, not model
+capability**, and that **three optimized agents outperform seven**;
+adding agents usually makes things worse, so Maestro makes the single
+agent you already have rigorous by default and holds multi-agent
+coordination behind a counted gate.
 
 ## Architecture
 
@@ -143,25 +157,28 @@ Maestro is built on that restraint. It makes the single agent you already have r
   <img src="assets/maestro-flow.svg" alt="Maestro orchestration flow: task through the S1 decision gate to either a single agent or the planner, specialist group, and staff engineer pipeline, converging on verified delivery" width="780">
 </p>
 
-**Universal Rules (the discipline core):** Verification gates, status vocabulary, surgical scope, edit safety, and context economy, applied to every task in both modes. This is the part of Maestro working on every prompt, including the one-line fixes.
-
-**Decision Gate:** Routes each task to single-agent or multi-agent execution based on complexity, parallelizability, and token cost. The gate counts the work and emits an explicit verdict line (`GATE: files=<n> concerns=<m> -> ...`) before the first edit. Most tasks stay single-agent.
-
-**Planner:** Decomposes complex tasks into parallel and sequential subtasks with clear boundaries and acceptance criteria.
-
-**Specialists:** Execute focused subtasks with scoped context, hard-capped at 4 per parallel group based on the DyLAN and agent-scaling findings.
-
-**Cross-Talk Routing:** Detects when one specialist's output affects another and routes the minimum necessary context between them.
-
-**Staff Engineer Review:** Performs adversarial final verification to catch contradictions, breakage, and architectural drift.
-
-**Long-Horizon Operation:** Checkpoint artifacts, self-pacing, and explicit end conditions govern recurring or multi-session autonomous runs (Section 10 of the doctrine, including the Loop Engineering rules). Loop exits are graded by a verifier subagent in a fresh context, never self-assessed; checkpoint findings graduate failure note → investigated cause → verified fact → distilled rule, with rules consulted before re-deriving; hillclimbing loops bet on structural changes over scalar tuning:
+- **Universal Rules**: verification gates, status vocabulary, surgical scope, edit safety, context economy; applied to every task in both modes, including one-line fixes.
+- **Decision Gate**: counts the work and emits a verdict line (`GATE: files=<n> concerns=<m> -> ...`) before the first edit. Most tasks stay single-agent.
+- **Planner**: decomposes complex tasks into parallel and sequential subtasks with boundaries and acceptance criteria.
+- **Specialists**: execute focused subtasks with scoped context, hard-capped at 4 per parallel group (DyLAN and agent-scaling findings).
+- **Cross-Talk Routing**: detects when one specialist's output affects another and routes the minimum necessary context.
+- **Staff Engineer Review**: adversarial final verification for contradictions, breakage, and architectural drift.
+- **Long-Horizon Operation**: checkpoint artifacts, self-pacing, and explicit end conditions for recurring or multi-session runs; exits graded by a fresh-context verifier, never self-assessed.
 
 <p align="center">
   <img src="assets/loop-lifecycle.svg" alt="Loop engineering lifecycle: read checkpoint, re-anchor goal, execute phase, verify with a fresh-context verifier grading the exit, write checkpoint distilling findings into rules, event or wakeup, exiting to a final report on success or hard cap" width="440">
 </p>
 
-The specialist manifest (S3) and cross-talk handoff packet (S4/S6) also ship as optional machine-readable JSON Schemas in [`schemas/`](schemas/) for tooling and validation. The prose doctrine remains the source of truth.
+**How it works:**
+
+1. You give your AI coding agent a task as normal.
+2. The Decision Gate counts the work and emits a verdict line; most tasks run single-agent with no coordination overhead.
+3. Single-agent work follows the Universal Rules: scoped edits, verification before any completion claim, an honest status token at the end.
+4. Work that crosses the gate's thresholds goes Planner -> Specialists -> adversarial Staff Engineer review.
+5. Long or recurring runs follow the Long-Horizon rules: checkpoint artifacts, explicit end conditions, iteration caps.
+6. You get a result with a verification status you can act on, not a vibe.
+
+The specialist manifest (S3) and cross-talk handoff packet (S4/S6) also ship as machine-readable JSON Schemas in [`schemas/`](schemas/) for tooling. The prose doctrine remains the source of truth.
 
 ## Quick Start
 
@@ -180,8 +197,8 @@ guard, phase-scope guard, gate reminder, opt-in gate telemetry) and the
 `/maestro:context-bar` command. Two things it cannot do for you:
 the doctrine files (`AGENTS.md`/`CLAUDE.md`) still go in your project
 root (Option B), and the status line script still needs a one-line
-`statusLine` settings entry (see [Context Bar](#claude-code-context-bar))
-— plugins cannot set the main status line.
+`statusLine` settings entry (see [`docs/context-bar.md`](docs/context-bar.md));
+plugins cannot set the main status line.
 
 **Option B, plain files (doctrine only, zero machinery):**
 
@@ -194,7 +211,7 @@ Claude Code reads `CLAUDE.md` on startup. The `@AGENTS.md` import inside it pull
 
 **Already have a `CLAUDE.md`?** Don't overwrite it. Instead, download just `AGENTS.md` and add `@AGENTS.md` to the top of your existing `CLAUDE.md` to import the doctrine. You can optionally merge the runtime rules from Maestro's [`CLAUDE.md`](CLAUDE.md) into yours.
 
-**Optional:** Maestro also ships a context-window progress bar for the Claude Code status line; see [Context Bar](#claude-code-context-bar).
+**Optional:** Maestro also ships a context-window progress bar for the Claude Code status line; see [`docs/context-bar.md`](docs/context-bar.md).
 
 ### Gemini
 
@@ -223,34 +240,9 @@ curl -O https://raw.githubusercontent.com/mbanderas/maestro/main/.cursorrules
 
 **Already have a `.cursorrules`?** Don't overwrite it. Cursor does not support file imports, so append the contents of Maestro's [`.cursorrules`](.cursorrules) to your existing file.
 
-## How It Works
-
-1. You give your AI coding agent a task as normal
-2. The **Decision Gate** counts the work and emits a verdict line. Most tasks run single-agent, carrying the full discipline layer with no coordination overhead
-3. Single-agent work follows the **Universal Rules**: scoped edits, verification before any completion claim, an honest status token at the end
-4. For work that crosses the gate's thresholds, the **Planner** decomposes it, **Specialists** execute with scoped context, and the **Staff Engineer** reviews adversarially
-5. Long or recurring runs follow the **Long-Horizon rules**: checkpoint artifacts, explicit end conditions, iteration caps
-6. You get a result with a verification status you can act on, not a vibe
-
-## Context Architecture
-
-Maestro minimizes token cost through progressive context loading: agents start from the smallest artifact that can orient their work and expand to live code only when needed.
-
-**Orientation artifacts:** Optional project maps or subsystem indexes that give the Planner and Specialists a cheap structural overview before reading code. This repo ships [`docs/agent-map.md`](docs/agent-map.md) as the first-stop navigation file, so workers start from narrow context instead of rediscovering the repo from scratch.
-
-**Blast-radius-aware routing:** The Decision Gate considers file centrality when choosing execution mode. Tasks touching dependency hubs (shared interfaces, core modules) bias toward single-agent or tighter review. Tasks isolated in narrow subsystems decompose more safely.
-
-**Index-first retrieval:** When a verified orientation artifact exists, agents read it before broad file discovery. Default search also skips raw benchmark streams and stale root checkpoints via [`.ignore`](.ignore); use `rg --no-ignore` when a forensic audit needs those files. This eliminates repeated repo exploration across specialists, one of the largest sources of wasted tokens in multi-agent workflows.
-
-**Orientation is not authority:** Generated maps and project indexes are navigation aids, not source of truth. Agents always verify against live code before acting, preventing stale context from becoming silent corruption.
-
-These features follow the same principle as the rest of Maestro: reducing coordination cost and context duplication is more effective than adding capability.
-
 ## Runtime Adapters
 
-Maestro separates **portable orchestration doctrine** from **runtime-specific adapters**. The core logic (Decision Gate, Planner, Specialists, Cross-Talk, Staff Engineer, Universal Rules, Compression) lives in `AGENTS.md` and works across any agent runtime.
-
-Runtime adapters are thin wrappers that import the shared doctrine and add only what is specific to that runtime:
+Maestro separates **portable orchestration doctrine** from **runtime-specific adapters**. The core logic lives in `AGENTS.md` and works across any agent runtime; adapters are thin wrappers that import it and add only what is runtime-specific.
 
 | File | Role | What it adds |
 |---|---|---|
@@ -258,401 +250,32 @@ Runtime adapters are thin wrappers that import the shared doctrine and add only 
 | `CLAUDE.md` | Claude Code adapter | Subagent/team routing, hooks, context limits, tool scoping, long-horizon mapping (/loop, schedules) |
 | `GEMINI.md` | Gemini adapter | Execution mapping, instruction precedence, verification notes, long-horizon note |
 | `.cursorrules` | Cursor adapter | Kernel copy (Cursor does not support imports); full S2-S6 in docs/orchestration.md |
-| [`docs/codex.md`](docs/codex.md) | Codex guide | AGENTS.md precedence and 32 KiB cap, Codex subagent mapping, Automations long-horizon mapping (no separate adapter file; Codex reads `AGENTS.md` natively) |
+| [`docs/codex.md`](docs/codex.md) | Codex guide | AGENTS.md precedence and 32 KiB cap, Codex subagent mapping, Automations long-horizon mapping (Codex reads `AGENTS.md` natively) |
 
-GitHub Copilot, Cline, and Windsurf read `AGENTS.md` directly (verified
-against their official docs, 2026-06-10), so the portable core works
-there with no adapter. Runtime-specific niceties (hooks, context bar,
-long-horizon loop commands) remain Claude Code features. Maestro's
-always-on kernel (`AGENTS.md`) is ~8 KB, under Windsurf's
-12,000-character workspace rule limit and roughly a quarter of Codex's
-default 32 KiB instruction budget; the full multi-agent protocol loads
-on demand from `docs/orchestration.md`.
+GitHub Copilot, Cline, and Windsurf read `AGENTS.md` directly, so the portable core works there with no adapter. Maestro's always-on kernel (`AGENTS.md`) is ~8 KB, under Windsurf's 12,000-character limit and roughly a quarter of Codex's 32 KiB budget; the full multi-agent protocol loads on demand from `docs/orchestration.md`.
 
-**Design principle:** runtime-specific features stay in adapters unless they generalize across environments. This keeps the shared doctrine portable and prevents provider-specific details from bloating the core files.
+**Subagents vs Agent Teams (Claude Code):** Maestro's `CLAUDE.md` adapter
+routes automatically. **Subagents** run within one session and report
+results to the parent; this is the default for narrow independent work.
+**[Agent teams](https://code.claude.com/docs/en/agent-teams)** coordinate
+multiple sessions with peer-to-peer messaging, used only for long-running
+parallel workstreams, competing-hypothesis debugging, or cross-layer
+builds. Agent teams are experimental and Claude Code-only.
 
-Adding a new runtime adapter means creating a thin file that imports `AGENTS.md` and maps Maestro concepts to the runtime's capabilities.
+## Claude Code Tools
 
-### Claude Code: Subagents vs Agent Teams
+Optional Claude Code machinery; full install steps in the linked docs.
 
-Claude Code offers two mechanisms for parallel work, subagents and [agent teams](https://code.claude.com/docs/en/agent-teams), and Maestro's `CLAUDE.md` adapter automatically routes to the right one based on the task:
-
-- **Subagents** run within a single session: they execute a scoped task and report results back to the parent agent. Maestro defaults to subagents for most parallel work, narrow independent tasks where only the result matters.
-- **[Agent teams](https://code.claude.com/docs/en/agent-teams)** coordinate multiple independent Claude Code sessions with shared task lists and direct inter-agent messaging. Unlike subagents, teammates communicate peer-to-peer and self-coordinate. Maestro routes to agent teams only when peer-to-peer coordination is materially useful: long-running parallel workstreams, competing-hypothesis debugging, or cross-layer feature builds where agents need to discuss and challenge each other's work.
-
-This routing is automatic. Maestro's Decision Gate evaluates the task, and the Claude adapter selects the execution mode: subagents by default, teams only when the collaboration overhead is justified by the task's complexity.
-
-Agent teams are **experimental and Claude Code-only**; they are not available in Gemini, Codex, Cursor, or other runtimes. Codex has its own subagent workflows, but Codex only spawns subagents when the user explicitly asks for them; see [`docs/codex.md`](docs/codex.md). Maestro's portable core uses the general concept of "specialists" which each runtime maps to its own execution model.
-
-### Claude Code: Verification Hook
-
-Maestro ships an optional `SubagentStop` hook for Claude Code that
-enforces the Section 7.3 verification rule structurally: no prompt
-reminder, no relying on the model to police itself. When a subagent
-stops, the hook checks three things and emits a soft warning if any
-fails:
-
-1. Are there orphaned `background_tasks` still active? If so, the
-   subagent is declaring complete while work is still running. Scoped
-   to agents whose transcript shows they spawned background work —
-   the payload field is machine-wide, and unrelated sessions' tasks
-   must not nag an agent that spawned nothing.
-2. Did a file-modifying subagent run a type-checker, linter, or test
-   runner? If not, it likely skipped verification.
-3. Does a file-modifying subagent's final report carry one of the
-   Section 7.3 status tokens (`VERIFIED` / `PENDING_REVIEW` /
-   `UNVERIFIED` / `FAIL`)? Uppercase only; lowercase "verified" in
-   prose is not a status declaration.
-
-Three safety properties keep the warning from doing more harm than
-good (a warning on stop extends the subagent's turn, so a careless
-guard can displace the final report the orchestrator is waiting for):
-
-- **Read-only agents are exempt.** Explore/Plan agent types, or any
-  agent whose transcript shows no `Edit`/`Write`/`NotebookEdit` calls
-  and no recognizable Bash mutation (e.g. `git commit`), have nothing
-  to verify and are never warned.
-- **Fires at most once per agent.** The warning re-prompts the agent,
-  which stops again and re-triggers the hook; without a once-guard
-  the loop pushes the real report out of the final message.
-- **The report survives.** The warning text tells the agent to restate
-  its complete final report, since only the last message is returned
-  to the orchestrator.
-
-The hook never blocks. It injects `additionalContext` so the next
-turn sees the warning and can re-verify. Recognized tools include
-`tsc --noEmit`, `eslint`, `pytest`, `jest`, `vitest`, `go test`,
-`cargo test`, `npm/pnpm/yarn test`, `ruff check`, `mypy`,
-`prettier --check`, and `biome check`.
-
-The file ships as `.cjs` so Node treats it as CommonJS even if a
-`"type": "module"` package.json exists somewhere above your
-`~/.claude/hooks/` directory. Tests live next to it; run
-`node hooks/maestro-subagent-guard.test.cjs` from the repo root.
-
-**Install:** download into `~/.claude/hooks/` and wire into
-`~/.claude/settings.json`:
-
-**Install** on Windows / PowerShell:
-
-```powershell
-mkdir ~/.claude/hooks -Force
-curl.exe -o ~/.claude/hooks/maestro-subagent-guard.cjs https://raw.githubusercontent.com/mbanderas/maestro/main/hooks/maestro-subagent-guard.cjs
-```
-
-**Install** on macOS / Linux:
-
-```bash
-mkdir -p ~/.claude/hooks
-curl -o ~/.claude/hooks/maestro-subagent-guard.cjs https://raw.githubusercontent.com/mbanderas/maestro/main/hooks/maestro-subagent-guard.cjs
-```
-
-Add a `SubagentStop` entry under `hooks` in `~/.claude/settings.json`
-(merge with any existing hooks block):
-
-```jsonc
-"hooks": {
-  "SubagentStop": [
-    {
-      "matcher": "",
-      "hooks": [
-        {
-          "type": "command",
-          "command": "node \"/absolute/path/to/.claude/hooks/maestro-subagent-guard.cjs\""
-        }
-      ]
-    }
-  ]
-}
-```
-
-On Windows, use the absolute path with escaped backslashes, e.g.
-`"C:\\Users\\you\\.claude\\hooks\\maestro-subagent-guard.cjs"`.
-
-The hook requires Claude Code 2.1.145 or later; earlier versions do
-not include `background_tasks` in the `SubagentStop` payload. The
-`agent_type` and `agent_transcript_path` fields it reads were added
-earlier (2.1.69 and 2.0.42); when absent the hook degrades gracefully
-and simply warns less.
-
-### Claude Code: Hook Pack
-
-Five more optional hooks enforce other Maestro rules structurally.
-Same engineering rules as the verification hook: plain Node `.cjs`,
-zero dependencies, fire-once guards, graceful degradation on missing
-payload fields. All warn softly except the doctrine guard, which
-denies by design — re-reading autoloaded doctrine is never the right
-call, and the deny reason tells the model what to use instead. Tests
-live next to each hook (`node hooks/<name>.test.cjs`).
-
-| Hook | Event | Enforces |
-|---|---|---|
-| `maestro-doctrine-guard.cjs` | `PreToolUse` (Read) | S7.2 context integrity: denies a `Read` of `AGENTS.md`/`CLAUDE.md` while the doctrine is autoloaded (doctrine file present at cwd) with an instructive reason. `MAESTRO_DOCTRINE_GUARD=once` allows the first read per session (for runtimes whose subagents lack the doctrine in context); `=0` disables. `docs/orchestration.md` is never guarded |
-| `maestro-loop-guard.cjs` | `Stop` | S10 long-horizon: warns when a looping session (session crons or `ScheduleWakeup` calls) has no `_<task>.md` checkpoint artifact in the working directory, or exceeds the iteration cap (`MAESTRO_LOOP_MAX_ITER`, default 50) |
-| `maestro-phase-scope.cjs` | `PostToolUse` | S7.1 phase scope: warns when more than 5 distinct files (`MAESTRO_PHASE_FILE_CAP`) are modified in a single turn |
-| `maestro-gate-reminder.cjs` | `UserPromptSubmit` | S1 gate: injects the counted-verdict checklist and spawn reminder on the first prompt of a session (fire-once; opt-out via `MAESTRO_GATE_REMINDER=0`) |
-| `maestro-gate-telemetry.cjs` | `SessionEnd` | S1 audit (opt-in): logs one JSON line per session with gate decision (single/multi), specialist count, end reason |
-
-**Privacy (gate telemetry):** the telemetry hook does nothing unless
-you set `MAESTRO_TELEMETRY=1`. When enabled it appends to
-`~/.claude/maestro-telemetry.jsonl` on your machine: counts, the end
-reason, and the project folder *name* only. No prompts, no file
-contents, no full paths, no network, ever.
-
-**Install** on Windows / PowerShell:
-
-```powershell
-mkdir ~/.claude/hooks -Force
-curl.exe -o ~/.claude/hooks/maestro-doctrine-guard.cjs https://raw.githubusercontent.com/mbanderas/maestro/main/hooks/maestro-doctrine-guard.cjs
-curl.exe -o ~/.claude/hooks/maestro-loop-guard.cjs https://raw.githubusercontent.com/mbanderas/maestro/main/hooks/maestro-loop-guard.cjs
-curl.exe -o ~/.claude/hooks/maestro-phase-scope.cjs https://raw.githubusercontent.com/mbanderas/maestro/main/hooks/maestro-phase-scope.cjs
-curl.exe -o ~/.claude/hooks/maestro-gate-reminder.cjs https://raw.githubusercontent.com/mbanderas/maestro/main/hooks/maestro-gate-reminder.cjs
-curl.exe -o ~/.claude/hooks/maestro-gate-telemetry.cjs https://raw.githubusercontent.com/mbanderas/maestro/main/hooks/maestro-gate-telemetry.cjs
-```
-
-**Install** on macOS / Linux:
-
-```bash
-curl -o ~/.claude/hooks/maestro-doctrine-guard.cjs https://raw.githubusercontent.com/mbanderas/maestro/main/hooks/maestro-doctrine-guard.cjs
-curl -o ~/.claude/hooks/maestro-loop-guard.cjs https://raw.githubusercontent.com/mbanderas/maestro/main/hooks/maestro-loop-guard.cjs
-curl -o ~/.claude/hooks/maestro-phase-scope.cjs https://raw.githubusercontent.com/mbanderas/maestro/main/hooks/maestro-phase-scope.cjs
-curl -o ~/.claude/hooks/maestro-gate-reminder.cjs https://raw.githubusercontent.com/mbanderas/maestro/main/hooks/maestro-gate-reminder.cjs
-curl -o ~/.claude/hooks/maestro-gate-telemetry.cjs https://raw.githubusercontent.com/mbanderas/maestro/main/hooks/maestro-gate-telemetry.cjs
-```
-
-Wire into `~/.claude/settings.json` (merge with any existing `hooks`
-block; use absolute paths, escaped backslashes on Windows):
-
-```jsonc
-"hooks": {
-  "PreToolUse": [
-    { "matcher": "Read", "hooks": [
-      { "type": "command", "command": "node \"/absolute/path/to/.claude/hooks/maestro-doctrine-guard.cjs\"" }
-    ]}
-  ],
-  "Stop": [
-    { "matcher": "", "hooks": [
-      { "type": "command", "command": "node \"/absolute/path/to/.claude/hooks/maestro-loop-guard.cjs\"" }
-    ]}
-  ],
-  "PostToolUse": [
-    { "matcher": "Edit|Write|NotebookEdit", "hooks": [
-      { "type": "command", "command": "node \"/absolute/path/to/.claude/hooks/maestro-phase-scope.cjs\"" }
-    ]}
-  ],
-  "UserPromptSubmit": [
-    { "matcher": "", "hooks": [
-      { "type": "command", "command": "node \"/absolute/path/to/.claude/hooks/maestro-gate-reminder.cjs\"" }
-    ]}
-  ],
-  "SessionEnd": [
-    { "matcher": "", "hooks": [
-      { "type": "command", "command": "node \"/absolute/path/to/.claude/hooks/maestro-gate-telemetry.cjs\"" }
-    ]}
-  ]
-}
-```
-
-The loop guard reads the `session_crons` Stop-payload field and Stop
-`additionalContext` output, both available in current Claude Code
-releases (see the Claude Code changelog); on older versions it simply
-stays silent.
-
-### Claude Code: Context Bar
-
-Maestro ships an optional status line for Claude Code: a context-window progress bar showing how much of the model's context is used.
-
-```text
-████████░░░░░░░░░░░░ 42% 84k/200k · my-project
-```
-
-The bar updates live, shifts from green to amber to red as context fills, and detects the model's context window automatically, including the 1M-token Opus tier. It is **enabled by default** once installed.
-
-**Install** on Windows / PowerShell:
-
-```powershell
-mkdir ~/.claude/statusline, ~/.claude/commands -Force
-curl -o ~/.claude/statusline/context-bar.ps1 https://raw.githubusercontent.com/mbanderas/maestro/main/statusline/context-bar.ps1
-curl -o ~/.claude/commands/context-bar.md https://raw.githubusercontent.com/mbanderas/maestro/main/commands/context-bar.md
-```
-
-**Install** on macOS / Linux (the bar requires [`jq`](https://jqlang.github.io/jq/); without it the status line shows the folder name only):
-
-```bash
-mkdir -p ~/.claude/statusline ~/.claude/commands
-curl -o ~/.claude/statusline/context-bar.sh https://raw.githubusercontent.com/mbanderas/maestro/main/statusline/context-bar.sh
-curl -o ~/.claude/commands/context-bar.md https://raw.githubusercontent.com/mbanderas/maestro/main/commands/context-bar.md
-chmod +x ~/.claude/statusline/context-bar.sh
-```
-
-Then point Claude Code at the script by adding a `statusLine` block to `~/.claude/settings.json` (use the **absolute path** to the script):
-
-```jsonc
-// Windows
-"statusLine": {
-  "type": "command",
-  "command": "powershell -NoProfile -ExecutionPolicy Bypass -File \"C:\\Users\\you\\.claude\\statusline\\context-bar.ps1\""
-}
-
-// macOS / Linux
-"statusLine": {
-  "type": "command",
-  "command": "bash /Users/you/.claude/statusline/context-bar.sh"
-}
-```
-
-**Enable / disable:** the bar is on by default. Toggle it with the `/context-bar` slash command:
-
-| Command | Effect |
-|---|---|
-| `/context-bar` | Toggle on/off |
-| `/context-bar off` | Disable; status line shows the folder name only |
-| `/context-bar on` | Re-enable |
-
-The toggle is a flag file (`.context-bar-disabled`) next to the script. No settings edit, no restart. The change applies on the next status line refresh.
-
-**Codex CLI:** this script does not apply. Codex CLI has no command-backed
-status line; it only renders a fixed set of built-in items. It already
-ships a native context-usage indicator. Enable it with the `/statusline`
-picker, or set `context` in the `[tui].status_line` list in
-`~/.codex/config.toml`.
-
-### Claude Code: Terse Mode + Compress
-
-Two token-efficiency tools, adapted from the MIT-licensed
-[Caveman](https://github.com/JuliusBrussee/caveman) plugin with
-attribution.
-
-**Terse mode** cuts output tokens while keeping full technical
-substance. Three levels — `lite` (no filler, full sentences), `full`
-(drop articles, fragments OK), `ultra` (abbreviations, arrows,
-maximum compression). **Off by default**: installing the plugin never
-changes your output style.
-
-- Turn on per session: `/maestro:terse [lite|full|ultra]`; off with
-  `/maestro:terse off`, "stop terse", or "normal mode".
-- Turn on permanently: set `{"terseLevel": "ultra"}` in the config
-  file for your OS (key: `terseLevel`; `MAESTRO_TERSE_LEVEL` env var
-  overrides the file):
-  - **Windows:** `%APPDATA%\maestro\config.json`
-  - **macOS / Linux:** `$XDG_CONFIG_HOME/maestro/config.json`,
-    falling back to `~/.config/maestro/config.json`
-  - The config file is **never created automatically**. Until it
-    exists, terse mode stays off — two machines with identical hook
-    installs can behave differently if only one has the file.
-- The `maestro-terse-mode` hook injects the level-filtered ruleset
-  (single source: `skills/terse/SKILL.md`) at SessionStart and a
-  one-line reminder each turn — per-turn reinforcement survives
-  context compaction, where one-shot instructions drift.
-- Quality guardrails ship with it: code, commits, and PRs are always
-  written normal, and Auto-Clarity drops terseness for security
-  warnings, irreversible-action confirmations, and multi-step
-  sequences.
-- The context bar shows a `[TERSE:ULTRA]` badge while active. The
-  flag file is read symlink-refusing, size-capped, and whitelisted —
-  never rendering attacker-controlled bytes.
-
-**`/maestro:compress <file>`** rewrites a natural-language memory
-file (CLAUDE.md, todos, notes) in terse form to cut input tokens —
-savings compound every turn the file is loaded (S8). Deterministic
-validation (headings, byte-exact code blocks, URLs) with cherry-pick
-repair; the original is kept as `<name>.original.md` and restored on
-persistent failure. Files with secret-looking names (.env,
-credentials, keys, `.ssh`/`.aws` paths) are refused outright —
-compression sends file contents to the Anthropic API.
-
-### Claude Code: Frontier Engine (off / single / fusion)
-
-Maestro Frontier adds an opt-in, zero-dependency **multi-CLI fusion
-engine** built from the AI CLIs already on your machine. It fans a prompt
-out to a parallel
-**panel** of local models, has Opus 4.8 **judge** their answers into a
-structured analysis (consensus, contradictions, unique insights, blind
-spots — compare, not merge), then has Opus write a **grounded
-synthesis** that explicitly does not majority-vote. It is the new
-default identity of the project; the existing doctrine, hooks, skills,
-and benchmarks are unchanged — the discipline layer is its proven
-foundation.
-
-<p align="center">
-  <img src="assets/frontier-pipeline.svg" alt="Maestro Frontier fusion pipeline: prompt fans out to parallel CLI panel (Opus 4.8, GPT-5.5, Gemini 3.1 Pro), Opus 4.8 judge produces structured analysis (consensus, contradictions, unique insights, blind spots), then Opus 4.8 synthesizer writes a grounded response" width="900">
-</p>
-
-It ships with the plugin and is driven by `/maestro:frontier`. Three
-modes, switched at will, **`off` by default** so installing or upgrading
-changes nothing until you opt in:
-
-| Mode | Behavior |
-|---|---|
-| `off` | Normal Maestro. Engine never invoked; zero behavior change. The default. |
-| `single <model>` | Route the prompt to one local CLI and return its answer. No panel, no judge, no synth. |
-| `fusion <preset>` | Full panel -> Opus judge analysis -> grounded Opus synthesis, with Fusion's degradation and one-level recursion bounds reproduced. |
-
-```text
-/maestro:frontier status                       # show current mode
-/maestro:frontier single opus                  # one-CLI mode
-/maestro:frontier fusion opus-gpt              # panel = Opus + GPT-5.5
-/maestro:frontier run "your prompt here"       # run under the current mode
-/maestro:frontier off                          # back to normal Maestro
-```
-
-Presets define the panel. By default the judge and synthesizer run on
-Opus 4.8 (`claude -p`): `opus-duo` (two independent Opus runs — isolates
-the synthesis lift), `opus-gpt` (Opus + GPT-5.5 via `codex exec`),
-`gpt-duo` (two GPT-5.5 runs whose judge and synthesizer also run on
-GPT-5.5 — a Codex-only fusion that needs no `claude`), `frontier-trio`
-(Opus + GPT-5.5 + Gemini 3.1 Pro via `gemini -p`), and `custom` (1-8 of
-the known models). Pass `--judge <model>` / `--synth <model>` to run
-those stages on any model for any preset (e.g. `--judge opus --synth
-gpt-5.5`), so you can mix the panel and the judge/synth freely.
-Degradation is graceful: a
-partial panel failure still returns a synthesis plus `failed_models`; a
-judge failure omits the analysis and synthesizes from the raw responses;
-a hard failure returns a typed `failure_reason`. A `FUSION_DEPTH`
-environment guard bounds recursion to one level.
-
-Honest scope, measured rather than implied: the **engine is built,
-unit-tested (degradation, recursion, budget, anti-majority all
-covered), and verified end-to-end on real runs of `single` mode and the
-`opus-gpt`, `opus-duo`, and `frontier-trio` presets**. The `gpt-duo`
-preset and `--judge`/`--synth` selection share that same code path and
-are unit-tested, but not yet live-run. The quality *lift* of local fusion
-is **not yet benchmarked in this repo**. Operational caveats found
-empirically on this machine and recorded in the risk burndown: headless
-web access differs per CLI (Codex confirmed live; Claude and Gemini are
-gated `webTools:false` in this build and documented as divergences), and
-each cold `claude -p` panel/judge/synth call is non-trivial in cost —
-use small prompts, and prefer `opus-gpt` to bound spend. The budget cap
-is opt-in (`tokenBudget`, default disabled).
-
-The engine is zero-dependency CommonJS under [`frontier/`](frontier/);
-its tests run with the rest of the suite via `npm test`. Each CLI is
-resolved from your `PATH` (`claude`, `codex`, `gemini`) — portable across
-macOS, Linux, and Windows, where the npm shims are invoked through
-`cmd.exe`. Point the engine at a non-`PATH` binary with `MAESTRO_CLAUDE_BIN`,
-`MAESTRO_CODEX_BIN`, or `MAESTRO_GEMINI_BIN`.
+- **Verification Hook**: a `SubagentStop` hook enforcing S7.3 structurally: warns when a file-modifying subagent skips a checker or omits a status token. Never blocks. [`docs/hooks.md`](docs/hooks.md)
+- **Hook Pack**: five more zero-dependency hooks (doctrine guard, loop guard, phase-scope, gate reminder, opt-in gate telemetry) enforcing the rest of the doctrine. [`docs/hooks.md`](docs/hooks.md)
+- **Context Bar**: a status-line context-window progress bar that shifts green to amber to red and detects the model's window (including the 1M Opus tier). [`docs/context-bar.md`](docs/context-bar.md)
+- **Terse Mode + Compress**: opt-in output-token reduction (`/maestro:terse`) and a memory-file compressor (`/maestro:compress`), adapted from the MIT-licensed Caveman plugin. [`docs/context-bar.md`](docs/context-bar.md)
 
 ## When to Use Maestro
 
-The discipline layer (verification, scope, honest status) applies to
-every task from a one-line fix upward. The orchestration path helps
-most on tasks that are:
+The discipline layer (verification, scope, honest status) applies to every task from a one-line fix upward. The orchestration path helps most on tasks that are genuinely too complex for one pass (large refactors, multi-file features), parallelizable (independent subtasks), or benefit from adversarial review. It is deliberately avoided where a single agent already handles the work, the work is purely sequential reasoning, or the task touches fewer than ~10 files; the research shows coordination overhead makes simple tasks worse, not better.
 
-- **Genuinely too complex for one pass:** large refactors, multi-file features, cross-cutting concerns
-- **Parallelizable:** independent subtasks that don't need sequential reasoning
-- **Benefiting from adversarial review:** where a second perspective catches issues
-
-The orchestration path is intentionally **avoided** where:
-
-- A single agent already handles it well (the Decision Gate blocks unnecessary multi-agent)
-- The work is purely sequential reasoning (planning, step-by-step proofs)
-- The task involves fewer than ~10 files
-
-This is by design. The research shows coordination overhead makes
-simple tasks worse, not better. On those tasks Maestro contributes
-the discipline layer and deliberately nothing else.
-
-## Why Not CrewAI / LangGraph / AutoGen?
+### Why Not CrewAI / LangGraph / AutoGen?
 
 | | Maestro | CrewAI / LangGraph / AutoGen |
 |---|---|---|
@@ -663,170 +286,62 @@ the discipline layer and deliberately nothing else.
 | **Default behavior** | Single-agent unless complexity warrants multi | Always multi-agent |
 | **Design philosophy** | Fewer agents, structured coordination | More agents, flexible topologies |
 
-Maestro is not a framework. It's a discipline-and-orchestration layer for AI coding agents that already exist. You don't write agent code. You copy a couple of files and your existing agent gains verification rigor, scope discipline, and gated multi-agent capabilities.
-
-If you need a standalone multi-agent application with custom tools, APIs, and deployment pipelines, use a framework. If you want your AI coding agent to handle complex tasks better without changing your workflow, use Maestro.
+Maestro is not a framework. It's a discipline-and-orchestration layer for AI coding agents that already exist: you copy a couple of files and your existing agent gains verification rigor, scope discipline, and gated multi-agent capabilities. If you need a standalone multi-agent application with custom tools, APIs, and deployment pipelines, use a framework.
 
 ## Benchmarks
 
 Maestro ships a reproducible A/B harness in [`benchmarks/`](benchmarks/):
-thirteen fixture tasks (single-file fixes through hidden-invariant
-features, a 19-file validation sweep, a multi-concern subsystem
-with a deliberately underspecified spec, and a trap-convention tier
-with code-only invariants), a runner for Windows and macOS/Linux
-(no npm/package deps; the macOS/Linux script needs `jq`), and a
-deterministic `verify.cjs` checker per task. Each task runs with Maestro ON (doctrine files in
-the work dir) vs OFF (absent), under an isolated `CLAUDE_CONFIG_DIR`
-so global config cannot contaminate either cell, and the checker stays
+thirteen fixture tasks, a runner for Windows and macOS/Linux (no deps;
+the macOS/Linux script needs `jq`), and a deterministic `verify.cjs`
+checker per task. Each task runs Maestro ON (doctrine files present) vs
+OFF (absent) under an isolated `CLAUDE_CONFIG_DIR`, with the checker
 **hidden from the agent until the run ends** (visible oracles inflate
-pass rates 20-60%, arXiv:2602.10975). Protocol, scoring rubric, and
-Codex/Gemini recipes: [`benchmarks/README.md`](benchmarks/README.md).
-
-Current cells (Claude Code, `sonnet`, hidden-oracle runner,
-2026-06-10/11; medians of valid runs, voided CLI-error runs excluded
-and documented):
+pass rates 20-60%, arXiv:2602.10975).
 
 <p align="center">
   <img src="assets/bench-cells.svg" alt="Bar chart of median cost per task-run for t07 to t10 and t12 with doctrine off, on, and core variant; pass rates per cell shown beneath each group" width="860">
 </p>
 
-| Cell | n | Pass | Med wall | Med turns | Med cost | Med out-tok |
-|---|---|---|---|---|---|---|
-| t07 OFF | 3 | 3/3 | 70s | 12 | $0.164 | 2,421 |
-| t07 ON | 3 | 3/3 | 71s | 15 | $0.228 | 2,799 |
-| t08 OFF | 9 | 9/9 | 80s | 24 | $0.230 | 4,467 |
-| t08 ON | 9 | 9/9 | 59s | 25 | $0.253 | 4,411 |
-| t09 OFF | 9 | 8/9 | 147s | 19 | $0.287 | 5,160 |
-| t09 ON | 9 | 8/9 | 143s | 18 | $0.315 | 5,478 |
-| t09 CORE | 6 | 6/6 | 137s | 20.5 | $0.345 | 5,231 |
-| t10 OFF | 5 | 5/5 | 29s | 6 | $0.101 | 1,607 |
-| t10 ON | 5 | 5/5 | 51s | 9 | $0.169 | 2,949 |
-| t11 OFF | 1 | 1/1 | 238s | 37 | $0.507 | 12,924 |
-| t11 ON | 1 | 1/1 | 201s | 37 | $0.533 | 9,905 |
-| t12 OFF | 9 | 9/9 | 175s | 21 | $0.343 | 6,529 |
-| t12 ON | 9 | 9/9 | 143s | 25 | $0.475 | 6,882 |
+Honest reading: **Maestro ON has never beaten OFF on success rate in any
+measured cell**; at n=9, t09 is exactly tied (8/9 each) and t08 and t12
+are 9/9 both modes. The early efficiency story did not survive
+replication: the t12 n=3 readings of -31% wall and -20% out-tokens were
+retracted at n=9 (out-tokens reversed to +5%, ON +38% median cost and +4
+median turns), and the t08 n=3 readings of -30% wall / -18% turns are
+**also** retracted at n=9 (turns and cost reversed to +4% / +10%, the
+remaining -25.5% wall gap sitting inside the OFF cell's own run-to-run
+range). What remains standing but unreplicated: the Gemini t08 cell
+(-40% wall, n=3, a different CLI) and the t11 pilot (-16% wall at n=1).
+On small or linear tasks the doctrine is pure overhead (t10: +78% median
+wall). t09 separates *models* more than modes: gemini-3.1-pro-preview
+passes 1 of 6 valid runs, gpt-5.4-mini 4/4, sonnet ~8-in-9. Small samples
+throughout; no significance claims.
 
-Three further claims were measured on 2026-06-10, then re-measured at
-higher n (t12 and t08 topped up to n=9 per mode, a purpose-built
-trap-convention task probed three times on haiku, a two-turn
-interactive-proxy probe, and three Decision-Gate activation probe
-cycles on 2026-06-11; 84 valid runs across the three loops, 0
-voids):
+The one new directional signal is on a different axis. **t14**, a
+checker-less trap task with a non-obvious correctness property, holds both
+arms at **6/6 pass** while the honesty metric `claim_consistent` runs
+**OFF 1/6 vs ON 4/6** and `target_smoke_tested` **OFF 0/6 vs ON 2/6**, at
+ON median cost **$0.1930** vs OFF **$0.1501** (about **+29%**). The
+`status_token` axis is excluded; OFF was never taught the S7.3
+vocabulary. Per the frozen prereg this is **directional only, not
+confirmatory** (n=6 is exploratory; a grounded effect needs n>=9): Maestro
+buys more honest completion behavior on a trap task, at higher cost; paid
+for by the premium, not recovered.
 
-- **Weak-model rescue: not measurable, now with stronger evidence.**
-  Haiku passes 30/30 across t07-t11 in both modes, and 9/9 on all
-  three difficulty versions of t13, a task purpose-built to fail it
-  (trap defaults, code-only invariants, boundary arithmetic; two
-  hardening cycles under a pre-declared calibration protocol). A
-  haiku-4.5 baseline does not fail on self-contained ~20-file
-  fixtures with discoverable conventions, so pass-rate rescue cannot
-  be observed at this task class. (Haiku cells live in the frontier
-  and follow-up summaries, never in the sonnet table above.)
-- **The multi-agent path (S2-S6) still never fires, but the gate now
-  speaks.** t12 was built to trip the Decision Gate (three concerns,
-  7 files touched across a 16-file app, spec resolvable only through
-  `docs/conventions.md`). All 18 baseline headless runs and all 3
-  interactive-proxy sessions: one Explore recon at most, zero
-  Planner/specialist/review agents, zero gate verbalization. Three
-  successive S1 revisions (required verdict line; counted verdict
-  with triggers checked first; closed downgrade set) were then probed
-  ON n=3 each (2026-06-11): verdict lines appeared in **9/9** probe
-  runs (the first gate verbalization ever measured) with correct
-  file/concern counts above the trigger, and every verdict still
-  concluded single-agent. S2-S6 spawns: **0/9**. Each revision's
-  rationale bent a different clause (perceived parallelism, the
-  homogeneity constraint, then the downgrade conditions themselves)
-  toward the model's solo prior; the sub-trigger guardrail (t01)
-  never false-fired. Prose doctrine gets the gate verbalized and
-  counted; it does not move sonnet across the spawn threshold on a
-  16-file fixture. Maestro's measured effects come from the universal
-  rules (S7-S10), not orchestration. The hook injection is what
-  finally moves it: with `gate-reminder` installed — alone, no other
-  hook — t12 drew a multi-agent verdict and spawned at least one real
-  specialist in 6/6 runs, at no measurable quality delta on a fixture
-  both cells already pass 6/6 (spawning costs more and buys nothing
-  here; spawn-isolation summary). The verdict line also binds: across
-  all 19 single-agent-verdict runs on disk no specialist was ever
-  spawned, while 2 of 8 full-pack multi-agent verdicts were stated
-  but never executed — a gap the single-hook cell closed at 0 of 6.
-  A `verdict-only` variant was tested and removed after a 2026-06-12
-  smoke moved the wrong way (same 3/3 pass rate, higher median cost,
-  more turns, no reduced-spawn evidence). The default stays on the
-  measured spawn reminder; shorter wording cost more behaviorally.
-- **Compliance deltas are null at these tiers.** Three runs in 69
-  scored streams stated a S7.3 status token: one honest UNVERIFIED
-  (t12 ON), two t08 ON runs claiming VERIFIED with no check run
-  (scored claim-inconsistent). Surgical scope and oracle integrity
-  remain perfect in both modes. Prose doctrine alone does not move
-  headless reporting behavior, which is why the verification hook
-  enforces it structurally.
+Key findings:
 
-Honest reading: **Maestro ON has never beaten OFF on success rate in
-any measured cell**: at n=9 t09 is exactly tied (8/9 each) and t08
-and t12 are 9/9 both modes. The efficiency story did not survive
-replication: the t12 n=3 readings of -31% wall and -20% out-tokens
-were retracted at n=9 (wall gap inside within-mode spread, out-tokens
-reversed to +5%, ON +38% median cost and +4 median turns), and the
-t08 n=3 readings of -30% wall / -18% turns / -8% cost are now **also
-retracted** at n=9: turns and cost reversed outright (+4% turns, +10%
-cost), out-tokens flattened to -1%, and the remaining wall gap
-(-25.5%, 20.3s) sits inside the OFF cell's own 47.4s run-to-run
-range. What remains standing but unreplicated: the Gemini t08 cell
-(-40% wall, n=3, a different CLI, never merged with Claude rows) and
-the t11 pilot (-16% wall at n=1). On small or linear tasks the
-doctrine is pure overhead (t10: +78% median wall). t09 separates
-*models* more than modes: gemini-3.1-pro-preview passes 1 of 6 valid
-runs, gpt-5.4-mini passes 4/4, sonnet ~8-in-9. The CORE row (compact
-~50-line variant) shows no efficiency gain over the full doctrine.
-Small samples throughout; no significance claims.
+- **No success-rate lift.** ON never beats OFF on pass rate in any measured cell; it buys verification, scope guarantees, and honest status, not speed or capability.
+- **Weak-model rescue: not measurable.** Haiku passes 30/30 across t07-t11 in both modes and 9/9 on all three difficulty versions of t13, a task purpose-built to fail it, but a haiku baseline does not fail on self-contained fixtures with discoverable conventions, so rescue cannot be observed at this task class.
+- **The gate speaks, prose alone does not spawn.** Three S1 revisions got verdict lines into 9/9 probe runs with correct counts above the trigger (the first gate verbalization ever measured), yet every verdict still concluded single-agent and S2-S6 spawns stayed 0/9. The `gate-reminder` hook (alone) is what finally moves sonnet across the spawn threshold (6/6, at no quality delta on a fixture both cells already pass).
+- **The verdict line binds.** Across all 19 single-agent-verdict runs on disk no specialist was ever spawned; 2 of 8 full-pack multi-agent verdicts were stated but never executed, a gap the single-hook cell closed at 0 of 6.
+- **Compliance deltas are null at these tiers.** Three runs in 69 scored streams stated a status token; surgical scope and oracle integrity stay perfect in both modes. Prose doctrine alone does not move headless reporting behavior; hence the structural verification hook.
 
-A first directional signal on a different axis. **t14**
-(`t14-feat-revenue-rollup`, a checker-less trap task with a
-non-obvious correctness property, n=6 OFF vs ON, Claude Code
-`sonnet`) holds both arms at **6/6 pass** — so no pass-rate or
-capability claim — while the primary honesty metric
-`claim_consistent` runs **OFF 1/6 vs ON 4/6** and
-`target_smoke_tested` **OFF 0/6 vs ON 2/6**, at ON median cost
-**$0.1930** vs OFF **$0.1501** (ON about **+29%**). The
-`status_token` axis is **excluded**: OFF was never taught the S7.3
-vocabulary, so scoring it there measures lexicon, not discipline.
-Per the frozen prereg this is **directional only, not confirmatory**
-— a grounded effect still needs at least n=9, so n=6 is exploratory
-by construction. Read narrowly: Maestro buys more honest completion
-behavior on a checker-less trap task, at higher cost — not a token
-saving, not a higher success rate, not a proven honesty effect. The
-older corpus could not demonstrate this earned overhead at all
-(capability-ceilinged, scope and oracle already clean in both modes);
-t14 is the first directional honesty-axis signal, and it is paid for,
-not recovered, by the cost premium.
-
-Full analysis and
-void accounting:
-[`benchmarks/results/20260610-summary-hidden-oracle.md`](benchmarks/results/20260610-summary-hidden-oracle.md),
-[`benchmarks/results/20260610-summary-xcli.md`](benchmarks/results/20260610-summary-xcli.md),
-[`benchmarks/results/20260610-summary-frontier.md`](benchmarks/results/20260610-summary-frontier.md),
-[`benchmarks/results/20260610-summary-followup.md`](benchmarks/results/20260610-summary-followup.md),
-[`benchmarks/results/20260611-summary-activation.md`](benchmarks/results/20260611-summary-activation.md),
-[`benchmarks/results/20260611-summary-efficiency.md`](benchmarks/results/20260611-summary-efficiency.md),
-[`benchmarks/results/20260611-summary-hooks.md`](benchmarks/results/20260611-summary-hooks.md),
-[`benchmarks/results/20260611-summary-spawns.md`](benchmarks/results/20260611-summary-spawns.md),
-the t14 honesty-axis result
-[`benchmarks/results/20260613-summary-t14.md`](benchmarks/results/20260613-summary-t14.md),
-and the earned-overhead re-score
-[`benchmarks/results/20260613-summary-earned-overhead.md`](benchmarks/results/20260613-summary-earned-overhead.md).
-
-Post-fix Gemini (`gemini-3.1-pro-preview`) and Codex (`gpt-5.4-mini`,
-exploratory n=1) cells for t08/t09, including the gemini quota voids
-and a gemini isolation caveat (global `~/.agents` skills load even in
-isolated runs), are in
-[`benchmarks/results/20260610-summary-xcli.md`](benchmarks/results/20260610-summary-xcli.md).
-Earlier same-day results for t01-t06 (and the original Codex/Gemini
-small-task cells) were measured **before** the hidden-oracle fix and
-are kept as labeled upper bounds in
-[`benchmarks/results/`](benchmarks/results/): the agent could read
-the checker during those runs, so their pass rates are not comparable.
 Numbers are never compared across CLIs or models, and the protocol
-forbids publishing numbers that were not actually measured.
+forbids publishing numbers that were not actually measured. Earlier
+same-day t01-t06 results were taken **before** the hidden-oracle fix and
+are kept only as labeled upper bounds, not comparable to the cells above.
+
+Full data, retractions, and methodology -> [`docs/benchmarks.md`](docs/benchmarks.md).
 
 ## Research Foundation
 
@@ -839,7 +354,7 @@ Maestro's architecture is grounded in 700+ sources across computer science, libr
 | [Towards a Science of Scaling Agent Systems](https://arxiv.org/abs/2512.08296) | 2025 | arXiv (Google/MIT) | 260 configs; architecture-task fit dominates; sequential tasks degrade 39-70% |
 | [Agent Scaling via Diversity](https://arxiv.org/abs/2602.03794) | 2026 | arXiv | 2 diverse agents match 16 homogeneous; diversity, not headcount, drives gains |
 | [LoopTrap](https://arxiv.org/abs/2605.05846) | 2026 | arXiv | Termination poisoning: loop end-conditions are an attack surface; hard caps mitigate |
-| [MetaGPT](https://arxiv.org/abs/2308.00352) | 2023 | — | Structured handoffs score 3.9/4 vs unstructured 2.1/4 |
+| [MetaGPT](https://arxiv.org/abs/2308.00352) | 2023 | - | Structured handoffs score 3.9/4 vs unstructured 2.1/4 |
 | [Voyager](https://arxiv.org/abs/2305.16291) | 2023 | NeurIPS | Skill library pattern for capability organization |
 | [GTD](https://arxiv.org/abs/2504.05767) | 2025 | arXiv | 0.3% degradation under failure with redundant topologies |
 | [SELFORG](https://arxiv.org/abs/2502.11811) | 2025 | arXiv | Shapley-based contribution estimation |
@@ -853,7 +368,7 @@ Contributions are welcome. Before opening a PR:
 1. Read the research foundation. Maestro's constraints (4-agent cap, Decision Gate bias toward single-agent) are intentional and research-backed
 2. Keep it zero-dependency: no npm packages, no external imports
 3. Test with real tasks across Claude Code, Gemini, Codex, and Cursor
-4. Docs changes: run `npx --yes markdownlint-cli2` from the repo root (no install footprint; config in `.markdownlint-cli2.jsonc`, covering README, AGENTS.md, CLAUDE.md, docs/, benchmarks/README.md)
+4. Docs changes: run `npx --yes markdownlint-cli2` from the repo root (no install footprint; config in `.markdownlint-cli2.jsonc`)
 
 If you have benchmarks, case studies, or research that challenges or extends the current architecture, open an issue. The design should evolve with evidence.
 
