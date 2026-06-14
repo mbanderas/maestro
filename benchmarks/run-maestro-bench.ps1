@@ -166,11 +166,13 @@ foreach ($taskDir in $taskDirs) {
         $dryHookSet = if (-not $runHooked) { $null } elseif ($Hooks.Count -gt 0) { $Hooks -join ',' } else { 'pack' }
         $dryDoctrine = ($runMode -eq 'on' -or $runMode -eq 'core')
         $dryCfg = if ($runHooked) { 'config-hooks' } else { 'config' }
-        Write-Host (" DRYRUN | hooks={0} | hook_set={1} | cfg={2} | doctrine_copied={3}" -f $runHooked, ($dryHookSet ?? '<none>'), $dryCfg, $dryDoctrine)
+        $dryReceipt = if ($runHooked -and ($Hooks -contains 'receipt-gate')) { '1' } else { $null }
+        Write-Host (" DRYRUN | hooks={0} | hook_set={1} | cfg={2} | doctrine_copied={3} | receipt_gate_env={4}" -f $runHooked, ($dryHookSet ?? '<none>'), $dryCfg, $dryDoctrine, ($dryReceipt ?? '<unset>'))
         $results.Add([pscustomobject]([ordered]@{
           task = $spec.id; category = $spec.category; cli = 'claude'; model = $Model
           mode = $runMode; hooks = $runHooked; hook_set = $dryHookSet
-          doctrine_copied = $dryDoctrine; config_dir = $dryCfg; dry_run = $true
+          doctrine_copied = $dryDoctrine; config_dir = $dryCfg
+          receipt_gate_env = $dryReceipt; dry_run = $true
         }))
         if (-not $KeepWork) { Remove-Item $workDir -Recurse -Force -ErrorAction SilentlyContinue }
         continue
@@ -184,6 +186,11 @@ foreach ($taskDir in $taskDirs) {
         $env:MAX_THINKING_TOKENS = "$MaxThinkingTokens"
         $env:CLAUDE_CODE_DISABLE_ADAPTIVE_THINKING = '1'
       }
+      # The receipt-gate hook is wired into Stop but stays inert unless this
+      # opt-in flag is set. Set it ONLY for cells that explicitly stage
+      # receipt-gate, so a normal pack install never activates the experiment.
+      $prevReceipt = $env:MAESTRO_RECEIPT_GATE
+      $env:MAESTRO_RECEIPT_GATE = if ($runHooked -and ($Hooks -contains 'receipt-gate')) { '1' } else { $null }
       Push-Location $workDir
       $sw = [Diagnostics.Stopwatch]::StartNew()
       try {
@@ -202,6 +209,7 @@ foreach ($taskDir in $taskDirs) {
         $env:CLAUDE_CONFIG_DIR = $prevCfg
         $env:MAX_THINKING_TOKENS = $prevThink
         $env:CLAUDE_CODE_DISABLE_ADAPTIVE_THINKING = $prevAdaptive
+        $env:MAESTRO_RECEIPT_GATE = $prevReceipt
       }
 
       $json = $null
