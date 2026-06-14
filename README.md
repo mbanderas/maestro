@@ -21,7 +21,7 @@
 > **Agents:** start with [`docs/agent-map.md`](docs/agent-map.md) for
 > repo navigation. This README is the user-facing product narrative.
 
-## The Fusion Engine
+## The Frontier Engine
 
 Maestro Frontier is an opt-in, zero-dependency **multi-CLI fusion
 engine** built from the AI CLIs already on your machine. It fans a

@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 860 360" role="img" aria-labelledby="t d">
   <title id="t">Maestro Frontier fusion engine on the discipline layer</title>
-  <desc id="d">Maestro Frontier fusion engine sitting on the discipline layer foundation; an amber data-flow connects the two. The top tier is the fusion engine (parallel panel, Opus judge, grounded synthesis); the bottom tier is the discipline layer (decision gate, verified status, surgical scope) that every task runs on.</desc>
+  <desc id="d">Maestro Frontier fusion engine sitting on the discipline layer foundation; an amber data-flow connects the two. The top tier is the Frontier engine (parallel panel, Opus judge, grounded synthesis); the bottom tier is the discipline layer (decision gate, verified status, surgical scope) that every task runs on.</desc>
   <style>
     .bg    { fill: #0a0a0c; }
     .tierT { fill: rgb(245 158 11 / 0.06); stroke: #f59e0b; stroke-width: 2; }
@@ -28,9 +28,9 @@
 
   <rect class="bg" width="860" height="360" rx="14"/>
 
-  <!-- ── top tier: the fusion engine (star) ── -->
+  <!-- ── top tier: the Frontier engine (star) ── -->
   <rect class="tierT" x="70" y="40" width="720" height="100" rx="12"/>
-  <text class="capA" x="88" y="60">FUSION ENGINE</text>
+  <text class="capA" x="88" y="60">FRONTIER ENGINE</text>
 
   <rect class="node" x="92" y="74" width="180" height="52" rx="8"/>
   <text class="lbl" x="182" y="100" text-anchor="middle">parallel panel</text>
@@ -69,5 +69,5 @@
   <text class="lbl" x="658" y="282" text-anchor="middle">surgical scope</text>
   <text class="sub" x="658" y="298" text-anchor="middle">every line traces back</text>
 
-  <text class="sub" x="430" y="346" text-anchor="middle">the fusion engine runs on the discipline layer this repo benchmarks</text>
+  <text class="sub" x="430" y="346" text-anchor="middle">the Frontier engine runs on the discipline layer this repo benchmarks</text>
 </svg>
