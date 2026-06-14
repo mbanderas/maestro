@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/maestro-frontier-banner.png" width="100%" alt="Maestro Frontier, frontier AI, conducted into one answer: the mascot conducts a panel of Opus 4.8, GPT-5.5, and Gemini 3.1 Pro through a judge into a grounded synthesis">
+  <img src="assets/maestro-frontier-banner.png" width="100%" alt="Maestro Frontier: the mascot conducts a panel of Opus 4.8, GPT-5.5, and Gemini 3.1 Pro through a judge into a grounded synthesis">
 </p>
 
 <p align="center">
@@ -21,23 +21,7 @@
 > **Agents:** start with [`docs/agent-map.md`](docs/agent-map.md) for
 > repo navigation. This README is the user-facing product narrative.
 
-Maestro installs as plain markdown files your AI agent reads on startup. No packages, no build steps, no SDK. Download the files for your runtime into the project root and your agent picks them up automatically.
-
-| Runtime | Files to add |
-|---|---|
-| Claude Code | [`AGENTS.md`](AGENTS.md) + [`CLAUDE.md`](CLAUDE.md) |
-| Gemini | [`AGENTS.md`](AGENTS.md) + [`GEMINI.md`](GEMINI.md) |
-| Codex | [`AGENTS.md`](AGENTS.md); see [Maestro on Codex](docs/codex.md) |
-| Cursor | [`.cursorrules`](.cursorrules) |
-| GitHub Copilot | [`AGENTS.md`](AGENTS.md); nearest `AGENTS.md` in the directory tree wins, and a root `CLAUDE.md` or `GEMINI.md` also works |
-| Cline | [`AGENTS.md`](AGENTS.md); native support (also auto-detects `.cursorrules`) |
-| Windsurf | [`AGENTS.md`](AGENTS.md); root file is always-on, processed by the Rules engine |
-
-Copy-paste install commands are in [Quick Start](#quick-start) below.
-
-> **Already have a `CLAUDE.md`, `AGENTS.md`, or `.cursorrules`?** Don't overwrite them, you'll lose your project context. See [Quick Start](#quick-start) for how to merge Maestro into your existing setup.
-
-## Maestro Frontier: Local AI Fusion
+## The Fusion Engine
 
 Maestro Frontier is an opt-in, zero-dependency **multi-CLI fusion
 engine** built from the AI CLIs already on your machine. It fans a
@@ -52,6 +36,10 @@ its proven foundation.
 <p align="center">
   <img src="assets/frontier-pipeline.svg" alt="Maestro Frontier fusion pipeline: prompt fans out to parallel CLI panel (Opus 4.8, GPT-5.5, Gemini 3.1 Pro), Opus 4.8 judge produces structured analysis (consensus, contradictions, unique insights, blind spots), then Opus 4.8 synthesizer writes a grounded response" width="900">
 </p>
+
+The pipeline above is the engine's whole architecture: fan out to a
+parallel panel, an Opus judge that compares the answers (it does not
+merge them), then a grounded synthesis.
 
 It ships with the plugin and is driven by `/maestro:frontier`. Three
 modes, switched at will, **`off` by default** so installing or
@@ -105,8 +93,9 @@ panel/judge/synth call is non-trivial in cost; use small prompts, and
 prefer `opus-gpt` to bound spend. The budget cap is opt-in
 (`tokenBudget`, default disabled). The engine is zero-dependency
 CommonJS under [`frontier/`](frontier/); each CLI is resolved from your
-`PATH` (`claude`, `codex`, `gemini`), overridable with `MAESTRO_CLAUDE_BIN`,
-`MAESTRO_CODEX_BIN`, or `MAESTRO_GEMINI_BIN`.
+`PATH` (`claude`, `codex`, `gemini`). Binary overrides and the full
+operational reference are in
+[`docs/fusion-local-design.md`](docs/fusion-local-design.md#binary-overrides).
 
 ## What You Get
 
@@ -114,7 +103,9 @@ CommonJS under [`frontier/`](frontier/); each CLI is resolved from your
   <img src="assets/what-you-get.svg" width="860" alt="What Maestro gives you: five capabilities on a dark card">
 </p>
 
-Drop two markdown files into your repo and your agent gains five things:
+Frontier is the headline; the discipline layer beneath it is what runs on
+every task. Drop two markdown files into your repo and your agent gains
+five things:
 
 1. **Done means done.** Completion reports carry a verification status (`VERIFIED` / `UNVERIFIED` / `FAIL`) backed by an actual type-check, lint, or test run, with an optional hook enforcing it structurally.
 2. **It stays in its lane.** Surgical-scope rules: every changed line traces back to what you asked for: no drive-by refactors, no formatting sweeps, no deleting code it couldn't verify was dead.
@@ -151,7 +142,11 @@ adding agents usually makes things worse, so Maestro makes the single
 agent you already have rigorous by default and holds multi-agent
 coordination behind a counted gate.
 
-## Architecture
+## The Discipline Layer It Runs On
+
+Frontier runs on this. It is the part this repo actually benchmarks: a
+verification-first discipline layer that applies to every task, fusion or
+not.
 
 <p align="center">
   <img src="assets/maestro-flow.svg" alt="Maestro orchestration flow: task through the S1 decision gate to either a single agent or the planner, specialist group, and staff engineer pipeline, converging on verified delivery" width="780">
@@ -181,6 +176,20 @@ coordination behind a counted gate.
 The specialist manifest (S3) and cross-talk handoff packet (S4/S6) also ship as machine-readable JSON Schemas in [`schemas/`](schemas/) for tooling. The prose doctrine remains the source of truth.
 
 ## Quick Start
+
+Maestro installs as plain markdown files your AI agent reads on startup. No packages, no build steps, no SDK. Download the files for your runtime into the project root and your agent picks them up automatically.
+
+| Runtime | Files to add |
+|---|---|
+| Claude Code | [`AGENTS.md`](AGENTS.md) + [`CLAUDE.md`](CLAUDE.md) |
+| Gemini | [`AGENTS.md`](AGENTS.md) + [`GEMINI.md`](GEMINI.md) |
+| Codex | [`AGENTS.md`](AGENTS.md); see [Maestro on Codex](docs/codex.md) |
+| Cursor | [`.cursorrules`](.cursorrules) |
+| GitHub Copilot | [`AGENTS.md`](AGENTS.md); nearest `AGENTS.md` in the directory tree wins, and a root `CLAUDE.md` or `GEMINI.md` also works |
+| Cline | [`AGENTS.md`](AGENTS.md); native support (also auto-detects `.cursorrules`) |
+| Windsurf | [`AGENTS.md`](AGENTS.md); root file is always-on, processed by the Rules engine |
+
+> **Already have a `CLAUDE.md`, `AGENTS.md`, or `.cursorrules`?** Don't overwrite them, you'll lose your project context. The per-runtime steps below show how to merge Maestro into an existing setup.
 
 ### Claude Code
 
@@ -305,17 +314,15 @@ pass rates 20-60%, arXiv:2602.10975).
 Honest reading: **Maestro ON has never beaten OFF on success rate in any
 measured cell**; at n=9, t09 is exactly tied (8/9 each) and t08 and t12
 are 9/9 both modes. The early efficiency story did not survive
-replication: the t12 n=3 readings of -31% wall and -20% out-tokens were
-retracted at n=9 (out-tokens reversed to +5%, ON +38% median cost and +4
-median turns), and the t08 n=3 readings of -30% wall / -18% turns are
-**also** retracted at n=9 (turns and cost reversed to +4% / +10%, the
-remaining -25.5% wall gap sitting inside the OFF cell's own run-to-run
-range). What remains standing but unreplicated: the Gemini t08 cell
-(-40% wall, n=3, a different CLI) and the t11 pilot (-16% wall at n=1).
-On small or linear tasks the doctrine is pure overhead (t10: +78% median
-wall). t09 separates *models* more than modes: gemini-3.1-pro-preview
-passes 1 of 6 valid runs, gpt-5.4-mini 4/4, sonnet ~8-in-9. Small samples
-throughout; no significance claims.
+replication: the t12 and t08 n=3 wall, turn, and token gains were all
+retracted at n=9, and the only unreplicated positives left standing
+(Gemini t08, the t11 pilot) are flagged as such. The full n=3 -> n=9
+reversal arithmetic is in
+[`docs/benchmarks.md`](docs/benchmarks.md#retractions). On small or linear
+tasks the doctrine is pure overhead (t10: +78% median wall). t09 separates
+*models* more than modes: gemini-3.1-pro-preview passes 1 of 6 valid runs,
+gpt-5.4-mini 4/4, sonnet ~8-in-9. Small samples throughout; no
+significance claims.
 
 The one new directional signal is on a different axis. **t14**, a
 checker-less trap task with a non-obvious correctness property, holds both
@@ -378,7 +385,7 @@ If you have benchmarks, case studies, or research that challenges or extends the
 
 ## Community
 
-Questions, ideas, or war stories about multi-agent coordination? [Open a discussion](https://github.com/mbanderas/maestro/discussions) or [file an issue](https://github.com/mbanderas/maestro/issues).
+Using Maestro Frontier, or running the discipline layer on your own agent? [Open a discussion](https://github.com/mbanderas/maestro/discussions) or [file an issue](https://github.com/mbanderas/maestro/issues).
 
 ## License
 
