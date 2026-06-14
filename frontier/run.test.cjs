@@ -54,7 +54,11 @@ const baseCfg = {
   },
   presets: {
     'opus-gpt': ['opus', 'gpt-5.5'],
+    'gpt-duo': ['gpt-5.5', 'gpt-5.5'],
     'frontier-trio': ['opus', 'gpt-5.5', 'gemini'],
+  },
+  presetStages: {
+    'gpt-duo': { judge: 'gpt-5.5', synth: 'gpt-5.5' },
   },
   judgeModel: 'opus',
   synthModel: 'opus',
@@ -251,9 +255,50 @@ async function runTests() {
     check('(j) budget no fanOut', !spyFan.wasCalled(), 'fanOut was called');
   }
 
+  // (k) gpt-duo pins judge + synth to gpt-5.5 (Codex-only fusion)
+  {
+    let judgeCfg = null;
+    let synthCfg = null;
+    const result = await runFrontier({
+      prompt: 'hello',
+      state: { mode: 'fusion', preset: 'gpt-duo' },
+      cfg: baseCfg,
+      deps: {
+        fanOut: async () => [makeOk('gpt-5.5', 'a'), makeOk('gpt-5.5', 'b')],
+        runJudge: async (_p, _r, cfg) => { judgeCfg = cfg; return VALID_ANALYSIS; },
+        runSynth: async (_p, _b, cfg) => { synthCfg = cfg; return 'FINAL'; },
+      },
+    });
+    check('(k) gpt-duo ok', result.status === 'ok', 'got ' + result.status);
+    check('(k) judge pinned gpt-5.5', judgeCfg && judgeCfg.judgeModel === 'gpt-5.5',
+      'got ' + (judgeCfg && judgeCfg.judgeModel));
+    check('(k) synth pinned gpt-5.5', synthCfg && synthCfg.synthModel === 'gpt-5.5',
+      'got ' + (synthCfg && synthCfg.synthModel));
+  }
+
+  // (l) explicit --judge/--synth override beats preset default
+  {
+    let judgeCfg = null;
+    let synthCfg = null;
+    await runFrontier({
+      prompt: 'hello',
+      state: { mode: 'fusion', preset: 'gpt-duo', judgeModel: 'opus', synthModel: 'opus' },
+      cfg: baseCfg,
+      deps: {
+        fanOut: async () => [makeOk('gpt-5.5', 'a'), makeOk('gpt-5.5', 'b')],
+        runJudge: async (_p, _r, cfg) => { judgeCfg = cfg; return VALID_ANALYSIS; },
+        runSynth: async (_p, _b, cfg) => { synthCfg = cfg; return 'FINAL'; },
+      },
+    });
+    check('(l) explicit judge override', judgeCfg && judgeCfg.judgeModel === 'opus',
+      'got ' + (judgeCfg && judgeCfg.judgeModel));
+    check('(l) explicit synth override', synthCfg && synthCfg.synthModel === 'opus',
+      'got ' + (synthCfg && synthCfg.synthModel));
+  }
+
   // ---------- report ----------
   if (failures.length === 0) {
-    process.stdout.write('\nAll ' + 10 + ' cases passed.\n');
+    process.stdout.write('\nAll ' + 12 + ' cases passed.\n');
     process.exit(0);
   } else {
     process.stderr.write('\n' + failures.length + ' failure(s):\n');

@@ -75,6 +75,26 @@ function cmdMode(argv) {
     } else {
       state = { mode: 'fusion', preset };
     }
+
+    // Optional judge/synth model overrides — apply to any fusion preset so
+    // users can mix freely (e.g. --judge opus --synth gpt-5.5). Unset =
+    // the preset's own stage model (presetStages) or the global default.
+    const judge = getFlag(argv, '--judge');
+    if (judge !== null) {
+      if (!validateModel(judge)) {
+        process.stderr.write('ERROR: unknown judge model: ' + judge + '\n');
+        process.exit(2);
+      }
+      state.judgeModel = judge;
+    }
+    const synth = getFlag(argv, '--synth');
+    if (synth !== null) {
+      if (!validateModel(synth)) {
+        process.stderr.write('ERROR: unknown synth model: ' + synth + '\n');
+        process.exit(2);
+      }
+      state.synthModel = synth;
+    }
   }
 
   saveState(state);

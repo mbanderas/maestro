@@ -4,10 +4,10 @@ argument-hint: "<off | single <model> | fusion <preset> | status | run <prompt>>
 allowed-tools: Bash, Read
 ---
 
-Drive the Maestro Frontier engine: a zero-dependency local reproduction
-of OpenRouter Fusion (parallel panel of local CLIs -> Opus judge
-analysis -> grounded Opus synthesis). Default mode is `off` — the engine
-is opt-in and never runs until you switch it on.
+Drive the Maestro Frontier engine: a zero-dependency local multi-CLI
+fusion engine (parallel panel of local CLIs -> Opus judge analysis ->
+grounded synthesis). Default mode is `off` — the engine is opt-in and
+never runs until you switch it on.
 
 Requested action: `$ARGUMENTS`
 
@@ -21,11 +21,15 @@ self-contained; do not edit its state file yourself.
    node "${CLAUDE_PLUGIN_ROOT}/frontier/cli.cjs" mode single --model <model>
    node "${CLAUDE_PLUGIN_ROOT}/frontier/cli.cjs" mode fusion --preset <preset>
    node "${CLAUDE_PLUGIN_ROOT}/frontier/cli.cjs" mode fusion --preset custom --models <a,b,c>
+   node "${CLAUDE_PLUGIN_ROOT}/frontier/cli.cjs" mode fusion --preset <preset> --judge <model> --synth <model>
    ```
 
    Models: `opus` (Claude Opus 4.8), `gpt-5.5` (Codex), `gemini`
-   (Gemini 3.1 Pro). Presets: `opus-duo`, `opus-gpt`, `frontier-trio`,
-   `custom`. Judge + synthesizer are always Opus.
+   (Gemini 3.1 Pro). Presets: `opus-duo`, `opus-gpt`, `gpt-duo`,
+   `frontier-trio`, `custom`. The judge + synthesizer default to Opus,
+   but `gpt-duo` runs them on GPT-5.5 — a Codex-only fusion that needs no
+   `claude` — and `--judge`/`--synth` override the model for any preset,
+   so you can mix freely (e.g. `--judge opus --synth gpt-5.5`).
 
 2. Show current mode/preset:
 
@@ -59,3 +63,9 @@ Notes:
 - Headless web access varies per CLI (Codex confirmed; Claude and
   Gemini gated off in this build). The engine sets a per-adapter
   `webTools` flag accordingly; see the risk burndown.
+- `gemini` works well as a panel member, but on Windows it is a poor
+  `--judge`/`--synth` choice: it takes its prompt as an argument and the
+  judge/synth prompts contain newlines, which the win32 arg-safety guard
+  refuses — the stage then degrades (judge omitted, synth falls back).
+  Use `opus` or `gpt-5.5` for judge/synth on Windows. (No such limit on
+  macOS/Linux, where args are passed directly.)

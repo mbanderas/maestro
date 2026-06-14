@@ -9,7 +9,7 @@
     {
       "name": "maestro",
       "source": "./",
-      "description": "Maestro Frontier: research-grounded multi-agent orchestration doctrine for AI coding agents (decision-gated routing, 4-specialist cap, structural enforcement hooks, terse mode + compress token tools, context-bar command) plus an opt-in zero-dependency local multi-CLI fusion engine via /maestro:frontier (off/single/fusion modes).",
+      "description": "Maestro Frontier: an opt-in, zero-dependency local multi-CLI fusion engine for AI coding agents. Fan a prompt out to the model CLIs on your machine (Opus 4.8, GPT-5.5, Gemini 3.1 Pro), have Opus 4.8 judge the answers into a structured analysis, then write a grounded synthesis — off/single/fusion modes via /maestro:frontier. Built on Maestro's research-grounded orchestration discipline: decision-gated multi-agent routing, verified done-claims, surgical scope, and structural enforcement hooks (123 A/B benchmark runs, 6 tested hooks).",
       "version": "1.2.0"
     }
   ]

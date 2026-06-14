@@ -1,9 +1,9 @@
 <p align="center">
-  <img src="assets/maestro-banner.jpg" alt="Maestro: AI coding agents, conducted properly" width="100%">
+  <img src="assets/maestro-frontier-banner.png" width="100%" alt="Maestro Frontier — frontier AI, conducted into one answer: the mascot conducts a panel of Opus 4.8, GPT-5.5, and Gemini 3.1 Pro through a judge into a grounded synthesis">
 </p>
 
 <p align="center">
-  A discipline layer for AI coding agents: verified done-claims, surgical scope, long-run guardrails, and multi-agent orchestration held behind a research-backed gate — plus Maestro Frontier, an opt-in, zero-dependency local multi-CLI fusion engine
+  <strong>Maestro Frontier</strong> is a local multi-CLI fusion engine: fan a prompt to Opus 4.8, GPT-5.5, and Gemini 3.1 Pro in parallel, have Opus 4.8 judge their answers into a structured analysis (consensus, contradictions, unique insights, blind spots — compare, not merge), then synthesize a grounded response that does not majority-vote. Built on Maestro's proven discipline layer: verified done-claims, surgical scope, long-run guardrails, and a research-backed multi-agent gate.
 </p>
 
 <p align="center">
@@ -563,16 +563,20 @@ compression sends file contents to the Anthropic API.
 
 ### Claude Code: Frontier Engine (off / single / fusion)
 
-Maestro Frontier adds an opt-in local **multi-CLI engine**: a
-zero-dependency reproduction of [OpenRouter
-Fusion](https://openrouter.ai/docs/guides/features/server-tools/fusion)
-built from the AI CLIs already on your machine. It fans a prompt out to
-a parallel **panel** of local models, has Opus 4.8 **judge** their
-answers into a structured analysis (consensus, contradictions, unique
-insights, blind spots — compare, not merge), then has Opus write a
-**grounded synthesis** that explicitly does not majority-vote. It is the
-new default identity of the project; the existing doctrine, hooks,
-skills, and benchmarks are unchanged.
+Maestro Frontier adds an opt-in, zero-dependency **multi-CLI fusion
+engine** built from the AI CLIs already on your machine. It fans a prompt
+out to a parallel
+**panel** of local models, has Opus 4.8 **judge** their answers into a
+structured analysis (consensus, contradictions, unique insights, blind
+spots — compare, not merge), then has Opus write a **grounded
+synthesis** that explicitly does not majority-vote. It is the new
+default identity of the project; the existing doctrine, hooks, skills,
+and benchmarks are unchanged — the discipline layer is its proven
+foundation.
+
+<p align="center">
+  <img src="assets/frontier-pipeline.svg" alt="Maestro Frontier fusion pipeline: prompt fans out to parallel CLI panel (Opus 4.8, GPT-5.5, Gemini 3.1 Pro), Opus 4.8 judge produces structured analysis (consensus, contradictions, unique insights, blind spots), then Opus 4.8 synthesizer writes a grounded response" width="900">
+</p>
 
 It ships with the plugin and is driven by `/maestro:frontier`. Three
 modes, switched at will, **`off` by default** so installing or upgrading
@@ -592,11 +596,16 @@ changes nothing until you opt in:
 /maestro:frontier off                          # back to normal Maestro
 ```
 
-Presets define the panel; the judge and synthesizer are always Opus 4.8
-(`claude -p`): `opus-duo` (two independent Opus runs — isolates the
-synthesis lift), `opus-gpt` (Opus + GPT-5.5 via `codex exec`),
-`frontier-trio` (Opus + GPT-5.5 + Gemini 3.1 Pro via `gemini -p`), and
-`custom` (1-8 of the known models). Degradation is faithful to Fusion: a
+Presets define the panel. By default the judge and synthesizer run on
+Opus 4.8 (`claude -p`): `opus-duo` (two independent Opus runs — isolates
+the synthesis lift), `opus-gpt` (Opus + GPT-5.5 via `codex exec`),
+`gpt-duo` (two GPT-5.5 runs whose judge and synthesizer also run on
+GPT-5.5 — a Codex-only fusion that needs no `claude`), `frontier-trio`
+(Opus + GPT-5.5 + Gemini 3.1 Pro via `gemini -p`), and `custom` (1-8 of
+the known models). Pass `--judge <model>` / `--synth <model>` to run
+those stages on any model for any preset (e.g. `--judge opus --synth
+gpt-5.5`), so you can mix the panel and the judge/synth freely.
+Degradation is graceful: a
 partial panel failure still returns a synthesis plus `failed_models`; a
 judge failure omits the analysis and synthesizes from the raw responses;
 a hard failure returns a typed `failure_reason`. A `FUSION_DEPTH`
@@ -604,11 +613,11 @@ environment guard bounds recursion to one level.
 
 Honest scope, measured rather than implied: the **engine is built,
 unit-tested (degradation, recursion, budget, anti-majority all
-covered), and verified end-to-end on real runs of `single` mode plus all
-three fusion presets (`opus-gpt`, `opus-duo`, `frontier-trio`)**. The quality
-*lift* of local fusion is **not yet benchmarked in this repo** — the
-68.3% DRACO figure is OpenRouter's hosted result and is cited as
-motivation, not as a Maestro measurement. Operational caveats found
+covered), and verified end-to-end on real runs of `single` mode and the
+`opus-gpt`, `opus-duo`, and `frontier-trio` presets**. The `gpt-duo`
+preset and `--judge`/`--synth` selection share that same code path and
+are unit-tested, but not yet live-run. The quality *lift* of local fusion
+is **not yet benchmarked in this repo**. Operational caveats found
 empirically on this machine and recorded in the risk burndown: headless
 web access differs per CLI (Codex confirmed live; Claude and Gemini are
 gated `webTools:false` in this build and documented as divergences), and

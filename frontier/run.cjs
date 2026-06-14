@@ -5,7 +5,7 @@
 'use strict';
 
 const { DEFAULTS } = require('./config.cjs');
-const { resolvePanel } = require('./config.cjs');
+const { resolvePanel, resolveJudgeModel, resolveSynthModel } = require('./config.cjs');
 const { classify, toFailedModel } = require('./schema.cjs');
 const dispatch = require('./dispatch.cjs');
 const judge = require('./judge.cjs');
@@ -114,8 +114,16 @@ async function runFrontier({ prompt, state, cfg, deps }) {
       };
     }
 
-    const analysis = await runJudge(prompt, ok, cfg);
-    let final = await runSynth(prompt, { analysis, responses: ok }, cfg);
+    // Resolve judge/synth model (explicit flag -> preset override -> default)
+    // and hand the judge/synth stages a cfg pinned to those models, so a
+    // preset like gpt-duo runs entirely on its own provider.
+    const stageCfg = {
+      ...cfg,
+      judgeModel: resolveJudgeModel(state, cfg),
+      synthModel: resolveSynthModel(state, cfg),
+    };
+    const analysis = await runJudge(prompt, ok, stageCfg);
+    let final = await runSynth(prompt, { analysis, responses: ok }, stageCfg);
     if (!final) {
       // synth-fail fallback: longest ok response
       final = ok.reduce((a, b) => b.content.length > a.content.length ? b : a).content;

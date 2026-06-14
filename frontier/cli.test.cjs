@@ -87,9 +87,35 @@ function runTests() {
     check('(d) single no model exit 2', r.code === 2, 'exit code ' + r.code);
   }
 
+  // (e) fusion --preset gpt-duo -> status shows gpt-duo
+  {
+    const dir = makeTmpDir();
+    const r1 = run(['mode', 'fusion', '--preset', 'gpt-duo'], dir);
+    check('(e) gpt-duo exit 0', r1.code === 0, 'exit ' + r1.code + ' stderr: ' + r1.stderr.trim());
+    const r2 = run(['status'], dir);
+    check('(e) status shows gpt-duo', r2.stdout.includes('gpt-duo'), 'stdout: ' + r2.stdout.trim());
+  }
+
+  // (f) fusion --judge/--synth overrides persist in state
+  {
+    const dir = makeTmpDir();
+    const r1 = run(['mode', 'fusion', '--preset', 'opus-gpt', '--judge', 'gpt-5.5', '--synth', 'gemini'], dir);
+    check('(f) override exit 0', r1.code === 0, 'exit ' + r1.code + ' stderr: ' + r1.stderr.trim());
+    const r2 = run(['status'], dir);
+    check('(f) status judgeModel', r2.stdout.includes('"judgeModel":"gpt-5.5"'), 'stdout: ' + r2.stdout.trim());
+    check('(f) status synthModel', r2.stdout.includes('"synthModel":"gemini"'), 'stdout: ' + r2.stdout.trim());
+  }
+
+  // (g) unknown --judge model -> exit 2
+  {
+    const dir = makeTmpDir();
+    const r = run(['mode', 'fusion', '--preset', 'opus-gpt', '--judge', 'bogus'], dir);
+    check('(g) bad judge exit 2', r.code === 2, 'exit code ' + r.code);
+  }
+
   // ---------- report ----------
   if (failures.length === 0) {
-    process.stdout.write('\nAll 4 CLI cases passed.\n');
+    process.stdout.write('\nAll CLI cases passed.\n');
     process.exit(0);
   } else {
     process.stderr.write('\n' + failures.length + ' failure(s):\n');

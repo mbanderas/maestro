@@ -126,7 +126,16 @@ const DEFAULTS = {
   presets: {
     'opus-duo': ['opus', 'opus'],
     'opus-gpt': ['opus', 'gpt-5.5'],
+    'gpt-duo': ['gpt-5.5', 'gpt-5.5'],
     'frontier-trio': ['opus', 'gpt-5.5', 'gemini'],
+  },
+  // Per-preset judge/synth model overrides. A preset listed here runs its
+  // judge + synthesizer on the named model instead of the global default
+  // below; this is what lets gpt-duo run end-to-end on Codex alone (no
+  // claude). Presets NOT listed use judgeModel/synthModel. An explicit
+  // --judge/--synth flag (state.judgeModel/synthModel) overrides both.
+  presetStages: {
+    'gpt-duo': { judge: 'gpt-5.5', synth: 'gpt-5.5' },
   },
   judgeModel: 'opus',
   synthModel: 'opus',
@@ -167,6 +176,33 @@ function resolvePanel(state, cfg) {
   return resolved;
 }
 
+/**
+ * Resolve the judge or synth model for a fusion state. Precedence:
+ * explicit flag (state.judgeModel/synthModel) -> per-preset override
+ * (cfg.presetStages) -> global default (cfg.judgeModel/synthModel).
+ * @param {'judge'|'synth'} stage
+ * @param {object} state
+ * @param {typeof DEFAULTS} cfg
+ * @returns {string}
+ */
+function resolveStageModel(stage, state, cfg) {
+  const explicit = stage === 'judge' ? state.judgeModel : state.synthModel;
+  if (explicit) return explicit;
+  const ps = cfg.presetStages && cfg.presetStages[state.preset];
+  if (ps && ps[stage]) return ps[stage];
+  return stage === 'judge' ? cfg.judgeModel : cfg.synthModel;
+}
+
+/** @param {object} state @param {typeof DEFAULTS} cfg @returns {string} */
+function resolveJudgeModel(state, cfg) {
+  return resolveStageModel('judge', state, cfg);
+}
+
+/** @param {object} state @param {typeof DEFAULTS} cfg @returns {string} */
+function resolveSynthModel(state, cfg) {
+  return resolveStageModel('synth', state, cfg);
+}
+
 /** @param {string} m @returns {boolean} */
 function validateMode(m) {
   return ['off', 'single', 'fusion'].includes(m);
@@ -199,6 +235,8 @@ module.exports = {
   loadState,
   saveState,
   resolvePanel,
+  resolveJudgeModel,
+  resolveSynthModel,
   validateMode,
   validatePreset,
   validateModel,

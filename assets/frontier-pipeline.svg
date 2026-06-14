@@ -1,0 +1,109 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 460" role="img" aria-labelledby="t d">
+  <title id="t">Maestro Frontier fusion pipeline</title>
+  <desc id="d">A hero animation of the Maestro Frontier fusion pipeline. A prompt fans out to three parallel model panels (Opus 4.8, GPT-5.5, Gemini 3.1 Pro), which converge into an Opus judge performing consensus, contradiction, unique-insight, and blind-spot analysis, then flows into a grounded synthesis output. Dash-flow pulses animate left to right along every connector.</desc>
+  <style>
+    .bg   { fill: #0a0a0c; }
+    .node { fill: #121216; stroke: #222228; stroke-width: 1.5; }
+    .panel{ fill: #121216; stroke: #222228; stroke-width: 1.5; }
+    .judge{ fill: rgb(245 158 11 / 0.08); stroke: #f59e0b; stroke-width: 2; }
+    .synth{ fill: rgb(245 158 11 / 0.08); stroke: #f59e0b; stroke-width: 2; }
+    .lbl  { font: 600 13px ui-monospace, SFMono-Regular, Consolas, monospace; fill: #f0f0f4; }
+    .mdl  { font: 600 12px ui-monospace, SFMono-Regular, Consolas, monospace; fill: #f0f0f4; }
+    .sub  { font: 400 10px ui-monospace, SFMono-Regular, Consolas, monospace; fill: #9e9eaa; }
+    .edge { stroke: #44444e; stroke-width: 1.5; fill: none; }
+    .flow { stroke-dasharray: 6 7; animation: dash 1.6s linear infinite; }
+    .acc  { stroke: #f59e0b; }
+    .acct { fill: #fbbf24; }
+    @keyframes dash { to { stroke-dashoffset: -26; } }
+    @media (prefers-reduced-motion: reduce) { .flow { animation: none; } }
+  </style>
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#44444e"/>
+    </marker>
+    <marker id="b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#f59e0b"/>
+    </marker>
+  </defs>
+
+  <!-- dark card background -->
+  <rect class="bg" width="900" height="460" rx="12"/>
+
+  <!-- ── prompt box ── -->
+  <!-- center y=230; box y=206..254 -->
+  <rect class="node" x="32" y="206" width="110" height="48" rx="8"/>
+  <text class="lbl" x="87" y="227" text-anchor="middle">prompt</text>
+  <text class="sub" x="87" y="244" text-anchor="middle">user query</text>
+
+  <!--
+    Layout columns:
+    prompt right edge: x=142
+    fan-hub x: 170
+    model boxes: x=214..374, centers y=110, 230, 350
+    converge-hub x: 408
+    judge box: x=432..618, center y=230
+    judge right edge: x=618
+    synthesis box: x=648..818
+  -->
+
+  <!-- fan-out: prompt -> hub at (170,230), then branch to each model -->
+  <!-- trunk -->
+  <path class="edge flow" d="M142 230 H170" />
+
+  <!-- top branch: hub -> top model left edge (214,110) -->
+  <path class="edge flow" d="M170 230 V110 H214" marker-end="url(#a)"/>
+  <!-- middle branch: hub -> middle model left edge (214,230) -->
+  <path class="edge flow" d="M170 230 H214" marker-end="url(#a)"/>
+  <!-- bottom branch: hub -> bottom model left edge (214,350) -->
+  <path class="edge flow" d="M170 230 V350 H214" marker-end="url(#a)"/>
+
+  <!-- ── model box 1: Opus 4.8 (top) — center y=110 -->
+  <rect class="panel" x="214" y="86" width="160" height="48" rx="8"/>
+  <text class="mdl" x="294" y="107" text-anchor="middle">Opus 4.8</text>
+  <text class="sub" x="294" y="123" text-anchor="middle">frontier reasoning</text>
+
+  <!-- ── model box 2: GPT-5.5 (middle) — center y=230 -->
+  <rect class="panel" x="214" y="206" width="160" height="48" rx="8"/>
+  <text class="mdl" x="294" y="227" text-anchor="middle">GPT-5.5</text>
+  <text class="sub" x="294" y="244" text-anchor="middle">frontier reasoning</text>
+
+  <!-- ── model box 3: Gemini 3.1 Pro (bottom) — center y=350 -->
+  <rect class="panel" x="214" y="326" width="160" height="48" rx="8"/>
+  <text class="mdl" x="294" y="347" text-anchor="middle">Gemini 3.1 Pro</text>
+  <text class="sub" x="294" y="364" text-anchor="middle">frontier reasoning</text>
+
+  <!-- converge: each model right edge -> hub at (408,230) -> judge -->
+  <!-- top model right (374,110) -> hub -->
+  <path class="edge flow" d="M374 110 H408 V230" />
+  <!-- middle model right (374,230) -> hub -->
+  <path class="edge flow" d="M374 230 H408" />
+  <!-- bottom model right (374,350) -> hub -->
+  <path class="edge flow" d="M374 350 H408 V230" />
+  <!-- hub -> judge left edge (432,230) -->
+  <path class="edge flow" d="M408 230 H432" marker-end="url(#a)"/>
+
+  <!-- ── Opus judge box — x=432..618, center y=230 -->
+  <rect class="judge" x="432" y="152" width="186" height="156" rx="8"/>
+  <text class="lbl acct" x="525" y="178" text-anchor="middle">Opus judge</text>
+  <text class="sub" x="525" y="200" text-anchor="middle">consensus · contradictions</text>
+  <text class="sub" x="525" y="218" text-anchor="middle">unique insights · blind spots</text>
+  <text class="sub" x="525" y="244" text-anchor="middle">cross-model analysis</text>
+  <text class="sub" x="525" y="261" text-anchor="middle">·  ·  ·</text>
+  <text class="sub" x="525" y="278" text-anchor="middle" style="fill:#9e9eaa;">synthesis prep</text>
+
+  <!-- judge -> synthesis (amber accent) -->
+  <path class="edge flow acc" d="M618 230 H648" marker-end="url(#b)"/>
+
+  <!-- ── grounded synthesis box — x=648..818, center y=230 -->
+  <rect class="synth" x="648" y="182" width="166" height="96" rx="8"/>
+  <text class="lbl acct" x="731" y="214" text-anchor="middle">grounded</text>
+  <text class="lbl acct" x="731" y="234" text-anchor="middle">synthesis</text>
+  <text class="sub" x="731" y="256" text-anchor="middle">fused · verified output</text>
+  <text class="sub" x="731" y="272" text-anchor="middle">no hallucinated consensus</text>
+
+  <!-- header / column labels -->
+  <text class="sub" x="450" y="36" text-anchor="middle" style="font-size:11.5px; fill:#9e9eaa; letter-spacing:0.5px;">Maestro · Frontier fusion pipeline</text>
+  <text class="sub" x="294" y="72" text-anchor="middle">parallel panel</text>
+  <text class="sub" x="525" y="140" text-anchor="middle">judge layer</text>
+  <text class="sub" x="731" y="168" text-anchor="middle">output</text>
+</svg>

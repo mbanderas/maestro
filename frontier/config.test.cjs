@@ -12,7 +12,8 @@ const path = require('path');
 const tmpBase = fs.mkdtempSync(path.join(os.tmpdir(), 'frontier-test-'));
 process.env.XDG_CONFIG_HOME = tmpBase;
 
-const { DEFAULTS, loadState, saveState, resolvePanel, validatePreset } = require('./config.cjs');
+const { DEFAULTS, loadState, saveState, resolvePanel, validatePreset,
+  resolveJudgeModel, resolveSynthModel } = require('./config.cjs');
 
 let failures = 0;
 function check(name, cond) {
@@ -85,6 +86,31 @@ async function main() {
   {
     check('validatePreset frontier-trio true', validatePreset('frontier-trio', DEFAULTS) === true);
     check('validatePreset bogus false', validatePreset('bogus', DEFAULTS) === false);
+  }
+
+  // (h) gpt-duo preset resolves to two GPT-5.5 panel members
+  {
+    const models = resolvePanel({ preset: 'gpt-duo' }, DEFAULTS);
+    check('gpt-duo panel', JSON.stringify(models) === JSON.stringify(['gpt-5.5', 'gpt-5.5']));
+  }
+
+  // (i) gpt-duo judge+synth resolve to gpt-5.5 (Codex-only fusion)
+  {
+    check('gpt-duo judge -> gpt-5.5', resolveJudgeModel({ preset: 'gpt-duo' }, DEFAULTS) === 'gpt-5.5');
+    check('gpt-duo synth -> gpt-5.5', resolveSynthModel({ preset: 'gpt-duo' }, DEFAULTS) === 'gpt-5.5');
+  }
+
+  // (j) presets without a stage override fall back to the global Opus default
+  {
+    check('opus-gpt judge -> opus (default)', resolveJudgeModel({ preset: 'opus-gpt' }, DEFAULTS) === 'opus');
+    check('opus-gpt synth -> opus (default)', resolveSynthModel({ preset: 'opus-gpt' }, DEFAULTS) === 'opus');
+  }
+
+  // (k) explicit --judge/--synth override beats preset + default
+  {
+    const st = { preset: 'gpt-duo', judgeModel: 'opus', synthModel: 'gemini' };
+    check('explicit judge override', resolveJudgeModel(st, DEFAULTS) === 'opus');
+    check('explicit synth override', resolveSynthModel(st, DEFAULTS) === 'gemini');
   }
 
   // cleanup

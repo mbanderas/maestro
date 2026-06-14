@@ -1,9 +1,9 @@
 # Local Fusion — Design & Implementation Plan
 
-A local equivalent of OpenRouter's Fusion API, built from local AI CLIs
-orchestrated by Maestro. No API. Opus 4.8 1M = judge + synthesizer;
-Codex CLI (GPT-5.5) and Gemini 3.1 Pro CLI = parallel panel. Reproduces
-Fusion's **fan-out → structured judge-analysis → grounded synthesis**.
+A local multi-CLI fusion engine, built from local AI CLIs orchestrated
+by Maestro. No API. Opus 4.8 1M = judge + synthesizer; Codex CLI
+(GPT-5.5) and Gemini 3.1 Pro CLI = parallel panel. Implements a
+**fan-out → structured judge-analysis → grounded synthesis** contract.
 
 - Status: **design + plan only** (no implementation; no edits to product repos).
 - Audit: Staff Engineer **PASS** (cycle 2; cycle 1 FAILed with 4 issues, all fixed — see §7).
@@ -12,9 +12,6 @@ Fusion's **fan-out → structured judge-analysis → grounded synthesis**.
 ---
 
 ## 1. Fusion contract (the spec to reproduce)
-
-Source: openrouter.ai/docs/guides/features/server-tools/fusion;
-/blog/announcements/fusion-beats-frontier.
 
 Three stages, **not** a majority vote:
 
@@ -54,8 +51,8 @@ Degradation / error modes (must be reproduced 1:1):
 `failure_reason ∈ { all_panels_failed, insufficient_credits, rate_limited,
 fusion_invocation_capped, unexpected_error }`.
 
-Recursion: `x-openrouter-fusion-depth` header — panel + judge **cannot**
-recursively invoke fusion; bounded to **one level**
+Recursion: a fusion-depth signal (`FUSION_DEPTH`) — panel + judge
+**cannot** recursively invoke fusion; bounded to **one level**
 (`fusion_invocation_capped` = 2nd call in same turn rejected).
 
 Contamination control: `excluded_domains` (web_search) / `blocked_domains`
