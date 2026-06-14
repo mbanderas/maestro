@@ -1,4 +1,4 @@
-# Local Fusion — Design & Implementation Plan
+# Local Fusion, Design & Implementation Plan
 
 A local multi-CLI fusion engine, built from local AI CLIs orchestrated
 by Maestro. No API. Opus 4.8 1M = judge + synthesizer; Codex CLI
@@ -6,7 +6,7 @@ by Maestro. No API. Opus 4.8 1M = judge + synthesizer; Codex CLI
 **fan-out → structured judge-analysis → grounded synthesis** contract.
 
 - Status: **design + plan only** (no implementation; no edits to product repos).
-- Audit: Staff Engineer **PASS** (cycle 2; cycle 1 FAILed with 4 issues, all fixed — see §7).
+- Audit: Staff Engineer **PASS** (cycle 2; cycle 1 FAILed with 4 issues, all fixed, see §7).
 - Date: 2026-06-14.
 
 ---
@@ -21,7 +21,7 @@ Three stages, **not** a majority vote:
 2. **Judge.** ONE judge model reads ALL panel responses and emits a
    structured analysis JSON. Judge also has web tools. Judge **compares**
    (consensus = higher-confidence; surfaces contradictions; preserves
-   unique insights; flags blind spots) — it does **not** merge.
+   unique insights; flags blind spots), it does **not** merge.
 3. **Synthesis.** The outer model writes the final answer **grounded** in
    the analysis JSON. The synthesis step itself adds lift (Opus+Opus panel
    beat solo Opus by 6.7 pts → lift is partly synthesis, not just diversity).
@@ -51,7 +51,7 @@ Degradation / error modes (must be reproduced 1:1):
 `failure_reason ∈ { all_panels_failed, insufficient_credits, rate_limited,
 fusion_invocation_capped, unexpected_error }`.
 
-Recursion: a fusion-depth signal (`FUSION_DEPTH`) — panel + judge
+Recursion: a fusion-depth signal (`FUSION_DEPTH`), panel + judge
 **cannot** recursively invoke fusion; bounded to **one level**
 (`fusion_invocation_capped` = 2nd call in same turn rejected).
 
@@ -84,53 +84,53 @@ synthesis itself helps.
 
 ## 2. Inventory (read-only; file:line verified)
 
-### AgentFactory Dual-CLI (TypeScript) — closest foundation
+### AgentFactory Dual-CLI (TypeScript), closest foundation
 
-- `dual-cli/headless.ts:37-173` — `runHeadless({kind, prompt, configStore,
+- `dual-cli/headless.ts:37-173`, `runHeadless({kind, prompt, configStore,
   timeoutMs, cwd, reveal}) -> HeadlessRunResult{ok, exitCode, stdout, stderr,
   durationMs, *TokensEst, binary, args}`. Spawns ONE CLI (l.84); `promptVia`
   `'arg'` (l.71) / `'stdin'` (l.131); 256KB rolling stdout buffer (l.155);
   SIGTERM→SIGKILL@2s timeout (l.137). **Reusable as the per-panel call
-  primitive** — captures machine-readable stdout. Exposes only static
+  primitive**, captures machine-readable stdout. Exposes only static
   `config.args` + prompt + wall-clock `timeoutMs` (no `max_tool_calls` /
   `max_completion_tokens` knobs).
-- `workers/spawn-cli.ts:8-40` — Windows `.cmd`/`.bat` hardening
+- `workers/spawn-cli.ts:8-40`, Windows `.cmd`/`.bat` hardening
   (CVE-2024-27980): wraps in `cmd.exe /d /s /c` + `quoteForCmd`. Reusable.
-- `workers/adapter-config.ts:26-59` — adapters: **codex** enabled
+- `workers/adapter-config.ts:26-59`, adapters: **codex** enabled
   (`exec --skip-git-repo-check --dangerously-bypass-approvals-and-sandbox`,
   stdin); **claude** enabled (`-p --output-format text
   --dangerously-skip-permissions`, arg); **gemini** `enabled:false`
   (`-p`, arg) stub (l.43). **No web-tool flags in any adapter.**
-- `dual-cli/role-plans.ts:25-308` — planner→builder→critic roles, JSON prompt
+- `dual-cli/role-plans.ts:25-308`, planner→builder→critic roles, JSON prompt
   schemas. No judge/synth role; a 4th role needs a new field + stage.
-- `dual-cli/context-bus.ts:58-70` — `computeVerdict` = state-flag
+- `dual-cli/context-bus.ts:58-70`, `computeVerdict` = state-flag
   (planner/critic stub?), **not** consensus/synthesis. Replaced for Fusion.
 - Concurrency: **none** in `dual-cli/` (no Promise.all / p-limit / Worker);
   dispatch is strictly sequential `await`. Max-iter cap `orchestrator.ts:77-79`.
 - `package.json`: **`p-limit` is not a dependency** (better-sqlite3, cors,
-  express, ws, node-pty). A new concurrency dep would be required — avoided (§3.5).
+  express, ws, node-pty). A new concurrency dep would be required, avoided (§3.5).
 
-### TheBunker workshop (Node/Express + node-pty + React) — GUI surface
+### TheBunker workshop (Node/Express + node-pty + React), GUI surface
 
-- `workshop/lib/dispatch.js:125-187` — `buildCliInvocation`: claude
+- `workshop/lib/dispatch.js:125-187`, `buildCliInvocation`: claude
   `--dangerously-skip-permissions -p --model --append-system-prompt @persona`
   (prompt = last positional l.165); codex `--full-auto --system-prompt-file`;
   gemini only in `launchCommandForCli` (`--yolo`, interactive l.205).
   **No web-tool flags.**
-- `workshop/lib/terminal-contract.js:31-48,193-374` — PTY lifecycle: output
+- `workshop/lib/terminal-contract.js:31-48,193-374`, PTY lifecycle: output
   is **terminal text only**, no machine-readable/JSON capture; completion =
   PTY exit code (l.92,201).
-- `workshop/lib/chief.js:40-41,187-258` — Chief = single long-lived
+- `workshop/lib/chief.js:40-41,187-258`, Chief = single long-lived
   interactive tile; **not** a fan-out dispatcher.
-- `lib/comms-workshop-bridge.js` (TheBunker **root** `lib/`) — **exists**: an
+- `lib/comms-workshop-bridge.js` (TheBunker **root** `lib/`), **exists**: an
   in-process comms→workshop dispatch seam. Calls workshop chief-tools
   `dispatch` (**1 task → 1 tile**, default specialist `cto-agent`); poll-based
   fan-in (`POLL_MS=5000`, `MAX 6h`, state-machine is sole authority, no event
   bus); relays terminal state to the comms bus. It is 1:1, comms-coupled, and
-  its output substrate is PTY text — **not** N-panel-per-prompt JSON fan-out.
-- Fan-in/cap: `workshop/lib/queue-scheduler.js:47,162,187` —
+  its output substrate is PTY text, **not** N-panel-per-prompt JSON fan-out.
+- Fan-in/cap: `workshop/lib/queue-scheduler.js:47,162,187`,
   `DEFAULT_MAX_AGENT_TILES=2` per-workspace concurrency cap; each task binds 1 tile.
-- `workshop/public/workshop.jsx:535-556` — UI renders 1 tile = 1 task.
+- `workshop/public/workshop.jsx:535-556`, UI renders 1 tile = 1 task.
 
 ### Reuse vs. gap summary
 
@@ -146,7 +146,7 @@ synthesis itself helps.
 
 ---
 
-## 3. Design — local Fusion engine
+## 3. Design, local Fusion engine
 
 ### 3.1 Recommended delivery surface
 
@@ -155,7 +155,7 @@ synthesis itself helps.
 
 - `runHeadless` is already the exact panel-call primitive (spawn CLI, capture
   **machine-parseable** stdout, timeout, token estimate). Bunker's PTY output
-  is terminal text — the wrong substrate for parseable panel responses.
+  is terminal text, the wrong substrate for parseable panel responses.
 - Gemini adapter stub already present (enable it); Windows `.cmd` hardening
   already done; TypeScript strict already enforced; token estimation present.
 - Least new surface: add a bounded-parallel fan-out wrapper + judge + synth
@@ -163,11 +163,11 @@ synthesis itself helps.
 
 Layered roadmap for the other two surfaces (not either/or):
 
-- **TheBunker** = later **consumer** — GUI tiles showing N panels + a synthesis
+- **TheBunker** = later **consumer**, GUI tiles showing N panels + a synthesis
   pane, calling this engine as a library. (Its dispatch seam exists but is
-  1 task→1 tile, comms-coupled, PTY-text — repurposing it for N-panel JSON
+  1 task→1 tile, comms-coupled, PTY-text, repurposing it for N-panel JSON
   fan-out is more new surface than building on `runHeadless`.)
-- **Claude Code plugin** = later **thin wrapper** — a `/fusion` entrypoint over
+- **Claude Code plugin** = later **thin wrapper**, a `/fusion` entrypoint over
   the same engine, using the engine's "tool mode" (§3.3) to mirror Fusion's
   analysis-to-caller shape exactly. (This very Maestro session is, in effect,
   a manual local-fusion: Opus orchestrating CLI subagents.)
@@ -248,12 +248,12 @@ Maps 1:1 to Fusion's degradation ladder and one-level recursion bound.
   Strategy: a per-adapter `webTools` capability flag; **M0 empirically verifies
   each CLI's headless web access (GO/NO-GO)**; any CLI that lacks it is gated
   `webTools:false` and the gap is documented as an explicit Fusion divergence
-  (a panel member without web silently violates fan-out semantics — so it is
+  (a panel member without web silently violates fan-out semantics, so it is
   made explicit, never silent). Phase 2 adds one shared local **MCP
   web_search/web_fetch server** all CLIs call, giving uniform parity and a
   single `excluded_domains` config (mirrors Fusion's one-line exclude benefit).
 - **Concurrency.** Hand-rolled bounded semaphore (default = panel size,
-  cap 4) — avoids FD/CPU exhaustion. No `p-limit` dep (absent from
+  cap 4), avoids FD/CPU exhaustion. No `p-limit` dep (absent from
   `package.json`); `Promise.all` is the codebase idiom.
 - **Cost.** Pre-flight sum `tokensEst` (already in `headless.ts:114`) vs
   `cfg.tokenBudget`; abort fan-out if projected to exceed. Per-adapter
@@ -268,7 +268,7 @@ Maps 1:1 to Fusion's degradation ladder and one-level recursion bound.
 
 ## 4. Implementation plan
 
-**Plan Decision Gate (S1, for the eventual build — NOT executed this run):**
+**Plan Decision Gate (S1, for the eventual build, NOT executed this run):**
 `GATE: files≈11 concerns=4 -> multi-agent — 5+ files across 2+ concerns;
 independent subtasks (schema/dispatch vs judge/synth vs CLI/config).`
 
@@ -285,20 +285,20 @@ independent subtasks (schema/dispatch vs judge/synth vs CLI/config).`
 
 ### Risks (ranked)
 
-1. **Web-tool parity across 3 CLIs** — HIGH. Codex/Gemini web flags differ;
+1. **Web-tool parity across 3 CLIs**, HIGH. Codex/Gemini web flags differ;
    may need the MCP shim for true parity. De-risked by the M0 GO/NO-GO gate;
    gaps documented as explicit divergences.
-2. **Codex/Gemini headless auth + Windows `.cmd` quirks** — MED. `spawn-cli.ts`
+2. **Codex/Gemini headless auth + Windows `.cmd` quirks**, MED. `spawn-cli.ts`
    hardening reused; M0 spike de-risks.
-3. **Judge JSON reliability from a CLI** (vs API structured output) — MED.
+3. **Judge JSON reliability from a CLI** (vs API structured output), MED.
    Strict-parse + degrade path is Fusion-faithful; few-shot the schema;
    retry-once.
-4. **Cost/latency of N parallel agentic web loops** — MED. Semaphore + token
+4. **Cost/latency of N parallel agentic web loops**, MED. Semaphore + token
    budget + `max_tool_calls` caps.
-5. **Recursion via a CLI re-calling fusion** — LOW. `FUSION_DEPTH` guard.
+5. **Recursion via a CLI re-calling fusion**, LOW. `FUSION_DEPTH` guard.
 
 Out of scope this artifact: any edit to AgentFactory or TheBunker source
-(design + plan only). The eventual build is a **harness/multi-CLI mutation** —
+(design + plan only). The eventual build is a **harness/multi-CLI mutation**,
 report PENDING_REVIEW; never count it as green evidence until run.
 
 ---
@@ -337,7 +337,7 @@ the same engine later.
 
 ## 7. Audit trail (Staff Engineer, 2 cycles)
 
-**Cycle 1: FAIL** — 4 issues, all fixed:
+**Cycle 1: FAIL**, 4 issues, all fixed:
 
 | # | Sev | Issue | Fix |
 |---|---|---|---|
@@ -346,6 +346,6 @@ the same engine later.
 | 3 | MAJOR | Codex headless web access hand-waved | Empirical web check moved to **M0 GO/NO-GO**; per-adapter `webTools` gate + documented divergence (§3.5) |
 | 4 | MINOR | `runHeadless` exposes no `max_tool_calls`/`max_completion_tokens` | Per-adapter flag-templates in `config.ts`; timeout-only fallback documented (§3.5) |
 
-**Cycle 2: PASS** — all 4 fixes verified against primary sources; Fusion's
+**Cycle 2: PASS**, all 4 fixes verified against primary sources; Fusion's
 3-stage semantics, full degradation ladder, and one-level recursion bound
 confirmed reproduced; no new blockers.
