@@ -65,18 +65,40 @@ it. The flag alone is session-scoped. So a durable settings change writes
 `config.json.terseLevel` and mirrors the live flag, which is exactly the
 pairing the hook maintains at session start. Reading reports the resolved
 level (`env` over `config` over `off`) and flags an active `env` override.
+When `MAESTRO_TERSE_LEVEL` is set to a recognized level (`off`, `lite`,
+`full`, or `ultra`) in the environment, a `set terse` write to `config.json`
+is overridden at the next session start, because the hook honors that
+variable before reading the file. The CLI warns on `set` that the write will
+not take effect while the override is active. The override is never silent.
 
 **frontier already has a hardened module.** `frontier/config.cjs` exports
 `loadState`, `saveState`, `validateMode`, `validatePreset`,
 `validateModel`, and `DEFAULTS`. The settings module requires it directly
 rather than re-implementing any of it. One source of truth, no duplication.
 
-**context-bar lives where the status-line script lives.** The flag sits
-next to the script named in `statusLine.command` inside
-`${CLAUDE_CONFIG_DIR or ~/.claude}/settings.json`, defaulting to
-`~/.claude/statusline/`. The settings module resolves that path the same
-way the `/context-bar` command does, so the bar scripts and the settings
-view always agree on one file.
+**context-bar lives next to the running status-line script.** Both
+`context-bar.ps1` and `context-bar.sh` test the flag only at their own
+directory (`$PSScriptRoot` and `$script_dir`), so the flag must sit beside
+whichever script `statusLine.command` actually runs, which is not
+necessarily the plugin's own `statusline/` directory. The settings module
+resolves that directory deterministically in code, with no agent in the
+loop:
+
+1. Read `${CLAUDE_CONFIG_DIR or ~/.claude}/settings.json` and parse it as
+   JSON.
+2. Take `statusLine.command` (a string, or the `command` field when
+   `statusLine` is an object), split on whitespace, and use the first token
+   that looks like a path. `path.dirname` of that token is the script
+   directory.
+3. If `settings.json` is absent or unparseable, or `statusLine.command` is
+   missing, fall back to `${CLAUDE_CONFIG_DIR or ~/.claude}/statusline`.
+4. If the resolved command exists but its basename is not a `context-bar`
+   script, the module still uses its directory but `status` and `set` warn
+   that the status line may not be the Maestro bar, so a flag is never
+   written silently to a directory the bar will never read.
+
+This is the same resolution the `/context-bar` command performs, expressed
+as a code path the CLI runs unaided rather than as agent behavior.
 
 ## Security
 
