@@ -25,9 +25,11 @@ param(
   [switch]$SaveStream,            # capture full stream-json event log per run
   [switch]$InstallHooks,          # plant hooks/*.cjs + hooks.json wiring into a
                                   # second isolated config dir, used for on/core
-                                  # runs only. Default OFF: baseline cells stay
-                                  # hook-free and comparable. OFF-mode cells
-                                  # NEVER get hooks, flag or not.
+                                  # runs by default. Default OFF: baseline cells
+                                  # stay hook-free and comparable. OFF-mode cells
+                                  # get hooks ONLY with -HookOffToo (still no
+                                  # doctrine copied); without it they stay
+                                  # hook-free.
   [string[]]$Hooks = @(),         # subset of the pack to stage, by short name
                                   # (gate-reminder, doctrine-guard, ...). Filters
                                   # BOTH the staged .cjs copies AND the hooks.json
