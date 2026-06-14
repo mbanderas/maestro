@@ -9,7 +9,7 @@
     .grid { stroke: #222228; stroke-width: 1; }
     .off  { fill: #44444e; }
     .on   { fill: #f59e0b; }
-    .core { fill: rgb(245 158 11 / 0.16); stroke: #f59e0b; stroke-width: 1.5; }
+    .core { fill: rgb(245 158 11 / 0.24); stroke: #f59e0b; stroke-width: 1.5; }
     /* Animated baseline only — dash-flow carries no data (bar values stay
        static), so a frozen social-preview frame never misreads. */
     .axis { stroke: #f59e0b; stroke-width: 1.5; fill: none; stroke-dasharray: 6 7; animation: dash 1.6s linear infinite; }

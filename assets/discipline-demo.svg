@@ -12,8 +12,10 @@
     .gate  { font: 600 11px ui-monospace, SFMono-Regular, Consolas, monospace; fill: #fbbf24; }
     .cap   { font: 400 10.5px ui-monospace, SFMono-Regular, Consolas, monospace; fill: #9e9eaa; }
     .dot   { animation: blink 1.4s steps(1) infinite; }
+    .flow  { stroke: #f59e0b; stroke-width: 1.5; fill: none; stroke-dasharray: 6 7; animation: dash 1.6s linear infinite; }
     @keyframes blink { 50% { opacity: 0; } }
-    @media (prefers-reduced-motion: reduce) { .dot { animation: none; } }
+    @keyframes dash  { to { stroke-dashoffset: -26; } }
+    @media (prefers-reduced-motion: reduce) { .dot, .flow { animation: none; } }
   </style>
 
   <rect width="920" height="312" rx="12" fill="#0a0a0c"/>
@@ -49,6 +51,9 @@
   <text class="good" x="488" y="178">UNVERIFIED: no type-checker or linter</text>
   <text class="good" x="488" y="194">configured in this project.</text>
   <rect class="dot" x="488" y="206" width="7" height="13" fill="#9e9eaa"/>
+
+  <!-- amber dash-flow baseline under both panels: shared motion language (accent only, no data) -->
+  <line class="flow" x1="40" y1="240" x2="880" y2="240"/>
 
   <!-- footer -->
   <text class="cap" x="460" y="272" text-anchor="middle">both close-outs quoted verbatim from committed benchmark streams (benchmarks/results/streams/)</text>

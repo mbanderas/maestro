@@ -60,17 +60,17 @@
   <!-- ── model box 1: Opus 4.8 (top) — center y=110 -->
   <rect class="panel" x="214" y="86" width="160" height="48" rx="8"/>
   <text class="mdl" x="294" y="107" text-anchor="middle">Opus 4.8</text>
-  <text class="sub" x="294" y="123" text-anchor="middle">frontier reasoning</text>
+  <text class="sub" x="294" y="123" text-anchor="middle">Anthropic</text>
 
   <!-- ── model box 2: GPT-5.5 (middle) — center y=230 -->
   <rect class="panel" x="214" y="206" width="160" height="48" rx="8"/>
   <text class="mdl" x="294" y="227" text-anchor="middle">GPT-5.5</text>
-  <text class="sub" x="294" y="244" text-anchor="middle">frontier reasoning</text>
+  <text class="sub" x="294" y="244" text-anchor="middle">OpenAI Codex</text>
 
   <!-- ── model box 3: Gemini 3.1 Pro (bottom) — center y=350 -->
   <rect class="panel" x="214" y="326" width="160" height="48" rx="8"/>
   <text class="mdl" x="294" y="347" text-anchor="middle">Gemini 3.1 Pro</text>
-  <text class="sub" x="294" y="364" text-anchor="middle">frontier reasoning</text>
+  <text class="sub" x="294" y="364" text-anchor="middle">Google DeepMind</text>
 
   <!-- converge: each model right edge -> hub at (408,230) -> judge -->
   <!-- top model right (374,110) -> hub -->
