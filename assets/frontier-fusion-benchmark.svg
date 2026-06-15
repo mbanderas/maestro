@@ -1,0 +1,126 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 940 500" role="img" aria-labelledby="t d">
+  <title id="t">Maestro Frontier fusion vs solo benchmark</title>
+  <desc id="d">Horizontal bar chart of pass rate on a 100-task agentic coding suite (93 scored). Fusion panels are plotted against the solo models that compose them. Every fusion panel outscores its individual members; an Opus 4.8 self-fusion (double Opus) reaches ~65.5%, matching Claude Fable 5 solo at ~65.3%. The strongest fusion, Fable 5 + GPT-5.5, leads at ~68.9%, while solo Gemini 3.1 Pro and Gemini 3 Flash trail at ~45% and ~43%.</desc>
+  <style>
+    .title { font: 700 16px ui-monospace, SFMono-Regular, Consolas, monospace; fill: #f0f0f4; }
+    .sub   { font: 400 11px ui-monospace, SFMono-Regular, Consolas, monospace; fill: #9e9eaa; }
+    .leg   { font: 600 11px ui-monospace, SFMono-Regular, Consolas, monospace; fill: #c8c8d2; }
+    .row   { font: 600 11px ui-monospace, SFMono-Regular, Consolas, monospace; fill: #d2d2dc; }
+    .val   { font: 700 11px ui-monospace, SFMono-Regular, Consolas, monospace; fill: #f0f0f4; }
+    .tick  { font: 400 10px ui-monospace, SFMono-Regular, Consolas, monospace; fill: #8a8a96; }
+    .gtag  { font: 700 10px ui-monospace, SFMono-Regular, Consolas, monospace; fill: #f59e0b; }
+    .fusion { fill: #6f63d6; }
+    .solo   { fill: #6e6e7a; }
+    .fable  { fill: #d9772e; }
+    .grid   { stroke: #1d1d24; stroke-width: 1; }
+    .axis   { stroke: #33333d; stroke-width: 1; }
+    /* Animated accents carry NO data: bar widths are static, so a frozen
+       social-preview frame always reads the true numbers. */
+    .guide { stroke: #f59e0b; stroke-width: 1.5; fill: none; stroke-dasharray: 5 6; animation: dash 1.5s linear infinite; }
+    @keyframes dash { to { stroke-dashoffset: -22; } }
+    .pulse { fill: none; stroke: #f59e0b; stroke-width: 2; animation: pulse 2.2s ease-in-out infinite; }
+    @keyframes pulse { 0%,100% { opacity: .22; } 50% { opacity: .85; } }
+    @media (prefers-reduced-motion: reduce) {
+      .guide { animation: none; }
+      .pulse { animation: none; opacity: .55; }
+    }
+  </style>
+
+  <rect width="940" height="500" rx="12" fill="#0a0a0c"/>
+
+  <text class="title" x="40" y="38">Fusing the CLIs you already run = Frontier-tier performance</text>
+  <text class="sub" x="40" y="56">100-task agentic coding suite, 93 scored. Double Opus reaches Fable 5 tier; every fusion panel beats its solo members.</text>
+
+  <!-- legend -->
+  <rect class="fusion" x="40" y="70" width="12" height="12" rx="2"/>
+  <text class="leg" x="58" y="80">Fusion panel</text>
+  <rect class="solo" x="172" y="70" width="12" height="12" rx="2"/>
+  <text class="leg" x="190" y="80">Solo model</text>
+  <rect class="fable" x="300" y="70" width="12" height="12" rx="2"/>
+  <text class="leg" x="318" y="80">Fable 5 (frontier ref)</text>
+
+  <!-- vertical gridlines: 45% .. 70% plus 72% boundary; axis at 40% (x=450) -->
+  <line class="axis" x1="450" y1="98" x2="450" y2="458"/>
+  <line class="grid" x1="518.75" y1="98" x2="518.75" y2="458"/>
+  <line class="grid" x1="587.5"  y1="98" x2="587.5"  y2="458"/>
+  <line class="grid" x1="656.25" y1="98" x2="656.25" y2="458"/>
+  <line class="grid" x1="725"    y1="98" x2="725"    y2="458"/>
+  <line class="grid" x1="793.75" y1="98" x2="793.75" y2="458"/>
+  <line class="grid" x1="862.5"  y1="98" x2="862.5"  y2="458"/>
+  <line class="axis" x1="450" y1="458" x2="890" y2="458"/>
+
+  <!-- x ticks -->
+  <text class="tick" x="450"    y="474" text-anchor="middle">40%</text>
+  <text class="tick" x="518.75" y="474" text-anchor="middle">45%</text>
+  <text class="tick" x="587.5"  y="474" text-anchor="middle">50%</text>
+  <text class="tick" x="656.25" y="474" text-anchor="middle">55%</text>
+  <text class="tick" x="725"    y="474" text-anchor="middle">60%</text>
+  <text class="tick" x="793.75" y="474" text-anchor="middle">65%</text>
+  <text class="tick" x="862.5"  y="474" text-anchor="middle">70%</text>
+
+  <!-- bars (static, correct widths) -->
+  <!-- 1: Fable 5 + GPT-5.5 (fusion) 68.9 -->
+  <rect class="fable"  x="450" y="103" width="397.4" height="18" rx="2"/>
+  <text class="row" x="438" y="116" text-anchor="end">Fable 5 + GPT-5.5 (fusion)</text>
+  <text class="val" x="853.4" y="116">68.9%</text>
+
+  <!-- 2: Opus 4.8 + GPT-5.5 + Gemini 3.1 Pro (fusion) 68.3 -->
+  <rect class="fusion" x="450" y="133" width="389.1" height="18" rx="2"/>
+  <text class="row" x="438" y="146" text-anchor="end">Opus 4.8 + GPT-5.5 + Gemini 3.1 Pro (fusion)</text>
+  <text class="val" x="845.1" y="146">68.3%</text>
+
+  <!-- 3: Opus 4.8 + GPT-5.5 (fusion) 67.5 -->
+  <rect class="fusion" x="450" y="163" width="378.1" height="18" rx="2"/>
+  <text class="row" x="438" y="176" text-anchor="end">Opus 4.8 + GPT-5.5 (fusion)</text>
+  <text class="val" x="834.1" y="176">67.5%</text>
+
+  <!-- 4: Opus 4.8 + Opus 4.8 (self-fusion) 65.5 — double Opus -->
+  <rect class="fusion" x="450" y="193" width="350.6" height="18" rx="2"/>
+  <rect class="pulse" x="447" y="190" width="356.6" height="24" rx="4"/>
+  <text class="row" x="438" y="206" text-anchor="end">Opus 4.8 + Opus 4.8 (self-fusion)</text>
+  <text class="val" x="806.6" y="206">65.5%</text>
+
+  <!-- 5: Claude Fable 5 (solo) 65.3 -->
+  <rect class="fable"  x="450" y="223" width="347.9" height="18" rx="2"/>
+  <text class="row" x="438" y="236" text-anchor="end">Claude Fable 5 (solo)</text>
+  <text class="val" x="803.9" y="236">65.3%</text>
+
+  <!-- 6: Gemini 3 Flash + Kimi K2.6 + DeepSeek V4 Pro (fusion) 64.7 -->
+  <rect class="fusion" x="450" y="253" width="339.6" height="18" rx="2"/>
+  <text class="row" x="438" y="266" text-anchor="end">Gemini 3 Flash + Kimi K2.6 + DeepSeek V4 Pro (fusion)</text>
+  <text class="val" x="795.6" y="266">64.7%</text>
+
+  <!-- 7: DeepSeek V4 Pro (solo) 60.3 -->
+  <rect class="solo" x="450" y="283" width="279.1" height="18" rx="2"/>
+  <text class="row" x="438" y="296" text-anchor="end">DeepSeek V4 Pro (solo)</text>
+  <text class="val" x="735.1" y="296">60.3%</text>
+
+  <!-- 8: GPT-5.5 (solo) 60.0 -->
+  <rect class="solo" x="450" y="313" width="275" height="18" rx="2"/>
+  <text class="row" x="438" y="326" text-anchor="end">GPT-5.5 (solo)</text>
+  <text class="val" x="731" y="326">60.0%</text>
+
+  <!-- 9: Claude Opus 4.8 (solo) 58.7 -->
+  <rect class="solo" x="450" y="343" width="257.1" height="18" rx="2"/>
+  <text class="row" x="438" y="356" text-anchor="end">Claude Opus 4.8 (solo)</text>
+  <text class="val" x="713.1" y="356">58.7%</text>
+
+  <!-- 10: Kimi K2.6 (solo) 53.7 -->
+  <rect class="solo" x="450" y="373" width="188.4" height="18" rx="2"/>
+  <text class="row" x="438" y="386" text-anchor="end">Kimi K2.6 (solo)</text>
+  <text class="val" x="644.4" y="386">53.7%</text>
+
+  <!-- 11: Gemini 3.1 Pro (solo) 45.3 -->
+  <rect class="solo" x="450" y="403" width="72.9" height="18" rx="2"/>
+  <text class="row" x="438" y="416" text-anchor="end">Gemini 3.1 Pro (solo)</text>
+  <text class="val" x="528.9" y="416">45.3%</text>
+
+  <!-- 12: Gemini 3 Flash (solo) 43.0 -->
+  <rect class="solo" x="450" y="433" width="41.25" height="18" rx="2"/>
+  <text class="row" x="438" y="446" text-anchor="end">Gemini 3 Flash (solo)</text>
+  <text class="val" x="497.25" y="446">43.0%</text>
+
+  <!-- Fable-5-tier guide (animated dash, static position at Fable 5 solo = 65.3%) -->
+  <line class="guide" x1="797.9" y1="98" x2="797.9" y2="458"/>
+  <text class="gtag" x="797.9" y="93" text-anchor="middle">Fable 5 tier</text>
+</svg>

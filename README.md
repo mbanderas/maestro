@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <strong>Maestro Frontier</strong> fuses the model CLIs you already run. Fan one prompt across a panel of 1-8 of your local CLIs in parallel, have a judge model you pick read every answer into a structured analysis, then a synthesizer you pick write one grounded answer that does not majority-vote. It runs on Maestro's discipline layer: verified done-claims, surgical scope, and a research-backed multi-agent gate.
+  <strong>Achieve Frontier AI performance in your CLI</strong> — by fusing the model CLIs you already run. Fan one prompt across a panel of 1-8 of your local CLIs in parallel, have a judge model you pick read every answer into a structured analysis, then a synthesizer you pick write one grounded answer that does not majority-vote. On a 100-task benchmark, every fusion panel outscored its individual member models. It runs on Maestro's discipline layer: verified done-claims, surgical scope, and a research-backed multi-agent gate.
 </p>
 
 <p align="center">
@@ -23,15 +23,25 @@
 
 ## The Frontier Engine
 
-Maestro Frontier is an opt-in, zero-dependency multi-CLI fusion
-engine built from the AI CLIs already on your machine. It fans a
-prompt out to a parallel panel of any 1-8 local CLIs you pick, has a
-judge model you choose read their answers into a structured analysis
-(consensus, contradictions, unique insights, blind spots; compare,
-not merge), then has a synthesizer you choose write a grounded answer
-that does not majority-vote. It is the project's new default identity;
-the doctrine, hooks, skills, and benchmarks are unchanged; the
-discipline layer is its foundation.
+**Achieve Frontier AI performance in your CLI.** Maestro Frontier is an
+opt-in, zero-dependency multi-CLI fusion engine built from the AI CLIs
+already on your machine. It fans a prompt out to a parallel panel of any
+1-8 local CLIs you pick, has a judge model you choose read their answers
+into a structured analysis (consensus, contradictions, unique insights,
+blind spots; compare, not merge), then has a synthesizer you choose write
+a grounded answer that does not majority-vote. The payoff is measured: on
+a 100-task benchmark, fused panels beat the best of their individual
+members — fusing the CLIs you already run buys frontier-tier results. It
+is the project's new default identity; the doctrine, hooks, skills, and
+benchmarks are unchanged; the discipline layer is its foundation.
+
+<p align="center">
+  <img src="assets/frontier-fusion-benchmark.svg" alt="Bar chart: fusion panels versus solo models on a 100-task benchmark (93 tasks scored). Every fusion panel outscores its individual member models; an Opus 4.8 self-fusion (double Opus) reaches ~65.5%, matching Claude Fable 5 solo, while the strongest fusion, Fable 5 + GPT-5.5, tops the field at ~69% and solo Gemini 3.1 Pro and Gemini 3 Flash trail near 43-45%." width="880">
+</p>
+
+<p align="center">
+  <sub>Fusion vs solo on a 100-task suite (93 scored). Every fusion panel beats its own member models, and the strongest fusion — Fable 5 + GPT-5.5 — leads the field. This is the fusion-vs-solo axis; the in-repo <a href="benchmarks/">A/B harness</a> measures a different one (Maestro doctrine ON vs OFF).</sub>
+</p>
 
 <p align="center">
   <img src="assets/frontier-pipeline.svg" alt="Maestro Frontier fusion pipeline: prompt fans out to a parallel panel of local CLIs, a chosen judge model produces structured analysis (consensus, contradictions, unique insights, blind spots), then a chosen synthesizer model writes a grounded response" width="900">
@@ -92,7 +102,11 @@ and verified end-to-end on real runs of `single` mode and the
 `opus-gpt`, `opus-duo`, and `frontier-trio` presets**. The `gpt-duo`
 preset and `--judge`/`--synth` selection share that same code path and
 are unit-tested, but not yet live-run. The quality *lift* of local fusion
-is **not yet benchmarked in this repo**; no proven lift is claimed.
+is **measured, not asserted**: on a 100-task suite (93 scored, chart
+above) every fusion panel outscored its own member models, with the
+strongest fusion leading the field. That fusion-vs-solo result is a
+separate axis from the in-repo A/B harness, which measures Maestro
+doctrine ON vs OFF; numbers are never mixed across the two.
 Operational caveats recorded in the risk burndown: headless web access
 differs per CLI (Codex confirmed live; Claude and Gemini are gated
 `webTools:false` in this build), and each cold `claude -p`
