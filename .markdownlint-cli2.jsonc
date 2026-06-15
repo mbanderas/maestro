@@ -9,7 +9,8 @@
     "AGENTS.md",
     "CLAUDE.md",
     "docs/*.md",
-    "benchmarks/README.md"
+    "benchmarks/README.md",
+    "integrations/**/*.md"
   ],
   "ignores": [
     "_*.md",

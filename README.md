@@ -48,9 +48,11 @@ Frontier engine with auto-run. That is the entire install — you are done.
 tarball) and copy the frontier/ directory into the project. Run the engine with
 `node frontier/cli.cjs status`, `node frontier/cli.cjs mode <off|single|fusion> --preset <preset>`,
 or `node frontier/cli.cjs run "<prompt>"` — it is zero-dependency Node, works anywhere, and keeps
-its state in ~/.config/maestro. The hooks, slash commands, and skills are Claude-Code
-plugin constructs that no other runtime can load, so the doctrine from step 1 is what governs the
-agent there — copying those folders does nothing.
+its state in ~/.config/maestro. For a /frontier slash command, also copy
+integrations/cursor/commands/frontier.md to .cursor/commands/ (Cursor) or
+integrations/codex/prompts/frontier.md to ~/.codex/prompts/ (Codex) — these are typing shortcuts
+that call the engine, not auto-run hooks. The plugin's enforcement hooks, /maestro:* commands, and
+skills can't load outside Claude Code, so the doctrine from step 1 is what governs the agent there.
 
 Leave Frontier off (its default) until I arm it — /maestro:frontier on Claude Code, or
 node frontier/cli.cjs mode fusion --preset opus-gpt elsewhere.
