@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <strong>Maestro Frontier</strong> fuses the model CLIs you already run. Fan one prompt across a panel of 1-8 of your local CLIs in parallel, have a judge model you pick read every answer into a structured analysis, then a synthesizer you pick write one grounded answer that does not majority-vote. On the DRACO deep-research benchmark, a fused panel scored higher than any of its members run solo. It runs on Maestro's discipline layer: verified done-claims, surgical scope, and a research-backed multi-agent gate.
+  <strong>Maestro Frontier</strong> fuses the model CLIs you already run. Fan one prompt across a panel of 1-8 of your local CLIs in parallel, have a judge model you pick read every answer into a structured analysis, then a synthesizer you pick write one grounded answer that does not majority-vote. It runs on Maestro's discipline layer: verified done-claims, surgical scope, and a research-backed multi-agent gate.
 </p>
 
 <p align="center">
@@ -75,6 +75,10 @@ Presets define the panel; the judge and synthesizer default to Opus 4.8
 - **`frontier-trio`**: Opus + GPT-5.5 + Gemini 3.1 Pro (via `gemini -p`).
 - **`custom`**: 1-8 of the known models.
 
+Three model CLIs ship as adapters today: Opus 4.8 (`claude`), GPT-5.5
+(`codex`), and Gemini 3.1 Pro (`gemini`). Kimi, DeepSeek, GLM, and Qwen
+adapters follow in an update soon.
+
 Pass `--judge <model>` / `--synth <model>` to run those stages on any
 model for any preset (e.g. `--judge opus --synth gpt-5.5`), so you can mix
 the panel and the judge/synth freely. Degradation is graceful: a partial
@@ -103,45 +107,6 @@ operational reference are in
 <p align="center">
   <img src="assets/frontier-stack.svg" alt="Maestro Frontier fusion engine sitting on the discipline layer foundation; an amber data-flow connects the two" width="820">
 </p>
-
-### What fusion buys, measured
-
-<p align="center">
-  <img src="assets/draco-benchmark.png" width="820" alt="Horizontal bar chart of DRACO deep-research scores: fusion panels plotted against solo models, with two configurations (Fable 5 + GPT-5.5 fusion, and Claude Fable 5 solo) scored on 93 of 100 tasks">
-</p>
-
-The fan-out, judge, and synth method behind Frontier was measured on
-DRACO ([arXiv:2602.11685](https://arxiv.org/abs/2602.11685)), an
-independent deep-research benchmark that grades answers by rubric for
-accuracy, completeness, objectivity, and citation quality, run on the
-same kind of local CLIs you already use for code.
-
-- **You don't need the one best model.** On DRACO, a panel of three
-  cheaper, non-frontier models, Gemini 3 Flash + Kimi K2.6 + DeepSeek
-  V4 Pro, scored 64.7% on the full 100 tasks, above solo GPT-5.5
-  (60.0%) and solo Opus 4.8 (58.8%). That trio is a DRACO data point,
-  not a shipped roster: the three adapters Frontier ships today are
-  Opus 4.8, GPT-5.5, and Gemini 3.1 Pro. The lesson that transfers is
-  that a fused panel of the CLIs you already run can outscore any one
-  of them solo on this benchmark.
-- **Every panel beats its own members solo.** Opus + GPT fusion
-  (~67.5%) clears the better of the two run alone, solo GPT-5.5 at
-  60.0% and solo Opus at 58.8%.
-- **Even one model fused against itself gains.** Opus self-fusion
-  scored 65.5% versus solo Opus at 58.8%, a 6.7-point lift from the
-  judge and synthesis stages alone.
-
-Among the full-100-task configurations, the Opus 4.8 + GPT-5.5 +
-Gemini 3.1 Pro trio led at 68.3%, over every solo model. Two
-configurations on the chart, Fable 5 + GPT-5.5 (fusion) at ~69% and
-Claude Fable 5 (solo) at ~65%, were scored on 93 of 100 tasks; read
-them with that caveat.
-
-DRACO is an external deep-research benchmark, not this repo's own
-coding A/B harness. What transfers is the method: a panel plus a judge
-plus a synthesizer beats any member run solo. Arm it with
-`/maestro:frontier fusion opus-gpt` to start fusing on your next
-prompt.
 
 ## What You Get
 
@@ -436,6 +401,7 @@ Maestro's architecture is grounded in 700+ sources across computer science, libr
 | [Voyager](https://arxiv.org/abs/2305.16291) | 2023 | NeurIPS | Skill library pattern for capability organization |
 | [GTD](https://arxiv.org/abs/2504.05767) | 2025 | arXiv | 0.3% degradation under failure with redundant topologies |
 | [SELFORG](https://arxiv.org/abs/2502.11811) | 2025 | arXiv | Shapley-based contribution estimation |
+| [DRACO](https://arxiv.org/abs/2602.11685) | 2026 | arXiv | Deep-research benchmark reviewed for fusion; fused panels outscored their solo members |
 
 For the full analysis, read [Why Your Multi-Agent AI System Keeps Failing](https://marklaursen.com/blog/why-your-multi-agent-ai-system-keeps-failing).
 
