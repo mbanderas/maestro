@@ -20,18 +20,85 @@ function configDir() {
   return path.join(os.homedir(), '.config', 'maestro');
 }
 
-function statePath() {
+// ---------- arg helper (used by resolveScope) ----------
+
+/**
+ * @param {string[]} argv
+ * @param {string} flag
+ * @returns {string|null}
+ */
+function getFlag(argv, flag) {
+  const i = argv.indexOf(flag);
+  return i !== -1 && i + 1 < argv.length ? argv[i + 1] : null;
+}
+
+// ---------- scope helpers ----------
+
+/**
+ * Sanitize a raw scope value: lowercase, strip non-[a-z0-9-] chars entirely,
+ * then return 'default' if the result is empty.
+ * Examples: 'Foo' -> 'foo', 'a b!c' -> 'abc', '' -> 'default'.
+ * @param {*} v
+ * @returns {string}
+ */
+function sanitizeScope(v) {
+  const s = String(v).toLowerCase().replace(/[^a-z0-9-]/g, '');
+  return s.length > 0 ? s : 'default';
+}
+
+/**
+ * Resolve the active scope from argv + environment. Precedence:
+ *   1. --scope <value> flag in argv
+ *   2. process.env.MAESTRO_SCOPE
+ *   3. Autodetect: CLAUDE_PLUGIN_ROOT || CLAUDECODE truthy -> 'claude-code'
+ *   4. 'default'
+ * The chosen value is always passed through sanitizeScope.
+ * @param {string[]} argv
+ * @returns {string}
+ */
+function resolveScope(argv) {
+  const flagVal = getFlag(argv, '--scope');
+  if (flagVal !== null) return sanitizeScope(flagVal);
+  if (process.env.MAESTRO_SCOPE) return sanitizeScope(process.env.MAESTRO_SCOPE);
+  if (process.env.CLAUDE_PLUGIN_ROOT || process.env.CLAUDECODE) return 'claude-code';
+  return 'default';
+}
+
+// ---------- path helpers ----------
+
+/** Pre-scope global state file; migration source only, never written/deleted. */
+function legacyStatePath() {
   return path.join(configDir(), 'frontier-state.json');
+}
+
+/**
+ * Scope-aware state path.
+ * scope === 'default' => frontier-state.json (legacy-compatible, no suffix).
+ * Any other scope => frontier-state.<scope>.json.
+ * @param {string} [scope] Omit to autodetect the runtime scope via resolveScope([]).
+ * @returns {string}
+ */
+function statePath(scope) {
+  if (scope === undefined) scope = resolveScope([]);
+  if (scope === 'default') return path.join(configDir(), 'frontier-state.json');
+  return path.join(configDir(), 'frontier-state.' + scope + '.json');
 }
 
 // ---------- state I/O ----------
 
-function loadState() {
+/**
+ * Read and validate a state file. Returns:
+ *   - null if the file is absent (ENOENT) — caller decides the fallback.
+ *   - {mode:'off'} on symlink, corrupt JSON, or invalid mode.
+ *   - parsed object on success.
+ * @param {string} p
+ * @returns {object|null}
+ */
+function _readStateFile(p) {
+  let st;
+  try { st = fs.lstatSync(p); } catch { return null; }
+  if (st.isSymbolicLink()) return { mode: 'off' };
   try {
-    const p = statePath();
-    let st;
-    try { st = fs.lstatSync(p); } catch { return { mode: 'off' }; }
-    if (st.isSymbolicLink()) return { mode: 'off' };
     const raw = fs.readFileSync(p, 'utf8');
     const parsed = JSON.parse(raw);
     if (!parsed || typeof parsed !== 'object') return { mode: 'off' };
@@ -43,14 +110,44 @@ function loadState() {
 }
 
 /**
+ * Load frontier state for the given scope.
+ * D3 MIGRATION: if scope !== 'default' and the scoped file does NOT exist
+ * AND the legacy frontier-state.json DOES exist, seed from the legacy file
+ * (read-only — never write during load). Same symlink/parse guards apply.
+ * Falls back to {mode:'off'} on any failure.
+ * @param {string} [scope] Omit to autodetect the runtime scope via resolveScope([]).
+ * @returns {object}
+ */
+function loadState(scope) {
+  if (scope === undefined) scope = resolveScope([]);
+  try {
+    const p = statePath(scope);
+    const result = _readStateFile(p);
+    if (result !== null) return result;
+
+    // File absent. For non-default scopes attempt migration from legacy file.
+    if (scope !== 'default') {
+      const legacyResult = _readStateFile(legacyStatePath());
+      if (legacyResult !== null) return legacyResult;
+    }
+
+    return { mode: 'off' };
+  } catch {
+    return { mode: 'off' };
+  }
+}
+
+/**
  * Atomic temp+rename write, 0600, symlink-refusing.
  * Ported from safeWriteFlag in hooks/maestro-terse-mode.cjs.
  * @param {object} state
+ * @param {string} [scope] Omit to autodetect the runtime scope via resolveScope([]).
  * @returns {boolean}
  */
-function saveState(state) {
+function saveState(state, scope) {
+  if (scope === undefined) scope = resolveScope([]);
   try {
-    const p = statePath();
+    const p = statePath(scope);
     const dir = path.dirname(p);
     fs.mkdirSync(dir, { recursive: true });
     try { if (fs.lstatSync(dir).isSymbolicLink()) return false; } catch { return false; }
@@ -231,7 +328,10 @@ function validateModel(m, cfg) {
 module.exports = {
   DEFAULTS,
   configDir,
+  sanitizeScope,
+  resolveScope,
   statePath,
+  legacyStatePath,
   loadState,
   saveState,
   resolvePanel,

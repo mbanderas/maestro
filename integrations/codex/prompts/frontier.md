@@ -18,14 +18,15 @@ Requested action: `$ARGUMENTS`
 Map it to one engine CLI call and run it from the repo root (where `frontier/` was
 installed). Do not edit the engine's state file by hand.
 
-1. Switch mode (persists to `~/.config/maestro/frontier-state.json`; default `off`):
+1. Switch mode (persists to `~/.config/maestro/frontier-state.codex.json`; default `off`).
+   `--scope codex` keeps Codex's armed mode independent from Claude Code and Cursor on the same machine:
 
    ```bash
-   node frontier/cli.cjs mode off
-   node frontier/cli.cjs mode single --model <model>
-   node frontier/cli.cjs mode fusion --preset <preset>
-   node frontier/cli.cjs mode fusion --preset custom --models <a,b,c>
-   node frontier/cli.cjs mode fusion --preset <preset> --judge <model> --synth <model>
+   node frontier/cli.cjs mode off --scope codex
+   node frontier/cli.cjs mode single --model <model> --scope codex
+   node frontier/cli.cjs mode fusion --preset <preset> --scope codex
+   node frontier/cli.cjs mode fusion --preset custom --models <a,b,c> --scope codex
+   node frontier/cli.cjs mode fusion --preset <preset> --judge <model> --synth <model> --scope codex
    ```
 
    Models: `opus` (Claude Opus 4.8, needs `claude`), `gpt-5.5` (needs `codex`),
@@ -37,14 +38,14 @@ installed). Do not edit the engine's state file by hand.
 2. Show the current mode/preset:
 
    ```bash
-   node frontier/cli.cjs status
+   node frontier/cli.cjs status --scope codex
    ```
 
 3. Run a prompt through the current mode — **this is the action that actually
    fuses**, since nothing auto-runs here. Set a mode first (step 1), then:
 
    ```bash
-   node frontier/cli.cjs run "<prompt>"
+   node frontier/cli.cjs run "<prompt>" --scope codex
    ```
 
    - `off`: prints a notice, spawns nothing.

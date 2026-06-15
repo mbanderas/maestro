@@ -4,7 +4,7 @@
 'use strict';
 
 const fs = require('fs');
-const { DEFAULTS, loadState, saveState, validateMode, validatePreset, validateModel } = require('./config.cjs');
+const { DEFAULTS, loadState, saveState, resolveScope, validateMode, validatePreset, validateModel } = require('./config.cjs');
 const { runFrontier } = require('./run.cjs');
 
 // ---------- arg helpers ----------
@@ -18,20 +18,39 @@ function hasFlag(argv, flag) {
   return argv.indexOf(flag) !== -1;
 }
 
+/**
+ * Strip --scope <value> from an argv array so it never leaks into prompts.
+ * @param {string[]} argv
+ * @returns {string[]}
+ */
+function stripScopeFlag(argv) {
+  const out = [];
+  let i = 0;
+  while (i < argv.length) {
+    if (argv[i] === '--scope') {
+      i += 2; // skip flag and its value
+    } else {
+      out.push(argv[i]);
+      i++;
+    }
+  }
+  return out;
+}
+
 // ---------- usage ----------
 
 function usage() {
   process.stderr.write(
     'Usage:\n' +
-    '  frontier mode <off|single|fusion> [--model X] [--preset Y] [--models a,b,c]\n' +
-    '  frontier status\n' +
-    '  frontier run [<prompt>|-]\n'
+    '  frontier mode <off|single|fusion> [--model X] [--preset Y] [--models a,b,c] [--scope <name>]\n' +
+    '  frontier status [--scope <name>]\n' +
+    '  frontier run [<prompt>|-] [--scope <name>]\n'
   );
 }
 
 // ---------- subcommands ----------
 
-function cmdMode(argv) {
+function cmdMode(argv, scope) {
   const newMode = argv[0];
   if (!newMode || !validateMode(newMode)) {
     process.stderr.write('ERROR: mode must be off, single, or fusion\n');
@@ -97,25 +116,28 @@ function cmdMode(argv) {
     }
   }
 
-  saveState(state);
+  saveState(state, scope);
   process.stdout.write('frontier mode set: ' + JSON.stringify(state) + '\n');
 }
 
-function cmdStatus() {
-  const state = loadState();
+function cmdStatus(scope) {
+  const state = loadState(scope);
   process.stdout.write(JSON.stringify(state) + '\n');
 }
 
-async function cmdRun(argv) {
+async function cmdRun(argv, scope) {
+  // Strip --scope and its value before building the prompt so it never leaks.
+  const cleanArgv = stripScopeFlag(argv);
+
   let prompt;
-  const rest = argv.join(' ').trim();
+  const rest = cleanArgv.join(' ').trim();
   if (!rest || rest === '-') {
     prompt = fs.readFileSync(0, 'utf8');
   } else {
     prompt = rest;
   }
 
-  const state = loadState();
+  const state = loadState(scope);
 
   if (state.mode === 'off') {
     process.stdout.write('Frontier off — using normal Maestro (engine not invoked).\n');
@@ -152,12 +174,15 @@ async function main() {
   const argv = process.argv.slice(2);
   const cmd  = argv[0];
 
+  // Resolve scope once from full argv; all subcommands receive it.
+  const scope = resolveScope(argv);
+
   if (cmd === 'mode') {
-    cmdMode(argv.slice(1));
+    cmdMode(argv.slice(1), scope);
   } else if (cmd === 'status') {
-    cmdStatus();
+    cmdStatus(scope);
   } else if (cmd === 'run') {
-    await cmdRun(argv.slice(1));
+    await cmdRun(argv.slice(1), scope);
   } else {
     usage();
     process.exit(2);

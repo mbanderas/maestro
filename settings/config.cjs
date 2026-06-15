@@ -199,10 +199,10 @@ function setContextBar(enabled) {
 
 // ---------- frontier (delegated to frontier/config.cjs) ----------
 
-function readFrontier() { return frontier.loadState(); }
+function readFrontier(scope) { return frontier.loadState(scope); }
 
-function saveFrontier(state) {
-  return frontier.saveState(state)
+function saveFrontier(state, scope) {
+  return frontier.saveState(state, scope)
     ? { ok: true, warning: null }
     : { ok: false, error: 'failed to write frontier state' };
 }
@@ -214,12 +214,12 @@ function setFrontier(spec, opts) {
   const head = (idx === -1 ? s : s.slice(0, idx)).toLowerCase();
   const tail = idx === -1 ? '' : s.slice(idx + 1).trim();
 
-  if (head === 'off' || head === '') return saveFrontier({ mode: 'off' });
+  if (head === 'off' || head === '') return saveFrontier({ mode: 'off' }, opts.scope);
 
   if (head === 'single') {
     const model = (tail || opts.model || '').trim();
     if (!frontier.validateModel(model)) return { ok: false, error: 'unknown model: ' + (model || '(none)') };
-    return saveFrontier({ mode: 'single', model });
+    return saveFrontier({ mode: 'single', model }, opts.scope);
   }
 
   if (head === 'fusion') {
@@ -244,7 +244,7 @@ function setFrontier(spec, opts) {
       if (!frontier.validateModel(opts.synth)) return { ok: false, error: 'unknown synth model: ' + opts.synth };
       state.synthModel = opts.synth;
     }
-    return saveFrontier(state);
+    return saveFrontier(state, opts.scope);
   }
 
   return { ok: false, error: 'frontier value must be off, single:<model>, or fusion:<preset>' };
@@ -252,8 +252,8 @@ function setFrontier(spec, opts) {
 
 // ---------- aggregate ----------
 
-function readAll() {
-  return { terse: readTerse(), frontier: readFrontier(), contextBar: readContextBar() };
+function readAll(scope) {
+  return { terse: readTerse(), frontier: readFrontier(scope), contextBar: readContextBar() };
 }
 
 // The available-values catalog: every toggle value a picker can offer. The

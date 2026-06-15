@@ -39,7 +39,9 @@ terse_badge() {
 # change. Needs jq. Output: presence = on, absence = off (no ON/OFF text).
 frontier_badge() {
   [ "$have_jq" -eq 1 ] || return
-  local f="${XDG_CONFIG_HOME:-$HOME/.config}/maestro/frontier-state.json"
+  local dir="${XDG_CONFIG_HOME:-$HOME/.config}/maestro"
+  local f="$dir/frontier-state.claude-code.json"
+  [ -f "$f" ] || f="$dir/frontier-state.json"
   [ -L "$f" ] && return
   [ ! -f "$f" ] && return
   local sz

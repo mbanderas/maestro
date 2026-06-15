@@ -44,7 +44,7 @@ if (Number.isFinite(fusionDepth) && fusionDepth >= 1) noop();
 
 let state;
 try {
-  state = require('../frontier/config.cjs').loadState();
+  state = require('../frontier/config.cjs').loadState('claude-code');
 } catch {
   noop();
 }

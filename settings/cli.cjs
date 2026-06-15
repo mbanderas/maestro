@@ -31,7 +31,8 @@ function fmtFrontier(f) {
 }
 
 function cmdStatus(argv) {
-  const all = settings.readAll();
+  const scope = getFlag(argv, '--scope') || undefined;
+  const all = settings.readAll(scope);
   if (argv.includes('--json')) {
     process.stdout.write(JSON.stringify(all, null, 2) + '\n');
     return;
@@ -85,6 +86,7 @@ function cmdSet(argv) {
     models: getFlag(argv, '--models'),
     model: getFlag(argv, '--model'),
     preset: getFlag(argv, '--preset'),
+    scope: getFlag(argv, '--scope'),
   };
   Object.keys(opts).forEach(k => { if (opts[k] == null) delete opts[k]; });
 
@@ -100,13 +102,14 @@ function cmdSet(argv) {
 function usageText() {
   return (
     'Usage:\n' +
-    '  settings status [--json]\n' +
+    '  settings status [--json] [--scope <name>]\n' +
     '  settings list [--json]\n' +
     '  settings help\n' +
-    '  settings set <key> <value> [--judge M] [--synth M] [--models a,b,c]\n' +
+    '  settings set <key> <value> [--judge M] [--synth M] [--models a,b,c] [--scope <name>]\n' +
     '    terse        <off|lite|full|ultra>\n' +
     '    frontier     <off | single:<model> | fusion:<preset>>\n' +
-    '    context-bar  <on|off>\n'
+    '    context-bar  <on|off>\n' +
+    '  --scope targets a named frontier state (e.g. claude-code, codex, cursor); omit for autodetect\n'
   );
 }
 

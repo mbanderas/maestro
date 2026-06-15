@@ -53,7 +53,10 @@ function Get-FrontierBadge {
     $cfgDir = if ($env:XDG_CONFIG_HOME) { Join-Path $env:XDG_CONFIG_HOME 'maestro' }
               elseif ($env:APPDATA) { Join-Path $env:APPDATA 'maestro' }
               else { Join-Path $HOME 'AppData\Roaming\maestro' }
-    $item = Get-Item -LiteralPath (Join-Path $cfgDir 'frontier-state.json') -Force -ErrorAction SilentlyContinue
+    $scoped = Join-Path $cfgDir 'frontier-state.claude-code.json'
+    $legacy = Join-Path $cfgDir 'frontier-state.json'
+    $statePath = if (Test-Path -LiteralPath $scoped -PathType Leaf) { $scoped } else { $legacy }
+    $item = Get-Item -LiteralPath $statePath -Force -ErrorAction SilentlyContinue
     if (-not $item -or $item.PSIsContainer) { return '' }
     if ($item.Attributes -band [IO.FileAttributes]::ReparsePoint) { return '' }
     if ($item.Length -gt 8192) { return '' }
