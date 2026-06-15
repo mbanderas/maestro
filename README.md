@@ -43,20 +43,23 @@ merge them), then a grounded synthesis.
 
 It ships with the plugin and is driven by `/maestro:frontier`. Three
 modes, switched at will, **`off` by default** so installing or
-upgrading changes nothing until you opt in:
+upgrading changes nothing until you opt in. **Arming it — `single` or
+`fusion` — makes it auto-run on every prompt**: a `UserPromptSubmit`
+hook routes each prompt through the engine and the live session relays
+the synthesized answer. `off` is the disable path.
 
 | Mode | Behavior |
 |---|---|
-| `off` | Normal Maestro. Engine never invoked; zero behavior change. The default. |
-| `single <model>` | Route the prompt to one local CLI and return its answer. No panel, no judge, no synth. |
-| `fusion <preset>` | Full panel -> Opus judge analysis -> grounded Opus synthesis, with graceful degradation and one-level recursion bounds. |
+| `off` | Normal Maestro. Engine never invoked; zero behavior change. The default, and the way to disable auto-run. |
+| `single <model>` | Auto-runs every prompt through one local CLI and relays its answer. No panel, no judge, no synth. |
+| `fusion <preset>` | Auto-runs every prompt through the full panel -> Opus judge analysis -> grounded Opus synthesis, with graceful degradation and one-level recursion bounds. |
 
 ```text
 /maestro:frontier status                       # show current mode
-/maestro:frontier single opus                  # one-CLI mode
-/maestro:frontier fusion opus-gpt              # panel = Opus + GPT-5.5
-/maestro:frontier run "your prompt here"       # run under the current mode
-/maestro:frontier off                          # back to normal Maestro
+/maestro:frontier single opus                  # arm one-CLI auto-run
+/maestro:frontier fusion opus-gpt              # arm panel auto-run (Opus + GPT-5.5)
+/maestro:frontier run "your prompt here"       # manual one-off (armed modes also auto-run)
+/maestro:frontier off                          # disable auto-run; back to normal Maestro
 ```
 
 <p align="center">
@@ -304,7 +307,7 @@ Every Maestro slash command in Claude Code is namespaced `/maestro:<name>`. On C
 | Toggle | Values | What it controls |
 |---|---|---|
 | `terse` | `off`, `lite`, `full`, `ultra` | Output-token reduction. Shows an amber level badge (`ULTRA`) on the status bar. |
-| `frontier` | `off`; `single:` `opus` / `gpt-5.5` / `gemini`; `fusion:` `opus-duo` / `opus-gpt` / `gpt-duo` / `frontier-trio` / `custom`, each with optional `--judge` / `--synth` | The local fusion engine. Shows a blue `ƒ` panel badge when on: `ƒO+C`, `ƒO+C+G`, `ƒ✦3` (`O`=Opus, `C`=ChatGPT/GPT-5.5, `G`=Gemini). |
+| `frontier` | `off`; `single:` `opus` / `gpt-5.5` / `gemini`; `fusion:` `opus-duo` / `opus-gpt` / `gpt-duo` / `frontier-trio` / `custom`, each with optional `--judge` / `--synth` | The local fusion engine. When armed it auto-runs on every prompt. The blue `ƒ` panel badge means auto-run is on: `ƒO+C`, `ƒO+C+G`, `ƒ✦3` (`O`=Opus, `C`=ChatGPT/GPT-5.5, `G`=Gemini). |
 | `context-bar` | `on`, `off` | The status-line context-window progress bar. |
 
 Portable everywhere, Codex included: `node settings/cli.cjs status | list | help | set <key> <value>` (frontier also takes `--judge`, `--synth`, `--models a,b,c`). Full references: [`docs/settings.md`](docs/settings.md) and [`docs/context-bar.md`](docs/context-bar.md).

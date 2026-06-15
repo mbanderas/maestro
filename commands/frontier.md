@@ -7,7 +7,13 @@ allowed-tools: Bash, Read
 Drive the Maestro Frontier engine: a zero-dependency local multi-CLI
 fusion engine (parallel panel of local CLIs -> Opus judge analysis ->
 grounded synthesis). Default mode is `off`: the engine is opt-in and
-never runs until you switch it on.
+never runs until you switch it on. Arming it (`single` or `fusion`)
+makes it **auto-run on every prompt** — a `UserPromptSubmit` hook
+(`hooks/frontier-autorun.cjs`) routes each prompt through the engine and
+the live session relays the synthesized answer. `off` disables auto-run.
+Autorun blocks the turn until the engine returns; the hook carries a
+300s timeout (`hooks/hooks.json`), and a run that exceeds it is skipped
+so the turn proceeds normally. Any engine error degrades the same way.
 
 Requested action: `$ARGUMENTS`
 
@@ -38,7 +44,9 @@ self-contained; do not edit its state file yourself.
    ```
 
 3. Run a prompt through the current mode (prompt as the argument, or
-   piped on stdin):
+   piped on stdin). This is a manual one-off; when the engine is armed
+   (`single`/`fusion`) the autorun hook already runs every prompt for
+   you, so `run` is mainly for scripting or an explicit re-run:
 
    ```bash
    node "${CLAUDE_PLUGIN_ROOT}/frontier/cli.cjs" run "<prompt>"
