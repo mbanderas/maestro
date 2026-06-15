@@ -372,6 +372,36 @@ Every Maestro slash command in Claude Code is namespaced `/maestro:<name>`. On C
 
 Portable everywhere, Codex included: `node settings/cli.cjs status | list | help | set <key> <value>` (frontier also takes `--judge`, `--synth`, `--models a,b,c`). Full references: [`docs/settings.md`](docs/settings.md) and [`docs/context-bar.md`](docs/context-bar.md).
 
+## Updating Maestro
+
+Maestro no longer pins a plugin version. The marketplace always resolves to the latest `main`, so updating is a single refresh — no version bump needed in any file.
+
+### Claude Code (recommended)
+
+```text
+/plugin marketplace update maestro
+/plugin reload-plugins
+```
+
+`reload-plugins` applies the update in the running session. If Claude Code warns that a restart is required, restart it. Non-interactive equivalent: `claude plugin marketplace update maestro`.
+
+You can also enable marketplace auto-update so the local clone refreshes automatically — check Claude Code's plugin settings.
+
+**Shortcut:** `/maestro:update` runs the sequence above and re-syncs any wired copies (frontier adapter, context bar) in one step.
+
+> **Note:** There is no `/plugin update <name>` command in Claude Code. The correct command is `/plugin marketplace update maestro`.
+
+### Codex / Cursor (portable installs, no plugin system)
+
+Run `/update` if your integration file exposes it, or update manually:
+
+- **Git clone:** `git pull` inside the Maestro clone directory.
+- **Downloaded copy:** re-download the tarball and re-copy `frontier/` plus your integration command file (`integrations/codex/prompts/frontier.md` or `integrations/cursor/commands/frontier.md`) from the latest `main`.
+
+### Gemini / other CLIs
+
+The same portable manual steps apply: re-pull or re-copy `frontier/` and the relevant integration file from `main`. If your CLI supports custom commands and you have a `/update` wired, run that instead.
+
 ## When to Use Maestro
 
 The discipline layer (verification, scope, honest status) applies to every task from a one-line fix upward. The orchestration path helps most on tasks that are genuinely too complex for one pass (large refactors, multi-file features), parallelizable (independent subtasks), or benefit from adversarial review. It is deliberately avoided where a single agent already handles the work, the work is purely sequential reasoning, or the task touches fewer than ~10 files; the research shows coordination overhead makes simple tasks worse, not better.

@@ -7,8 +7,9 @@ wrapper logic, gate tools, or auto-run on every prompt. So these ports are typin
 shortcuts that tell the agent to shell out to the portable Frontier engine
 (`frontier/cli.cjs`); they are **not** a plugin equivalent.
 
-Only `/frontier` is ported, because it is the one command that drives portable
-machinery (the zero-dependency Node engine). `terse`, `context-bar`, and `settings`
+Only `/frontier` and `/update` are ported. `/frontier` drives the portable engine
+(`frontier/cli.cjs`); `/update` refreshes the install (git pull or re-download +
+re-copy `frontier/` and the command files). `terse`, `context-bar`, and `settings`
 depend on Claude Code hooks/status line and would only inject text elsewhere;
 `compress` operates on memory files and is partly portable. The orchestration
 doctrine itself needs no command — it lives in `AGENTS.md` and loads on demand.
@@ -23,6 +24,45 @@ doctrine itself needs no command — it lives in `AGENTS.md` and loads on demand
 After adding a file, restart the tool or open a new chat so it loads. Both runtimes
 expand `$ARGUMENTS` to the full argument string — `/frontier fusion opus-gpt` passes
 `fusion opus-gpt`.
+
+Each runtime passes an explicit `--scope` flag so armed state is per-CLI and never
+leaks across runtimes on the same machine: Codex uses `--scope codex`, Cursor uses
+`--scope cursor`. Claude Code autodetects its scope and needs no flag. If you add a
+Gemini or Antigravity integration, pass `--scope gemini`.
+
+## Updating portable installs
+
+Portable installs have no plugin system. Update = refresh the copied files from
+latest `main`.
+
+**If you cloned the Maestro repo:**
+
+```bash
+git -C <path-to-maestro-clone> pull
+```
+
+Then re-copy `frontier/` and the integration command files into your project.
+
+**If you copied files manually** (no clone), re-download from latest `main` and
+overwrite the copies in your project:
+
+```bash
+curl -O https://raw.githubusercontent.com/mbanderas/maestro/main/AGENTS.md
+curl -O https://raw.githubusercontent.com/mbanderas/maestro/main/frontier/cli.cjs
+# Also re-copy the integration command file(s) you installed.
+```
+
+A `/update` shortcut command ships for each runtime — install it once and future
+updates are a single invocation:
+
+| Runtime | Source in this repo | Install to | Invoke |
+|---|---|---|---|
+| Cursor | `integrations/cursor/commands/update.md` | `.cursor/commands/update.md` (per-repo) or `~/.cursor/commands/` (global) | `/update` |
+| Codex (CLI + IDE/Desktop) | `integrations/codex/prompts/update.md` | `~/.codex/prompts/update.md` (global only) | `/update` |
+
+**Version model:** Maestro pins no version for portable files. Fetching from
+latest `main` always resolves the newest committed code — no manual version bump
+needed per release.
 
 ## Caveats
 
