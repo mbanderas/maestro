@@ -36,11 +36,11 @@ the latest without any manual version bump.
 3. **Reload the running session** — the plugin binary is pinned at session
    start, so the new code is NOT live yet. Tell the user:
 
-   > Run `/plugin reload-plugins` in this session to apply the update without
+   > Run `/reload-plugins` in this session to apply the update without
    > restarting. If that command warns or is unavailable, restart Claude Code —
    > the updated plugin loads automatically on next launch.
 
-   Do not attempt to run `/plugin reload-plugins` via Bash; it is an in-session
+   Do not attempt to run `/reload-plugins` via Bash; it is an in-session
    slash command that must be entered by the user in the Claude Code UI.
 
 4. **Post-restart re-sync** — on restart the `SessionStart` hook fires and
@@ -48,11 +48,11 @@ the latest without any manual version bump.
    This happens automatically; no manual step is needed.
 
 5. **Confirm** — report: update pulled, session reload required via
-   `/plugin reload-plugins` or restart.
+   `/reload-plugins` or restart.
 
 Notes:
 
-- `/plugin reload-plugins` applies the new code in-session; a full restart is
+- `/reload-plugins` applies the new code in-session; a full restart is
   always a safe fallback.
 - Do NOT tell the user to run `/plugin update maestro` — that command does not
   exist in Claude Code.

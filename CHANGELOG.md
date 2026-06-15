@@ -28,7 +28,7 @@ All notable changes to Maestro are documented here. The format follows
   `version` field from `.claude-plugin/plugin.json` and
   `.claude-plugin/marketplace.json`; the plugin now resolves to the latest
   commit on `main`, so `/plugin marketplace update maestro` +
-  `/plugin reload-plugins` always pulls the newest code with no manual
+  `/reload-plugins` always pulls the newest code with no manual
   version bump per release. (`package.json` keeps its npm version metadata.)
 - **`/maestro:frontier` arming copy** now states plainly that arming a mode
   auto-runs the engine on every prompt in Claude Code, instead of implying
@@ -38,7 +38,7 @@ All notable changes to Maestro are documented here. The format follows
 
 - **`/maestro:update`** (Claude Code) — one command that runs the
   marketplace update, reports what changed, and points the user at
-  `/plugin reload-plugins` (or a restart) to apply it.
+  `/reload-plugins` (or a restart) to apply it.
 - **Portable `/update`** for Codex (`integrations/codex/prompts/update.md`)
   and Cursor (`integrations/cursor/commands/update.md`) — refreshes the
   copied `frontier/` engine and integration files from latest `main`.

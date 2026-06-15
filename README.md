@@ -380,7 +380,7 @@ Maestro no longer pins a plugin version. The marketplace always resolves to the 
 
 ```text
 /plugin marketplace update maestro
-/plugin reload-plugins
+/reload-plugins
 ```
 
 `reload-plugins` applies the update in the running session. If Claude Code warns that a restart is required, restart it. Non-interactive equivalent: `claude plugin marketplace update maestro`.
