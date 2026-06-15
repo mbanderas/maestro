@@ -97,11 +97,12 @@ function cmdSet(argv) {
   if (r.warning) process.stdout.write('WARNING: ' + r.warning + '\n');
 }
 
-function usage() {
-  process.stderr.write(
+function usageText() {
+  return (
     'Usage:\n' +
     '  settings status [--json]\n' +
     '  settings list [--json]\n' +
+    '  settings help\n' +
     '  settings set <key> <value> [--judge M] [--synth M] [--models a,b,c]\n' +
     '    terse        <off|lite|full|ultra>\n' +
     '    frontier     <off | single:<model> | fusion:<preset>>\n' +
@@ -109,11 +110,24 @@ function usage() {
   );
 }
 
+function usage() {
+  process.stderr.write(usageText());
+}
+
+// `help` prints the usage grammar plus the available-values catalog to
+// stdout, so a non-interactive user (Codex, scripts) gets the same matrix the
+// keyboard picker offers.
+function cmdHelp() {
+  process.stdout.write(usageText() + '\n');
+  cmdList([]);
+}
+
 function main() {
   const argv = process.argv.slice(2);
   const cmd = argv[0];
   if (cmd === 'status') cmdStatus(argv.slice(1));
   else if (cmd === 'list') cmdList(argv.slice(1));
+  else if (cmd === 'help' || cmd === '--help' || cmd === '-h') cmdHelp();
   else if (cmd === 'set') cmdSet(argv.slice(1));
   else { usage(); process.exit(2); }
 }

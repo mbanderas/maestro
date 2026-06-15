@@ -1,7 +1,8 @@
 # Maestro Settings
 
-One place to see and change Maestro's toggles. Interactive in Claude Code
-with a keyboard picker, and a portable CLI everywhere else. The feature is a
+One place to see and change Maestro's toggles. In Claude Code, run it with
+arguments to change a toggle in one line, or with no arguments for a keyboard
+picker; everywhere else a portable CLI does the same. The feature is a
 front-end over Maestro's existing state; it stores nothing of its own, so the
 terse hook, the frontier engine, and the context-bar scripts keep reading
 exactly what they read today.
@@ -45,6 +46,30 @@ CLI, which then prints a confirmation and the new status.
 `/maestro:settings status` prints the current values without changing
 anything.
 
+## Claude Code: direct commands
+
+Pass arguments and `/maestro:settings` runs the change immediately — no
+questionnaire. The first argument selects the action:
+
+| You type | What runs |
+|---|---|
+| `/maestro:settings` | the keyboard picker (above) |
+| `/maestro:settings status` | print current values |
+| `/maestro:settings list` | print every available value |
+| `/maestro:settings help` | usage grammar + the full matrix |
+| `/maestro:settings set terse off` | set a toggle |
+| `/maestro:settings terse off` | shorthand for `set terse off` |
+| `/maestro:settings frontier fusion opus-gpt` | `set frontier fusion:opus-gpt` |
+| `/maestro:settings frontier fusion custom --models opus,gpt-5.5,gemini` | a custom panel |
+| `/maestro:settings frontier fusion opus-gpt --judge opus --synth gpt-5.5` | with stage overrides |
+| `/maestro:settings context-bar off` | hide the context bar |
+
+The friendly space form (`frontier fusion opus-gpt`) is normalized to the
+CLI's colon form (`fusion:opus-gpt`); the colon form works too. The
+`argument-hint` shows the grammar as you type — Claude Code has no per-value
+tab-completion for command arguments, so the hint plus `help` is the discovery
+path.
+
 ## Codex and any other CLI: the portable command
 
 Codex has no user-hook system, no `AskUserQuestion`, and no way for a plugin
@@ -55,6 +80,7 @@ CLI directly. It is the same writer the Claude Code command calls.
 ```text
 node settings/cli.cjs status            # all three current values
 node settings/cli.cjs status --json     # machine-readable
+node settings/cli.cjs help              # usage grammar + every available value
 node settings/cli.cjs list              # every available value
 node settings/cli.cjs list --json       # machine-readable catalog
 node settings/cli.cjs set terse ultra
@@ -100,3 +126,19 @@ file opened with `O_EXCL` and `O_NOFOLLOW` at mode `0600`, then atomic
 rename into place. Reads cap the byte length, refuse symlinks, and validate
 against the whitelist before any value reaches your context or the status
 line.
+
+## Updating the installed plugin
+
+`/maestro:settings` runs from the installed plugin cache, which is pinned to a
+version at `…/.claude/plugins/cache/maestro/maestro/<version>`. After a new
+release, refresh it so the new command and CLI load:
+
+```text
+/plugin marketplace update maestro
+/plugin update maestro
+```
+
+The cache is keyed by the version in `.claude-plugin/plugin.json` and
+`.claude-plugin/marketplace.json`, so any release that changes the command
+bumps that version; otherwise `/plugin update` sees the same version and does
+nothing.

@@ -114,6 +114,14 @@ function main() {
     check('list text names preset ' + p, lstTxt.includes(p)));
   check('list text names custom', lstTxt.includes('custom'));
 
+  // help: usage grammar + the full matrix, on stdout, exit 0
+  const help = run(['help']);
+  check('help shows usage', /Usage:/.test(help));
+  check('help lists set grammar', /settings set <key> <value>/.test(help));
+  check('help includes the matrix', /opus-gpt/.test(help) && /frontier-trio/.test(help));
+  check('help names custom', /custom/.test(help));
+  check('--help is an alias', /Usage:/.test(run(['--help'])));
+
   // bad input exits non-zero
   const e1 = runFail(['set', 'terse', 'loud']);
   check('bad terse exits 2', e1 && e1.status === 2);
