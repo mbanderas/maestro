@@ -6,6 +6,24 @@ All notable changes to Maestro are documented here. The format follows
 
 ## [Unreleased]
 
+## [1.3.2] - 2026-06-15
+
+### Fixed
+
+- **Windows CI green**: two `windows-latest`-only failures in the Hook
+  tests job.
+  - `hooks/maestro-statusline-sync.test.cjs` asserted the POSIX
+    executable bit (`mode & 0o111`) on the synced `.sh`; NTFS has no
+    such bit and `fs.chmod` only toggles read-only, so the check failed
+    on Windows. Guarded the assertion by platform — POSIX still asserts
+    it. The hook itself is unchanged (it writes `0o755` correctly).
+  - `frontier/dispatch.test.cjs` (f) asserted parallel `fanOut` elapsed
+    `< 400ms` with 200ms stub sleeps; Windows process-spawn jitter
+    pushed parallel elapsed over the bound, flaking the run. Grew the
+    stub sleep (200→500ms) so it dominates spawn jitter and widened the
+    threshold (400→900ms); the parallel(~1x) vs serial(~2x) discriminator
+    is preserved (serial would elapse ~1000ms+).
+
 ### Changed
 
 - **Maestro Frontier positioning copy** rewritten across `README.md`,
