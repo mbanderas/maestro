@@ -17,25 +17,43 @@
   <a href="#the-frontier-engine"><img src="https://img.shields.io/badge/Frontier-fusion%20engine-f59e0b" alt="Frontier fusion engine"></a>
   <img src="https://img.shields.io/badge/agents-Claude%20Code%20%7C%20Gemini%20%7C%20Codex%20%7C%20Cursor-5b82d6" alt="Claude Code | Gemini | Codex | Cursor">
   <img src="https://img.shields.io/badge/platform-macOS%20%7C%20Linux%20%7C%20Windows-lightgrey" alt="macOS | Linux | Windows">
-  <img src="https://img.shields.io/badge/install-2%20files-blueviolet" alt="2 files to install">
+  <img src="https://img.shields.io/badge/install-2%20lines-blueviolet" alt="2-line plugin install">
   <a href="#contributing"><img src="https://img.shields.io/badge/PRs-welcome-brightgreen" alt="PRs welcome"></a>
 </p>
 
 <p align="center">
-  <sub>13 fixture tasks &middot; 123 valid A/B runs &middot; 11 voids excluded &amp; re-run &middot; 6 hooks, all tested &middot; ~8 KB always-on kernel &middot; 2 files to install</sub>
+  <sub>13 fixture tasks &middot; 123 valid A/B runs &middot; 11 voids excluded &amp; re-run &middot; 6 hooks, all tested &middot; ~8 KB always-on kernel &middot; 2-line plugin install</sub>
 </p>
 
-> **⚡ Fastest install** — paste this to your coding agent (Claude Code, Gemini, Codex / Codex Desktop, Cursor, Cline, Windsurf, …) and it wires Maestro up correctly:
+> **⚡ Universal install** — paste this to your coding agent (Claude Code, Gemini, Codex / Codex Desktop, Cursor, Cline, Windsurf, …) and it installs the full Maestro your runtime can run — orchestration doctrine, the Frontier engine, and on Claude Code the whole plugin:
 
 ```text
-Install Maestro into this repository. Fetch AGENTS.md from
-https://raw.githubusercontent.com/mbanderas/maestro/main/AGENTS.md. If the project root has
-no AGENTS.md, save it there; if one already exists, append Maestro's content below what is
-already there — never overwrite or delete the existing content. Then add my runtime's adapter
-from the same raw base — CLAUDE.md (Claude Code), GEMINI.md (Gemini), or .cursorrules (Cursor);
-Codex needs only AGENTS.md. Merge the adapter into any existing file the same way (append,
-never overwrite the existing content), and make sure the adapter —
-not AGENTS.md — imports @AGENTS.md at the top (Cursor has no imports, so paste the kernel in).
+Install Maestro into this repository — the orchestration doctrine, the Frontier fusion engine,
+and, on Claude Code, the full plugin machinery. Source of truth: the repo at
+https://github.com/mbanderas/maestro (raw base https://raw.githubusercontent.com/mbanderas/maestro/main/).
+
+1. Doctrine — every runtime. Put AGENTS.md in the project root; if one already exists, append
+Maestro's content below what is there and never overwrite or delete it. Add my runtime adapter —
+CLAUDE.md (Claude Code), GEMINI.md (Gemini), or .cursorrules (Cursor); Codex needs only AGENTS.md.
+Merge the adapter into any existing file the same append-only way, and make the adapter — not
+AGENTS.md — import @AGENTS.md at the top (Cursor has no imports, so paste the kernel in). Also
+fetch docs/orchestration.md into docs/ — the doctrine loads the full S2-S6 multi-agent protocol
+from it on demand.
+
+2. Machinery.
+- Claude Code: run `/plugin marketplace add mbanderas/maestro` then `/plugin install maestro@maestro`.
+Those two lines wire the enforcement hooks, /maestro:* commands, skills, status line, and the
+Frontier engine with auto-run. That is the entire install — you are done.
+- Any other CLI (Codex, Cursor, Gemini, Cline, Windsurf, …): clone the repo (or download the main
+tarball) and copy the frontier/ directory into the project. Run the engine with
+`node frontier/cli.cjs status`, `node frontier/cli.cjs mode <off|single|fusion> --preset <preset>`,
+or `node frontier/cli.cjs run "<prompt>"` — it is zero-dependency Node, works anywhere, and keeps
+its state in ~/.config/maestro. The hooks, slash commands, and skills are Claude-Code
+plugin constructs that no other runtime can load, so the doctrine from step 1 is what governs the
+agent there — copying those folders does nothing.
+
+Leave Frontier off (its default) until I arm it — /maestro:frontier on Claude Code, or
+node frontier/cli.cjs mode fusion --preset opus-gpt elsewhere.
 ```
 
 ---
@@ -360,7 +378,7 @@ The discipline layer (verification, scope, honest status) applies to every task 
 
 | | Maestro | CrewAI / LangGraph / AutoGen |
 |---|---|---|
-| **Setup** | Copy 1-2 files, done | Install packages, write Python/TS, configure agents |
+| **Setup** | Two lines (`/plugin install`) or copy a folder, done | Install packages, write Python/TS, configure agents |
 | **Dependencies** | Zero | Framework + SDK + runtime |
 | **Where it runs** | Inside your existing AI coding agent | Standalone process you build and deploy |
 | **Agent count** | Hard cap at 4 parallel (research-backed) | Unlimited (user decides) |
