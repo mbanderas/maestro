@@ -1,8 +1,9 @@
 # Local Fusion, Design & Implementation Plan
 
 A local multi-CLI fusion engine, built from local AI CLIs orchestrated
-by Maestro. No API. Opus 4.8 1M = judge + synthesizer; Codex CLI
-(GPT-5.5) and Gemini 3.1 Pro CLI = parallel panel. Implements a
+by Maestro. No API. Opus 4.8 1M = default judge + synthesizer,
+overridable per stage (--judge/--synth); the panel is any local CLIs
+(default here: Codex (GPT-5.5) + Gemini 3.1 Pro). Implements a
 **fan-out → structured judge-analysis → grounded synthesis** contract.
 
 - Status: **design + plan only** (no implementation; no edits to product repos).

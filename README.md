@@ -1,9 +1,9 @@
 <p align="center">
-  <img src="assets/maestro-frontier-banner.png" width="100%" alt="Maestro Frontier: the mascot conducts a panel of Opus 4.8, GPT-5.5, and Gemini 3.1 Pro through a judge into a grounded synthesis">
+  <img src="assets/maestro-frontier-banner.png" width="100%" alt="Maestro Frontier: the mascot conducts a panel of local model CLIs through a judge model into a grounded synthesis">
 </p>
 
 <p align="center">
-  <strong>Maestro Frontier</strong> is a local multi-CLI fusion engine: fan one prompt to Opus 4.8, GPT-5.5, and Gemini 3.1 Pro in parallel, have Opus judge their answers into a structured analysis, then synthesize a grounded response that does not majority-vote. It runs on Maestro's proven discipline layer: verified done-claims, surgical scope, and a research-backed multi-agent gate.
+  <strong>Maestro Frontier</strong> fuses the model CLIs you already run. Fan one prompt across a panel of 1-8 of your local CLIs in parallel, have a judge model you pick read every answer into a structured analysis, then a synthesizer you pick write one grounded answer that does not majority-vote. On the DRACO deep-research benchmark, a fused panel scored higher than any of its members run solo. It runs on Maestro's discipline layer: verified done-claims, surgical scope, and a research-backed multi-agent gate.
 </p>
 
 <p align="center">
@@ -23,22 +23,22 @@
 
 ## The Frontier Engine
 
-Maestro Frontier is an opt-in, zero-dependency **multi-CLI fusion
-engine** built from the AI CLIs already on your machine. It fans a
-prompt out to a parallel **panel** of local models, has Opus 4.8
-**judge** their answers into a structured analysis (consensus,
-contradictions, unique insights, blind spots (compare, not merge),
-then has Opus write a **grounded synthesis** that explicitly does not
-majority-vote. It is the project's new default identity; the doctrine,
-hooks, skills, and benchmarks are unchanged; the discipline layer is
-its proven foundation.
+Maestro Frontier is an opt-in, zero-dependency multi-CLI fusion
+engine built from the AI CLIs already on your machine. It fans a
+prompt out to a parallel panel of any 1-8 local CLIs you pick, has a
+judge model you choose read their answers into a structured analysis
+(consensus, contradictions, unique insights, blind spots; compare,
+not merge), then has a synthesizer you choose write a grounded answer
+that does not majority-vote. It is the project's new default identity;
+the doctrine, hooks, skills, and benchmarks are unchanged; the
+discipline layer is its foundation.
 
 <p align="center">
-  <img src="assets/frontier-pipeline.svg" alt="Maestro Frontier fusion pipeline: prompt fans out to parallel CLI panel (Opus 4.8, GPT-5.5, Gemini 3.1 Pro), Opus 4.8 judge produces structured analysis (consensus, contradictions, unique insights, blind spots), then Opus 4.8 synthesizer writes a grounded response" width="900">
+  <img src="assets/frontier-pipeline.svg" alt="Maestro Frontier fusion pipeline: prompt fans out to a parallel panel of local CLIs, a chosen judge model produces structured analysis (consensus, contradictions, unique insights, blind spots), then a chosen synthesizer model writes a grounded response" width="900">
 </p>
 
 The pipeline above is the engine's whole architecture: fan out to a
-parallel panel, an Opus judge that compares the answers (it does not
+parallel panel, a judge model that compares the answers (it does not
 merge them), then a grounded synthesis.
 
 It ships with the plugin and is driven by `/maestro:frontier`. Three
@@ -52,7 +52,7 @@ the synthesized answer. `off` is the disable path.
 |---|---|
 | `off` | Normal Maestro. Engine never invoked; zero behavior change. The default, and the way to disable auto-run. |
 | `single <model>` | Auto-runs every prompt through one local CLI and relays its answer. No panel, no judge, no synth. |
-| `fusion <preset>` | Auto-runs every prompt through the full panel -> Opus judge analysis -> grounded Opus synthesis, with graceful degradation and one-level recursion bounds. |
+| `fusion <preset>` | Auto-runs every prompt through your panel -> a judge model's analysis -> a grounded synthesis, with graceful degradation and one-level recursion bounds. |
 
 ```text
 /maestro:frontier status                       # show current mode
@@ -67,7 +67,7 @@ the synthesized answer. `off` is the disable path.
 </p>
 
 Presets define the panel; the judge and synthesizer default to Opus 4.8
-(`claude -p`):
+(`claude -p`), and you override either with `--judge` / `--synth`:
 
 - **`opus-duo`**: two independent Opus runs, isolating the synthesis lift.
 - **`opus-gpt`**: Opus + GPT-5.5 (via `codex exec`); the recommended default for bounded spend.
@@ -103,6 +103,45 @@ operational reference are in
 <p align="center">
   <img src="assets/frontier-stack.svg" alt="Maestro Frontier fusion engine sitting on the discipline layer foundation; an amber data-flow connects the two" width="820">
 </p>
+
+### What fusion buys, measured
+
+<p align="center">
+  <img src="assets/draco-benchmark.png" width="820" alt="Horizontal bar chart of DRACO deep-research scores: fusion panels plotted against solo models, with two configurations (Fable 5 + GPT-5.5 fusion, and Claude Fable 5 solo) scored on 93 of 100 tasks">
+</p>
+
+The fan-out, judge, and synth method behind Frontier was measured on
+DRACO ([arXiv:2602.11685](https://arxiv.org/abs/2602.11685)), an
+independent deep-research benchmark that grades answers by rubric for
+accuracy, completeness, objectivity, and citation quality, run on the
+same kind of local CLIs you already use for code.
+
+- **You don't need the one best model.** On DRACO, a panel of three
+  cheaper, non-frontier models, Gemini 3 Flash + Kimi K2.6 + DeepSeek
+  V4 Pro, scored 64.7% on the full 100 tasks, above solo GPT-5.5
+  (60.0%) and solo Opus 4.8 (58.8%). That trio is a DRACO data point,
+  not a shipped roster: the three adapters Frontier ships today are
+  Opus 4.8, GPT-5.5, and Gemini 3.1 Pro. The lesson that transfers is
+  that a fused panel of the CLIs you already run can outscore any one
+  of them solo on this benchmark.
+- **Every panel beats its own members solo.** Opus + GPT fusion
+  (~67.5%) clears the better of the two run alone, solo GPT-5.5 at
+  60.0% and solo Opus at 58.8%.
+- **Even one model fused against itself gains.** Opus self-fusion
+  scored 65.5% versus solo Opus at 58.8%, a 6.7-point lift from the
+  judge and synthesis stages alone.
+
+Among the full-100-task configurations, the Opus 4.8 + GPT-5.5 +
+Gemini 3.1 Pro trio led at 68.3%, over every solo model. Two
+configurations on the chart, Fable 5 + GPT-5.5 (fusion) at ~69% and
+Claude Fable 5 (solo) at ~65%, were scored on 93 of 100 tasks; read
+them with that caveat.
+
+DRACO is an external deep-research benchmark, not this repo's own
+coding A/B harness. What transfers is the method: a panel plus a judge
+plus a synthesizer beats any member run solo. Arm it with
+`/maestro:frontier fusion opus-gpt` to start fusing on your next
+prompt.
 
 ## What You Get
 

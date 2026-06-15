@@ -5,8 +5,8 @@ allowed-tools: Bash, Read
 ---
 
 Drive the Maestro Frontier engine: a zero-dependency local multi-CLI
-fusion engine (parallel panel of local CLIs -> Opus judge analysis ->
-grounded synthesis). Default mode is `off`: the engine is opt-in and
+fusion engine (parallel panel of local CLIs -> a judge model's
+analysis -> grounded synthesis). Default mode is `off`: the engine is opt-in and
 never runs until you switch it on. Arming it (`single` or `fusion`)
 makes it **auto-run on every prompt** — a `UserPromptSubmit` hook
 (`hooks/frontier-autorun.cjs`) routes each prompt through the engine and
@@ -55,8 +55,8 @@ self-contained; do not edit its state file yourself.
    - `off`: prints a notice and exits without spawning anything;
      normal Maestro behavior is unchanged.
    - `single`: dispatches the one selected CLI and prints its answer.
-   - `fusion`: runs the panel in parallel, then the Opus judge and
-     synthesizer; prints the final answer (a one-line run meta of
+   - `fusion`: runs the panel in parallel, then the judge and
+     synthesizer models; prints the final answer (a one-line run meta of
      preset, models, analysis present, and failed models goes to stderr).
 
 4. Report the engine's stdout verbatim. On an error the engine prints

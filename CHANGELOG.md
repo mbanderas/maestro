@@ -6,6 +6,22 @@ All notable changes to Maestro are documented here. The format follows
 
 ## [Unreleased]
 
+### Changed
+
+- **Maestro Frontier positioning copy** rewritten across `README.md`,
+  the shared package/plugin/marketplace description, `commands/frontier.md`,
+  and `docs/fusion-local-design.md`/`.html` so the panel reads as any
+  1-8 local CLIs you pick and the judge/synthesizer as any model you
+  choose (default Opus 4.8, overridable with `--judge`/`--synth`), not
+  Opus-only. Three adapters ship today: Opus 4.8, GPT-5.5, Gemini 3.1
+  Pro.
+- **DRACO benchmark subsection** added to the README
+  ([arXiv:2602.11685](https://arxiv.org/abs/2602.11685), an external
+  deep-research benchmark): fusion panels beat their members run solo,
+  a budget trio scores 64.7% over every solo model, and Opus
+  self-fusion lifts +6.7 points, with the 93/100-task caveat on the two
+  affected configurations. Chart added at `assets/draco-benchmark.png`.
+
 ## [1.3.1] - 2026-06-15
 
 ### Added
