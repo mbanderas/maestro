@@ -285,6 +285,30 @@ Optional Claude Code machinery; full install steps in the linked docs.
 - **Terse Mode + Compress**: opt-in output-token reduction (`/maestro:terse`) and a memory-file compressor (`/maestro:compress`), adapted from the MIT-licensed Caveman plugin. [`docs/context-bar.md`](docs/context-bar.md)
 - **Settings**: `/maestro:settings` changes any toggle in one line (`set terse off`, `frontier fusion opus-gpt`, `help`) or opens a keyboard picker with no arguments (the `AskUserQuestion` selector, not the built-in `/model` widget, which plugins cannot render), plus a portable `node settings/cli.cjs status|list|help|set` for Codex and any other CLI, over the terse, frontier, and context-bar toggles. [`docs/settings.md`](docs/settings.md)
 
+## Commands & Settings
+
+Every Maestro slash command in Claude Code is namespaced `/maestro:<name>`. On Codex and other CLIs without slash commands, the same actions run through the scripts noted below.
+
+| Command | What it does | Usage |
+|---|---|---|
+| `/maestro:settings` | See or change all toggles. With arguments it runs the change directly; with no arguments it opens a keyboard picker. | `/maestro:settings`, `… status`, `… list`, `… help`, `… set terse off`, `… frontier fusion opus-gpt` |
+| `/maestro:frontier` | Drive the local multi-CLI fusion engine: switch mode, pick a model/preset, or run a prompt through it. | `… off`, `… single opus`, `… fusion opus-gpt`, `… status`, `… run "<prompt>"` |
+| `/maestro:terse` | Switch terse output mode for the session (off by default). | `… lite`, `… full`, `… ultra`, `… off` |
+| `/maestro:context-bar` | Toggle the status-line context progress bar (and the Maestro badges on it). | `/maestro:context-bar`, `… on`, `… off` |
+| `/maestro:compress <file>` | Rewrite a natural-language memory file in terse form to cut input tokens; keeps a backup and validates deterministically. | `… path/to/NOTES.md` |
+
+### Settings toggles
+
+`/maestro:settings` and the portable `node settings/cli.cjs` cover three persisted toggles:
+
+| Toggle | Values | What it controls |
+|---|---|---|
+| `terse` | `off`, `lite`, `full`, `ultra` | Output-token reduction. Shows an amber level badge (`ULTRA`) on the status bar. |
+| `frontier` | `off`; `single:` `opus` / `gpt-5.5` / `gemini`; `fusion:` `opus-duo` / `opus-gpt` / `gpt-duo` / `frontier-trio` / `custom`, each with optional `--judge` / `--synth` | The local fusion engine. Shows a blue `ƒ` panel badge when on: `ƒO+C`, `ƒO+C+G`, `ƒ✦3` (`O`=Opus, `C`=ChatGPT/GPT-5.5, `G`=Gemini). |
+| `context-bar` | `on`, `off` | The status-line context-window progress bar. |
+
+Portable everywhere, Codex included: `node settings/cli.cjs status | list | help | set <key> <value>` (frontier also takes `--judge`, `--synth`, `--models a,b,c`). Full references: [`docs/settings.md`](docs/settings.md) and [`docs/context-bar.md`](docs/context-bar.md).
+
 ## When to Use Maestro
 
 The discipline layer (verification, scope, honest status) applies to every task from a one-line fix upward. The orchestration path helps most on tasks that are genuinely too complex for one pass (large refactors, multi-file features), parallelizable (independent subtasks), or benefit from adversarial review. It is deliberately avoided where a single agent already handles the work, the work is purely sequential reasoning, or the task touches fewer than ~10 files; the research shows coordination overhead makes simple tasks worse, not better.

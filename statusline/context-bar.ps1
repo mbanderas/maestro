@@ -133,8 +133,8 @@ $bar = ($color + ([string]$full * $filled) + $dim + ([string]$empty * ($width - 
 
 function Format-Tokens($n) {
     if ($n -ge 1000000) {
-        $m = [math]::Floor($n / 1000000 * 100 + 0.5) / 100
-        return ("{0:F2}M" -f $m)
+        $m = [math]::Round($n / 1000000, 1)
+        return ($m.ToString('0.#', [Globalization.CultureInfo]::InvariantCulture) + 'M')
     }
     if ($n -ge 1000) {
         $k = [math]::Floor($n / 1000 + 0.5)

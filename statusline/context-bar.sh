@@ -144,7 +144,7 @@ bar="$(printf '%b' "${color}${bar}${dim}${empty}${reset}")"
 fmt() {
   local n=$1
   if [ "$n" -ge 1000000 ]; then
-    awk -v n="$n" 'BEGIN { printf "%.2fM", n / 1000000 }'
+    LC_ALL=C awk -v n="$n" 'BEGIN { s = sprintf("%.1f", n / 1000000); sub(/\.0$/, "", s); printf "%sM", s }'
   elif [ "$n" -ge 1000 ]; then
     awk -v n="$n" 'BEGIN { printf "%dk", int(n / 1000 + 0.5) }'
   else
