@@ -6,6 +6,45 @@ All notable changes to Maestro are documented here. The format follows
 
 ## [Unreleased]
 
+### Fixed
+
+- **Per-CLI Frontier state isolation.** The engine stored its armed
+  mode/preset in a single global `frontier-state.json`, so arming a mode
+  in one CLI (Claude Code, Codex, Cursor, Gemini) silently changed it in
+  every other CLI on the same machine. State is now scoped per runtime —
+  `frontier-state.<scope>.json` (e.g. `frontier-state.claude-code.json`,
+  `frontier-state.codex.json`). Scope resolves from `--scope <name>` >
+  `MAESTRO_SCOPE` > autodetect (`CLAUDE_PLUGIN_ROOT`/`CLAUDECODE` =>
+  `claude-code`) > `default`. A one-time read-only migration seeds a new
+  scope from the legacy `frontier-state.json` so existing armed state is
+  preserved. Wired through `frontier/config.cjs`, `frontier/cli.cjs`,
+  `hooks/frontier-autorun.cjs`, `settings/config.cjs`, `settings/cli.cjs`,
+  both statusline badges, and the Codex/Cursor integration commands
+  (`--scope codex` / `--scope cursor`).
+
+### Changed
+
+- **Fluent updates: the plugin version is no longer pinned.** Removed the
+  `version` field from `.claude-plugin/plugin.json` and
+  `.claude-plugin/marketplace.json`; the plugin now resolves to the latest
+  commit on `main`, so `/plugin marketplace update maestro` +
+  `/plugin reload-plugins` always pulls the newest code with no manual
+  version bump per release. (`package.json` keeps its npm version metadata.)
+- **`/maestro:frontier` arming copy** now states plainly that arming a mode
+  auto-runs the engine on every prompt in Claude Code, instead of implying
+  the user must invoke `run` manually.
+
+### Added
+
+- **`/maestro:update`** (Claude Code) — one command that runs the
+  marketplace update, reports what changed, and points the user at
+  `/plugin reload-plugins` (or a restart) to apply it.
+- **Portable `/update`** for Codex (`integrations/codex/prompts/update.md`)
+  and Cursor (`integrations/cursor/commands/update.md`) — refreshes the
+  copied `frontier/` engine and integration files from latest `main`.
+- **README "Updating Maestro"** section documenting the one-command update
+  per runtime and the newest-commit-wins version model.
+
 ## [1.3.2] - 2026-06-15
 
 ### Fixed

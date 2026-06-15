@@ -1,5 +1,5 @@
 ---
-description: Maestro Frontier local multi-CLI engine: switch mode (off/single/fusion), pick a model/preset, or run a prompt
+description: Maestro Frontier local multi-CLI engine: arm a mode (off/single/fusion) so it auto-runs every prompt, pick a model/preset, or run a one-off prompt
 argument-hint: "<off | single <model> | fusion <preset> | status | run <prompt>>"
 allowed-tools: Bash, Read
 ---
@@ -59,9 +59,18 @@ self-contained; do not edit its state file yourself.
      synthesizer models; prints the final answer (a one-line run meta of
      preset, models, analysis present, and failed models goes to stderr).
 
-4. Report the engine's stdout verbatim. On an error the engine prints
-   `ERROR [<failure_reason>]: <detail>` to stderr and exits non-zero;
-   relay the failure_reason.
+4. Report the result, matched to the action:
+   - `run`: report the engine's stdout verbatim.
+   - arming a mode (`single`/`fusion`): confirm the mode, then tell the
+     user plainly that the engine now **auto-runs on every prompt** —
+     they just chat normally and the synthesized answer is relayed.
+     Do NOT tell the user to call `run` manually; arming already routes
+     every prompt through the engine (`run` is only a scripted one-off).
+   - `off`: confirm auto-run is disabled and normal Maestro resumes.
+   - `status`: report the current mode/preset.
+
+   On an error the engine prints `ERROR [<failure_reason>]: <detail>`
+   to stderr and exits non-zero; relay the failure_reason.
 
 Notes:
 
