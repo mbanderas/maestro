@@ -1,4 +1,4 @@
-# Maestro Multi-Agent Orchestration, Full Protocol (S2-S6)
+# Maestro Multi-Agent Orchestration: Full Protocol (S2-S6)
 
 Loaded on demand: read this file when the Decision Gate
 ([AGENTS.md](../AGENTS.md) S1) returns a multi-agent verdict. The
@@ -110,7 +110,7 @@ ties), each prompted to refute, not confirm.
 
 ---
 
-## 9. Model Routing, full table
+## 9. Model Routing: full table
 
 Pick the cheapest model that handles the task. Orchestrator decides
 at spawn time; Planner (S2) assigns per subtask.
@@ -131,10 +131,10 @@ bloat parent context and trigger compaction.
 
 | Agent tier | Cap | Exception |
 |------------|-----|-----------|
-| Haiku | 100 words |, |
+| Haiku | 100 words | - |
 | Sonnet | 500 words | Code output (uncapped) |
-| Opus | Uncapped |, |
-| Frontier | Uncapped |, |
+| Opus | Uncapped | - |
+| Frontier | Uncapped | - |
 | Explore | 200 words | Always, regardless of model |
 
 Explore agents: "report in under 200 words" in every prompt.

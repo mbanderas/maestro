@@ -6,8 +6,53 @@ All notable changes to Maestro are documented here. The format follows
 
 ## [Unreleased]
 
+## [1.3.1] - 2026-06-15
+
+### Fixed
+
+- **`docs/orchestration.md` em-dash-scrub damage**: the Model Routing
+  output-cap table carried broken `|, |` cells for Haiku, Opus, and
+  Frontier — the em-dash "no exception" marker had been scrubbed to a
+  bare comma — now ASCII `-`. The H1 and the "Model Routing" H2, whose
+  em-dash separators the same scrub turned into commas, are now colons
+  (matching the scrub's own H1-to-colon convention). The deliberate
+  prose commas are unchanged.
+
+### Changed
+
+- **CHANGELOG reconciliation**: added the missing [1.2.0] and [1.3.0]
+  entries so the changelog matches the shipped tags and GitHub releases,
+  and graduated the former [Unreleased] "S10 loop-design rules" into
+  [1.2.0] — the version whose history first shipped them (`e64b4d3`, an
+  ancestor of the 1.2.0 bump `408b293`).
+
+## [1.3.0] - 2026-06-15
+
 ### Added
 
+- **`/maestro:settings` polish** (`commands/settings.md`): direct
+  slash-command arguments and inline help over the unified settings CLI.
+- **Context-bar status line** (`commands/context-bar.md`): a Frontier
+  engine badge and a bare terse level in the status line, plus compact
+  M-token formatting (1M, 1.4M).
+- **Frontier auto-run** (`commands/frontier.md`): runs the engine on
+  every prompt when armed.
+
+## [1.2.0] - 2026-06-14
+
+### Added
+
+- **Frontier engine** (`commands/frontier.md`): an opt-in,
+  zero-dependency local multi-CLI engine. Fan a prompt out to the model
+  CLIs on your machine, judge the answers into a structured analysis,
+  then write a grounded synthesis. `off`/`single`/`fusion` modes switch
+  via `/maestro:frontier`; adds a `gpt-duo` preset and configurable
+  judge/synth roles. Frontier-led README and branding, a frontier-stack
+  positioning diagram, and a unified SVG motion language.
+- **Unified settings** (`commands/settings.md`, `docs/settings.md`): the
+  `/maestro:settings` command plus a portable status/set CLI aggregating
+  the terse, frontier, and context-bar stores; docs page, README entry,
+  and a picker covering the full frontier matrix.
 - **S10 loop-design rules** (`AGENTS.md`): three additions derived
   from Anthropic's Fable 5 loop-design guidance (RLanceMartin,
   2026-06). Loop termination is graded by a verifier subagent in a
@@ -17,6 +62,18 @@ All notable changes to Maestro are documented here. The format follows
   with distilled rules consulted before re-deriving. Hillclimbing
   loops bet on structural changes over scalar tuning; transient
   regressions inside the iteration cap are data, not stop signals.
+
+### Changed
+
+- **Em-dash scrub** (`docs/orchestration.md`, `docs/benchmarks.md`,
+  `docs/context-bar.md`, `docs/codex.md`, `docs/hooks.md`,
+  `commands/frontier.md`): replaced prose em-dashes with commas (code,
+  links, and anchors skipped) for a consistent ASCII house style; the
+  benchmarks H1 became a colon.
+- **Windows portability**: transcript parsing and flag I/O fixes,
+  compress run through the shell with CRLF tolerance, statusline rounding
+  aligned between `context-bar.ps1` and `context-bar.sh`, and a
+  `windows-latest` CI matrix leg.
 
 ## [1.1.0] - 2026-06-12
 
