@@ -378,18 +378,22 @@ Maestro no longer pins a plugin version. The marketplace always resolves to the 
 
 ### Claude Code (recommended)
 
+`/maestro:update` is the one-command path — it pulls the latest marketplace code, reports what changed, and tells you when to reload:
+
+```text
+/maestro:update
+```
+
+It can't run the reload for you (a slash command can't invoke another slash command), so it ends by prompting you to run `/reload-plugins` (or restart). The manual equivalent is two steps:
+
 ```text
 /plugin marketplace update maestro
 /reload-plugins
 ```
 
-`reload-plugins` applies the update in the running session. If Claude Code warns that a restart is required, restart it. Non-interactive equivalent: `claude plugin marketplace update maestro`.
+`/reload-plugins` applies the update in the running session; if Claude Code warns that a restart is required, restart it. Non-interactive equivalent of the pull: `claude plugin marketplace update maestro`. You can also enable marketplace auto-update so the local clone refreshes automatically — check Claude Code's plugin settings.
 
-You can also enable marketplace auto-update so the local clone refreshes automatically — check Claude Code's plugin settings.
-
-**Shortcut:** `/maestro:update` runs the sequence above and re-syncs any wired copies (frontier adapter, context bar) in one step.
-
-> **Note:** There is no `/plugin update <name>` command in Claude Code. The correct command is `/plugin marketplace update maestro`.
+> **Note:** There is no `/plugin update <name>` command in Claude Code. Use `/maestro:update`, or `/plugin marketplace update maestro` + `/reload-plugins`.
 
 ### Codex / Cursor (portable installs, no plugin system)
 
