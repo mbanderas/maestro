@@ -54,7 +54,9 @@ console.log('maestro-statusline-sync tests');
   check('output is silent', out === '');
   check('stale .sh refreshed', fs.readFileSync(sh, 'utf8') === 'FRESH-SH\n');
   check('stale .ps1 refreshed', fs.readFileSync(ps1, 'utf8') === 'FRESH-PS1\n');
-  check('.sh is executable', (fs.statSync(sh).mode & 0o111) !== 0);
+  // Exec bit is POSIX-only; Windows (NTFS) has no 0o111 bits and fs.chmod only
+  // toggles the read-only attribute, so this assertion is meaningless there.
+  check('.sh is executable', process.platform === 'win32' || (fs.statSync(sh).mode & 0o111) !== 0);
   fs.rmSync(t.root, { recursive: true, force: true });
 }
 
