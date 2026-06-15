@@ -7,14 +7,35 @@
 </p>
 
 <p align="center">
+  <a href="https://github.com/mbanderas/maestro/actions/workflows/ci.yml"><img src="https://github.com/mbanderas/maestro/actions/workflows/ci.yml/badge.svg" alt="CI status"></a>
+  <a href="https://github.com/mbanderas/maestro/tags"><img src="https://img.shields.io/github/v/tag/mbanderas/maestro?label=version&amp;color=5b82d6" alt="Latest version"></a>
   <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="MIT License"></a>
   <img src="https://img.shields.io/badge/dependencies-zero-brightgreen" alt="Zero Dependencies">
+  <a href="https://github.com/mbanderas/maestro/stargazers"><img src="https://img.shields.io/github/stars/mbanderas/maestro?style=flat&amp;color=f59e0b" alt="GitHub stars"></a>
+</p>
+
+<p align="center">
+  <a href="#the-frontier-engine"><img src="https://img.shields.io/badge/Frontier-fusion%20engine-f59e0b" alt="Frontier fusion engine"></a>
   <img src="https://img.shields.io/badge/agents-Claude%20Code%20%7C%20Gemini%20%7C%20Codex%20%7C%20Cursor-5b82d6" alt="Claude Code | Gemini | Codex | Cursor">
+  <img src="https://img.shields.io/badge/platform-macOS%20%7C%20Linux%20%7C%20Windows-lightgrey" alt="macOS | Linux | Windows">
+  <img src="https://img.shields.io/badge/install-2%20files-blueviolet" alt="2 files to install">
+  <a href="#contributing"><img src="https://img.shields.io/badge/PRs-welcome-brightgreen" alt="PRs welcome"></a>
 </p>
 
 <p align="center">
   <sub>13 fixture tasks &middot; 123 valid A/B runs &middot; 11 voids excluded &amp; re-run &middot; 6 hooks, all tested &middot; ~8 KB always-on kernel &middot; 2 files to install</sub>
 </p>
+
+> **⚡ Fastest install** — paste this to your coding agent (Claude Code, Gemini, Codex / Codex Desktop, Cursor, Cline, Windsurf, …) and it wires Maestro up correctly:
+
+```text
+Install Maestro into this repository. Download AGENTS.md from
+https://raw.githubusercontent.com/mbanderas/maestro/main/AGENTS.md into the project root,
+then add my runtime's adapter from the same raw base — CLAUDE.md (Claude Code),
+GEMINI.md (Gemini), or .cursorrules (Cursor); Codex needs only AGENTS.md.
+If a target file already exists, merge into it and keep my content (never overwrite),
+and make sure it imports @AGENTS.md at the top.
+```
 
 ---
 
