@@ -89,6 +89,31 @@ function main() {
   const j2 = JSON.parse(run(['status', '--json']));
   check('json judge/synth', j2.frontier.judgeModel === 'opus' && j2.frontier.synthModel === 'gpt-5.5');
 
+  // list catalog: every model + preset is reachable, sourced from frontier
+  // DEFAULTS (one source of truth — the picker must offer the FULL matrix).
+  delete require.cache[require.resolve('../frontier/config.cjs')];
+  const fc = require('../frontier/config.cjs');
+  const lst = JSON.parse(run(['list', '--json']));
+  const modelIds = lst.frontier.models.map(m => m.id);
+  Object.keys(fc.DEFAULTS.adapters).forEach(m =>
+    check('list offers model ' + m, modelIds.includes(m)));
+  const presetIds = lst.frontier.presets.map(p => p.id);
+  Object.keys(fc.DEFAULTS.presets).forEach(p =>
+    check('list offers preset ' + p, presetIds.includes(p)));
+  check('list offers custom preset', presetIds.includes('custom'));
+  check('list offers full terse matrix',
+    ['off', 'lite', 'full', 'ultra'].every(v => lst.terse.values.includes(v)));
+  check('list offers context-bar on/off',
+    lst.contextBar.values.includes('on') && lst.contextBar.values.includes('off'));
+  check('list exposes judge/synth defaults',
+    lst.frontier.defaults.judge === fc.DEFAULTS.judgeModel &&
+    lst.frontier.defaults.synth === fc.DEFAULTS.synthModel);
+  // human-readable list names every preset by id (verifier reads this form)
+  const lstTxt = run(['list']);
+  Object.keys(fc.DEFAULTS.presets).forEach(p =>
+    check('list text names preset ' + p, lstTxt.includes(p)));
+  check('list text names custom', lstTxt.includes('custom'));
+
   // bad input exits non-zero
   const e1 = runFail(['set', 'terse', 'loud']);
   check('bad terse exits 2', e1 && e1.status === 2);

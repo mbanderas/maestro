@@ -21,6 +21,15 @@ const TERSE_LEVELS = ['off', 'lite', 'full', 'ultra'];
 const FLAG_LEVELS = ['lite', 'full', 'ultra']; // 'off' = remove the flag
 const MAX_CONFIG_BYTES = 1 << 16; // 64 KB cap for config.json / settings.json
 
+// Human labels for model ids. Presentation only — the model SET is always
+// sourced from frontier DEFAULTS.adapters so there is one source of truth;
+// an id with no label here falls back to the id itself.
+const MODEL_LABELS = {
+  opus: 'Opus 4.8',
+  'gpt-5.5': 'GPT-5.5 (Codex)',
+  gemini: 'Gemini 3.1 Pro',
+};
+
 // ---------- directory resolvers ----------
 
 function claudeDir() {
@@ -247,6 +256,29 @@ function readAll() {
   return { terse: readTerse(), frontier: readFrontier(), contextBar: readContextBar() };
 }
 
+// The available-values catalog: every toggle value a picker can offer. The
+// frontier model/preset SET is sourced from frontier DEFAULTS so there is no
+// second list to drift; `custom` is the one preset value frontier accepts
+// that is not a DEFAULTS preset (validatePreset special-cases it).
+function catalog() {
+  const cfg = frontier.DEFAULTS;
+  const models = Object.keys(cfg.adapters).map(id => ({ id, label: MODEL_LABELS[id] || id }));
+  const presets = Object.keys(cfg.presets).map(id => ({ id, models: cfg.presets[id].slice() }));
+  presets.push({ id: 'custom', models: null });
+  return {
+    terse: { key: 'terse', values: TERSE_LEVELS.slice() },
+    frontier: {
+      modes: ['off', 'single', 'fusion'],
+      models,
+      presets,
+      stageModels: models.map(m => m.id),
+      defaults: { judge: cfg.judgeModel, synth: cfg.synthModel },
+      presetStages: cfg.presetStages || {},
+    },
+    contextBar: { key: 'context-bar', values: ['on', 'off'] },
+  };
+}
+
 function setKey(key, value, opts) {
   const k = String(key == null ? '' : key).toLowerCase();
   if (k === 'terse') return setTerse(value);
@@ -272,5 +304,6 @@ module.exports = {
   readContextBar,
   setContextBar,
   readAll,
+  catalog,
   setKey,
 };

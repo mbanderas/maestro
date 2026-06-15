@@ -47,6 +47,31 @@ function cmdStatus(argv) {
   process.stdout.write(lines.join('\n') + '\n');
 }
 
+function cmdList(argv) {
+  const c = settings.catalog();
+  if (argv.includes('--json')) {
+    process.stdout.write(JSON.stringify(c, null, 2) + '\n');
+    return;
+  }
+  const labelOf = {};
+  c.frontier.models.forEach(m => { labelOf[m.id] = m.label; });
+  const lines = ['Maestro settings — available values'];
+  lines.push('  terse        ' + c.terse.values.join(' | '));
+  lines.push('  context-bar  ' + c.contextBar.values.join(' | '));
+  lines.push('  frontier     off | single:<model> | fusion:<preset>');
+  lines.push('    models     ' + c.frontier.models.map(m => m.id + ' (' + m.label + ')').join(', '));
+  lines.push('    presets');
+  c.frontier.presets.forEach(p => {
+    const desc = p.models
+      ? p.models.map(id => labelOf[id] || id).join(' + ')
+      : 'choose your own models (--models a,b,c)';
+    lines.push('      ' + p.id.padEnd(14) + desc);
+  });
+  lines.push('    judge/synth  ' + c.frontier.stageModels.join(', ') +
+    '  (default judge=' + c.frontier.defaults.judge + ', synth=' + c.frontier.defaults.synth + ')');
+  process.stdout.write(lines.join('\n') + '\n');
+}
+
 function cmdSet(argv) {
   const key = argv[0];
   const value = argv[1];
@@ -76,6 +101,7 @@ function usage() {
   process.stderr.write(
     'Usage:\n' +
     '  settings status [--json]\n' +
+    '  settings list [--json]\n' +
     '  settings set <key> <value> [--judge M] [--synth M] [--models a,b,c]\n' +
     '    terse        <off|lite|full|ultra>\n' +
     '    frontier     <off | single:<model> | fusion:<preset>>\n' +
@@ -87,6 +113,7 @@ function main() {
   const argv = process.argv.slice(2);
   const cmd = argv[0];
   if (cmd === 'status') cmdStatus(argv.slice(1));
+  else if (cmd === 'list') cmdList(argv.slice(1));
   else if (cmd === 'set') cmdSet(argv.slice(1));
   else { usage(); process.exit(2); }
 }
