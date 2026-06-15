@@ -28,7 +28,49 @@ terse_badge() {
     lite|full|ultra) ;;
     *) return ;;
   esac
-  printf ' %s[TERSE:%s]%s' "${esc}[38;5;172m" "$(printf '%s' "$mode" | tr '[:lower:]' '[:upper:]')" "$reset"
+  printf ' %s%s%s' "${esc}[38;5;172m" "$(printf '%s' "$mode" | tr '[:lower:]' '[:upper:]')" "$reset"
+}
+
+# Frontier badge. Reads frontier-state.json (configDir = $XDG_CONFIG_HOME/maestro
+# else ~/.config/maestro), written by frontier/config.cjs. Same hardening as the
+# terse badge: refuse symlinks, size cap, and only ever emit letters from the
+# whitelist below or an integer count -- never raw bytes from the file. Letter
+# tables mirror frontier/config.cjs DEFAULTS; keep in sync if models/presets
+# change. Needs jq. Output: presence = on, absence = off (no ON/OFF text).
+frontier_badge() {
+  [ "$have_jq" -eq 1 ] || return
+  local f="${XDG_CONFIG_HOME:-$HOME/.config}/maestro/frontier-state.json"
+  [ -L "$f" ] && return
+  [ ! -f "$f" ] && return
+  local sz
+  sz=$(wc -c < "$f" 2>/dev/null | tr -d ' ')
+  [ -n "$sz" ] && [ "$sz" -gt 8192 ] && return
+  local mode panel n
+  mode=$(jq -r '.mode // empty' "$f" 2>/dev/null)
+  case "$mode" in
+    single)
+      case "$(jq -r '.model // empty' "$f" 2>/dev/null)" in
+        opus) panel='O' ;; gpt-5.5) panel='C' ;; gemini) panel='G' ;; *) panel='' ;;
+      esac
+      ;;
+    fusion)
+      case "$(jq -r '.preset // empty' "$f" 2>/dev/null)" in
+        opus-duo) panel='O+O' ;;
+        opus-gpt) panel='O+C' ;;
+        gpt-duo) panel='C+C' ;;
+        frontier-trio) panel='O+C+G' ;;
+        custom)
+          n=$(jq -r '(.models | length) // 0' "$f" 2>/dev/null)
+          [[ "$n" =~ ^[0-9]+$ ]] || n=0
+          [ "$n" -gt 9 ] && n=9
+          if [ "$n" -ge 1 ]; then panel="✦$n"; else panel=''; fi
+          ;;
+        *) panel='' ;;
+      esac
+      ;;
+    *) return ;;
+  esac
+  printf ' %sƒ%s%s' "${esc}[38;5;75m" "$panel" "$reset"
 }
 
 have_jq=0
@@ -42,7 +84,7 @@ folder="?"
 
 # Disabled via flag file, or jq missing -> show folder name only.
 if [ -f "$script_dir/.context-bar-disabled" ] || [ "$have_jq" -eq 0 ]; then
-  printf '%s%s%s%s' "$dim" "$folder" "$reset" "$(terse_badge)"
+  printf '%s%s%s%s%s' "$dim" "$folder" "$reset" "$(terse_badge)" "$(frontier_badge)"
   exit 0
 fi
 
@@ -112,7 +154,7 @@ fmt() {
 used_txt="$(fmt "$used")"
 cap_txt="$(fmt "$cap")"
 
-printf '%s %s%s%%%s %s%s/%s%s %s·%s %s%s' \
+printf '%s %s%s%%%s %s%s/%s%s %s·%s %s%s%s' \
   "$bar" "$color" "$pct" "$reset" \
   "$dim" "$used_txt" "$cap_txt" "$reset" \
-  "$dim" "$reset" "$folder" "$(terse_badge)"
+  "$dim" "$reset" "$folder" "$(terse_badge)" "$(frontier_badge)"

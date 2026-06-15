@@ -53,6 +53,17 @@ Then point Claude Code at the script by adding a `statusLine` block to `~/.claud
 
 The toggle is a flag file (`.context-bar-disabled`) next to the script. No settings edit, no restart. The change applies on the next status line refresh.
 
+**Maestro badges.** When active, two compact badges trail the folder name — **presence means on, absence means off**, so there is no `ON`/`OFF` text to read:
+
+- **Terse** — the level in amber: `ULTRA`, `FULL`, or `LITE`.
+- **Frontier** — `ƒ` plus the panel, in blue: `ƒO` (single Opus), `ƒO+C` (a fusion panel), `ƒO+C+G` (the trio), `ƒ✦3` (a custom panel of three). Letters are `O`=Opus, `C`=ChatGPT (GPT-5.5), `G`=Gemini.
+
+```text
+████████░░░░░░░░░░░░ 42% 84k/200k · my-project  ULTRA ƒO+C
+```
+
+Both read their state files symlink-refusing, size-capped, and whitelisted: the badge only ever renders letters from a fixed table or a count, never bytes from the file. The frontier badge reads `frontier-state.json` and, on macOS / Linux, needs `jq` (same as the bar).
+
 **Codex CLI:** this script does not apply. Codex CLI has no command-backed
 status line; it only renders a fixed set of built-in items. It already
 ships a native context-usage indicator. Enable it with the `/statusline`
@@ -90,9 +101,11 @@ changes your output style.
   written normal, and Auto-Clarity drops terseness for security
   warnings, irreversible-action confirmations, and multi-step
   sequences.
-- The context bar shows a `[TERSE:ULTRA]` badge while active. The
-  flag file is read symlink-refusing, size-capped, and whitelisted,
-  never rendering attacker-controlled bytes.
+- The context bar shows the level as a small amber badge (`ULTRA`,
+  `FULL`, `LITE`) while active, alongside the frontier badge when that
+  engine is on (see **Maestro badges** above). The flag file is read
+  symlink-refusing, size-capped, and whitelisted, never rendering
+  attacker-controlled bytes.
 
 **`/maestro:compress <file>`** rewrites a natural-language memory
 file (CLAUDE.md, todos, notes) in terse form to cut input tokens,

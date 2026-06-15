@@ -39,13 +39,47 @@ function Get-TerseBadge {
     } catch { return '' }
     $mode = $mode.ToLower() -replace '[^a-z]', ''
     if ($mode -notin @('lite', 'full', 'ultra')) { return '' }
-    return " $esc[38;5;172m[TERSE:$($mode.ToUpper())]$reset"
+    return " $esc[38;5;172m$($mode.ToUpper())$reset"
+}
+
+# Frontier badge. Reads frontier-state.json written by frontier/config.cjs
+# (configDir = $XDG_CONFIG_HOME/maestro, else %APPDATA%\maestro). Same
+# hardening as the terse badge: refuse symlinks, size cap, and -- crucially --
+# only ever emit letters from the whitelist tables below or an integer count,
+# never raw bytes from the file. Letter tables mirror frontier/config.cjs
+# DEFAULTS (adapters + presets); keep them in sync if models/presets change.
+# Output: presence = on, absence = off (no ON/OFF text).
+function Get-FrontierBadge {
+    $cfgDir = if ($env:XDG_CONFIG_HOME) { Join-Path $env:XDG_CONFIG_HOME 'maestro' }
+              elseif ($env:APPDATA) { Join-Path $env:APPDATA 'maestro' }
+              else { Join-Path $HOME 'AppData\Roaming\maestro' }
+    $item = Get-Item -LiteralPath (Join-Path $cfgDir 'frontier-state.json') -Force -ErrorAction SilentlyContinue
+    if (-not $item -or $item.PSIsContainer) { return '' }
+    if ($item.Attributes -band [IO.FileAttributes]::ReparsePoint) { return '' }
+    if ($item.Length -gt 8192) { return '' }
+    try { $st = [IO.File]::ReadAllText($item.FullName) | ConvertFrom-Json } catch { return '' }
+    if (-not $st) { return '' }
+    $letters = @{ 'opus' = 'O'; 'gpt-5.5' = 'C'; 'gemini' = 'G' }
+    $presets = @{ 'opus-duo' = 'O+O'; 'opus-gpt' = 'O+C'; 'gpt-duo' = 'C+C'; 'frontier-trio' = 'O+C+G' }
+    $panel = ''
+    switch ([string]$st.mode) {
+        'single' { if ($letters.ContainsKey([string]$st.model)) { $panel = $letters[[string]$st.model] } }
+        'fusion' {
+            $p = [string]$st.preset
+            if ($p -eq 'custom') {
+                $n = if ($st.models -is [array]) { $st.models.Count } else { 0 }
+                if ($n -ge 1) { if ($n -gt 9) { $n = 9 }; $panel = "$([char]0x2726)$n" }
+            } elseif ($presets.ContainsKey($p)) { $panel = $presets[$p] }
+        }
+        default { return '' }
+    }
+    return " $esc[38;5;75m$([char]0x0192)$panel$reset"
 }
 
 # Disabled via flag file -> show folder name only, skip the bar.
 $flag = Join-Path $PSScriptRoot '.context-bar-disabled'
 if (Test-Path -LiteralPath $flag) {
-    [Console]::Out.Write("$dim$folder$reset$(Get-TerseBadge)")
+    [Console]::Out.Write("$dim$folder$reset$(Get-TerseBadge)$(Get-FrontierBadge)")
     return
 }
 
@@ -112,4 +146,4 @@ $usedTxt = Format-Tokens $used
 $capTxt  = Format-Tokens $cap
 
 $sep = [char]0x00B7
-[Console]::Out.Write("$bar $color$pct%$reset $dim$usedTxt/$capTxt$reset $dim$sep$reset $folder$(Get-TerseBadge)")
+[Console]::Out.Write("$bar $color$pct%$reset $dim$usedTxt/$capTxt$reset $dim$sep$reset $folder$(Get-TerseBadge)$(Get-FrontierBadge)")
