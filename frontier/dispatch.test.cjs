@@ -125,12 +125,15 @@ check('(e) content includes PX',           e.content.includes('PX'));
 // ------------------------------------------------------------------ //
 // (f) fanOut bounded-parallel + order preserved
 // ------------------------------------------------------------------ //
-// Stub sleeps ~200ms then emits its model id as result.
+// Stub sleeps ~500ms then emits its model id as result. The sleep is kept
+// well above per-process spawn jitter (notably high/cold on Windows CI) so the
+// parallel(~1x) vs serial(~2x) signal survives: parallel elapses ~500ms+jitter,
+// serial would elapse ~1000ms+, comfortably either side of the 900ms threshold.
 const stubF = stub('f-parallel', `
 const id = process.env.STUB_ID || 'x';
 setTimeout(() => {
   process.stdout.write(JSON.stringify({is_error:false, result: id}));
-}, 200);
+}, 500);
 `);
 
 const cfgF = {
@@ -151,7 +154,7 @@ check('(f) order: results[0].model===a',     fResults[0].model === 'a');
 check('(f) order: results[1].model===b',     fResults[1].model === 'b');
 check('(f) order: results[0].content===a',   fResults[0].content === 'a');
 check('(f) order: results[1].content===b',   fResults[1].content === 'b');
-check('(f) parallel: elapsed < 400ms',       elapsed < 400);
+check('(f) parallel: elapsed < 900ms',       elapsed < 900);
 
 // ------------------------------------------------------------------ //
 // (g) fanOut with unknown adapter id -> failed PanelResponse, no throw
