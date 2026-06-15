@@ -18,6 +18,10 @@
           {
             "type": "command",
             "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/maestro-terse-mode.cjs\""
+          },
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/maestro-statusline-sync.cjs\""
           }
         ]
       }

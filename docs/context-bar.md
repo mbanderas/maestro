@@ -53,6 +53,8 @@ Then point Claude Code at the script by adding a `statusLine` block to `~/.claud
 
 The toggle is a flag file (`.context-bar-disabled`) next to the script. No settings edit, no restart. The change applies on the next status line refresh.
 
+**Staying current.** The status-line scripts are a standalone copy: a plugin cannot edit your `settings.json` or copy the script at install time, so an update to the plugin would otherwise leave your wired copy stale (you keep seeing the old render after the fix shipped). The plugin's `maestro-statusline-sync` SessionStart hook closes that gap — on each new session it refreshes `~/.claude/statusline/context-bar.{sh,ps1}` from the installed plugin when they differ, so a plugin update's fixes reach your status line automatically by the next session. It is **refresh-if-present only**: it never creates the file, so it cannot turn the bar on for you — install once as above, and it stays current after that.
+
 **Maestro badges.** When active, two compact badges trail the folder name — **presence means on, absence means off**, so there is no `ON`/`OFF` text to read:
 
 - **Terse** — the level in amber: `ULTRA`, `FULL`, or `LITE`.

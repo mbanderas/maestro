@@ -8,8 +8,24 @@ All notable changes to Maestro are documented here. The format follows
 
 ## [1.3.1] - 2026-06-15
 
+### Added
+
+- **Context-bar auto-refresh hook** (`hooks/maestro-statusline-sync.cjs`):
+  a SessionStart hook that refreshes the standalone, wired
+  `~/.claude/statusline/context-bar.{sh,ps1}` copy from the installed
+  plugin whenever it has drifted from the shipped version.
+  Refresh-if-present only — it never creates the file, so the plugin
+  still never changes a status line the user did not opt into. Closes
+  the gap where a plugin update shipped a context-bar fix (e.g. the
+  `1M`/`1.4M` token format and the Frontier badge) that never reached
+  the hand-installed copy the status line actually runs. Hardened I/O
+  (symlink refusal, `O_NOFOLLOW`, atomic temp+rename, size cap); tested.
+
 ### Fixed
 
+- **`package.json` version lag**: the `v1.3.1` tag shipped with
+  `package.json` still at `1.3.0`; bumped to `1.3.1` to track the
+  release.
 - **`docs/orchestration.md` em-dash-scrub damage**: the Model Routing
   output-cap table carried broken `|, |` cells for Haiku, Opus, and
   Frontier — the em-dash "no exception" marker had been scrubbed to a
