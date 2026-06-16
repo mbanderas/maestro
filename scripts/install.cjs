@@ -49,6 +49,11 @@ const WRAPPER_MAP = {
   },
 };
 
+// Codex skill templates installed alongside the deprecated codex wrapper.
+// Codex loads skills from <project>/.agents/skills/<name>/SKILL.md (project)
+// or ~/.agents/skills/<name>/SKILL.md (global). No-clobber, like wrappers.
+const CODEX_SKILLS = ['frontier', 'terse', 'settings', 'update'];
+
 // Runtime adapter per target. The adapter imports @AGENTS.md (Cursor has no
 // imports, so .cursorrules embeds the kernel). codex/cline/windsurf read
 // AGENTS.md directly and need no adapter.
@@ -413,6 +418,58 @@ function installEngine(projectRoot, dryRun, log) {
 }
 
 /**
+ * Copy a single package template file to dest, no-clobber. Skips when dest
+ * already exists, refuses symlinks, honors dry-run. Reuses safeMkdirp +
+ * safeWrite. Shared by wrapper and Codex-skill installs.
+ * @param {string} src absolute source path (under PKG_ROOT)
+ * @param {string} dest absolute destination path
+ * @param {string} label short tag for logs (e.g. "wrapper", "codex-skill")
+ * @param {boolean} dryRun
+ * @param {(msg: string) => void} log
+ * @returns {boolean} true = success (wrote, skipped, or planned), false = error
+ */
+function installNoClobberFile(src, dest, label, dryRun, log) {
+  // Check if dest exists already (no-clobber)
+  let destStat;
+  try { destStat = fs.lstatSync(dest); } catch { destStat = null; }
+
+  if (destStat) {
+    if (destStat.isSymbolicLink()) {
+      log(`ERROR: ${label} dest is a symlink — refusing: ${dest}`);
+      return false;
+    }
+    log(`[${label}] skipped (exists, not clobbered): ${dest}`);
+    return true;
+  }
+
+  let srcContent;
+  try {
+    srcContent = fs.readFileSync(src, 'utf8');
+  } catch (err) {
+    log(`ERROR: cannot read template ${src}: ${err.message}`);
+    return false;
+  }
+
+  if (dryRun) {
+    log(`[dry-run] would create ${dest}`);
+    return true;
+  }
+
+  if (!safeMkdirp(dest)) {
+    log(`ERROR: could not create parent dir for ${dest}`);
+    return false;
+  }
+
+  const res = safeWrite(dest, srcContent);
+  if (!res.ok) {
+    log(`ERROR: failed to write ${label} ${dest}: ${res.reason}`);
+    return false;
+  }
+  log(`[${label}] wrote ${dest}`);
+  return true;
+}
+
+/**
  * Install wrapper file (no-clobber).
  * @param {string} target
  * @param {string} projectRoot
@@ -449,44 +506,31 @@ function installWrapper(target, projectRoot, userGlobal, dryRun, log) {
     dest = path.join(projectRoot, mapping.proj);
   }
 
-  // Check if dest exists already (no-clobber)
-  let destStat;
-  try { destStat = fs.lstatSync(dest); } catch { destStat = null; }
+  return installNoClobberFile(src, dest, 'wrapper', dryRun, log);
+}
 
-  if (destStat) {
-    if (destStat.isSymbolicLink()) {
-      log(`ERROR: wrapper dest is a symlink — refusing: ${dest}`);
-      return false;
-    }
-    log(`[wrapper] skipped (exists, not clobbered): ${dest}`);
-    return true;
-  }
+/**
+ * Install the Codex skill templates (no-clobber) alongside the codex wrapper.
+ * Project mode -> <project>/.agents/skills/<name>/SKILL.md; --user/global mode
+ * -> ~/.agents/skills/<name>/SKILL.md (mirrors installWrapper's dest logic).
+ * @param {string} projectRoot
+ * @param {boolean} userGlobal
+ * @param {boolean} dryRun
+ * @param {(msg: string) => void} log
+ * @returns {boolean}
+ */
+function installCodexSkills(projectRoot, userGlobal, dryRun, log) {
+  const skillsRoot = userGlobal
+    ? path.join(os.homedir(), '.agents', 'skills')
+    : path.join(projectRoot, '.agents', 'skills');
 
-  let srcContent;
-  try {
-    srcContent = fs.readFileSync(src, 'utf8');
-  } catch (err) {
-    log(`ERROR: cannot read template ${src}: ${err.message}`);
-    return false;
+  let ok = true;
+  for (const name of CODEX_SKILLS) {
+    const src  = path.join(PKG_ROOT, 'integrations', 'codex', 'skills', name, 'SKILL.md');
+    const dest = path.join(skillsRoot, name, 'SKILL.md');
+    if (!installNoClobberFile(src, dest, 'codex-skill', dryRun, log)) ok = false;
   }
-
-  if (dryRun) {
-    log(`[dry-run] would create ${dest}`);
-    return true;
-  }
-
-  if (!safeMkdirp(dest)) {
-    log(`ERROR: could not create parent dir for ${dest}`);
-    return false;
-  }
-
-  const res = safeWrite(dest, srcContent);
-  if (!res.ok) {
-    log(`ERROR: failed to write wrapper ${dest}: ${res.reason}`);
-    return false;
-  }
-  log(`[wrapper] wrote ${dest}`);
-  return true;
+  return ok;
 }
 
 // ---- main entry ----
@@ -535,6 +579,12 @@ function run(argv) {
   // 3. Wrapper — this target's /frontier command (skip if no target detected).
   if (target !== 'none') {
     if (!installWrapper(target, project, userGlobal, dryRun, log)) anyError = true;
+  }
+
+  // 3b. Codex skills — the .agents/skills/<name>/SKILL.md set ships alongside
+  // the deprecated codex prompt wrapper.
+  if (target === 'codex') {
+    if (!installCodexSkills(project, userGlobal, dryRun, log)) anyError = true;
   }
 
   if (anyError) {

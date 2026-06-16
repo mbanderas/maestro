@@ -86,3 +86,13 @@ on the model honoring it rather than on a hook.
 The Maestro context bar also does not apply: Codex CLI ships a native
 context-usage indicator (`/statusline` picker, or `context` in
 `[tui].status_line` in `~/.codex/config.toml`).
+
+## Skills and the Frontier ON indicator
+
+`maestro install --target codex` installs the `frontier`, `terse`, `settings`,
+and `update` Maestro commands as Codex skills (no-clobber) to
+`.agents/skills/<name>/SKILL.md` (per-repo) or `~/.agents/skills/<name>/SKILL.md`
+(global). When `maestro frontier status --scope codex` reports mode != off, the
+`frontier` skill instructs Codex to lead its reply with
+`Maestro Frontier ON (<label>)` — `single · <model>` or `fusion · <preset>`. When
+mode is off, no indicator line appears.

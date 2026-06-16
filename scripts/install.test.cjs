@@ -225,6 +225,61 @@ function mkTmpTracked() {
     cm.indexOf('USER KEEP') < cm.indexOf('<!-- maestro:begin -->'));
 }
 
+// ---- test 9: codex skills install ----
+{
+  const SKILLS = ['frontier', 'terse', 'settings', 'update'];
+  const skillPath = (root, name) =>
+    path.join(root, '.agents', 'skills', name, 'SKILL.md');
+
+  // 9.1 dry-run writes NO skill files (only logs)
+  const D = mkTmpTracked();
+  const beforeD = listFiles(D).length;
+  run(['--target', 'codex', '--project', D, '--dry-run']);
+  check('9a: codex dry-run writes zero files', listFiles(D).length === beforeD);
+
+  // 9.2 real install creates all four skills with non-empty content
+  const TMP = mkTmpTracked();
+  const code = run(['--target', 'codex', '--project', TMP]);
+  check('9b: codex install returns 0', code === 0);
+  for (const name of SKILLS) {
+    const p = skillPath(TMP, name);
+    check(`9c: creates .agents/skills/${name}/SKILL.md`, fs.existsSync(p));
+    const nonEmpty = fs.existsSync(p) && fs.readFileSync(p, 'utf8').trim().length > 0;
+    check(`9c: ${name} SKILL.md is non-empty`, nonEmpty);
+  }
+
+  // 9.3 existing codex wrapper + AGENTS.md writes still happen (no regression)
+  check('9d: codex still installs AGENTS.md', fs.existsSync(path.join(TMP, 'AGENTS.md')));
+  check('9d: codex still installs .codex/prompts/frontier.md wrapper',
+    fs.existsSync(path.join(TMP, '.codex', 'prompts', 'frontier.md')));
+
+  // 9.4 INDICATOR contract delivered by the installed frontier skill
+  const frontier = fs.readFileSync(skillPath(TMP, 'frontier'), 'utf8');
+  check('9e: frontier SKILL.md contains "Maestro Frontier ON" indicator',
+    frontier.includes('Maestro Frontier ON'));
+  check('9e: frontier SKILL.md references status --scope codex',
+    frontier.includes('maestro frontier status --scope codex'));
+  check('9e: frontier SKILL.md states the off contract (no indicator line)',
+    frontier.includes('output no indicator line'));
+
+  // 9.5 re-run is no-clobber / idempotent (does not overwrite or error)
+  const userEdit = '\nUSER LOCAL EDIT\n';
+  fs.appendFileSync(skillPath(TMP, 'frontier'), userEdit, 'utf8');
+  const edited = fs.readFileSync(skillPath(TMP, 'frontier'), 'utf8');
+
+  const origWrite = process.stdout.write.bind(process.stdout);
+  const captured = [];
+  process.stdout.write = (s) => { captured.push(s); origWrite(s); return true; };
+  const rerun = run(['--target', 'codex', '--project', TMP]);
+  process.stdout.write = origWrite;
+
+  check('9f: re-run returns 0 (no error on existing skill)', rerun === 0);
+  check('9f: re-run does not clobber user edit to skill',
+    fs.readFileSync(skillPath(TMP, 'frontier'), 'utf8') === edited);
+  check('9f: re-run logs skipped (exists) for codex skill',
+    captured.join('').includes('skipped (exists'));
+}
+
 // ---- cleanup ----
 
 for (const d of tmpDirs) {

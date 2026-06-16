@@ -59,6 +59,26 @@ All notable changes to Maestro are documented here. The format follows
   copied `frontier/` engine and integration files from latest `main`.
 - **README "Updating Maestro"** section documenting the one-command update
   per runtime and the newest-commit-wins version model.
+- **Maestro portable tools as Codex skills** — each Maestro tool
+  (`frontier`, `compress`, `context-bar`, `settings`, `terse`, `update`)
+  ships as a self-contained skill under `.agents/skills/<name>/SKILL.md`,
+  installed via `maestro install --target codex`. Codex picks up the same
+  doctrine-aware toolset without a plugin marketplace.
+- **Codex `Maestro Frontier ON` armed indicator** — the skill adapter
+  instruction surfaces an explicit "Maestro Frontier ON" status line when
+  the engine is armed, matching the Claude Code statusline badge parity.
+
+### Fixed
+
+- **CI test helper platform divergence** — `cc-scope` test helpers now
+  produce identical results on Ubuntu and Windows; CI is green on both
+  `ubuntu-latest` and `windows-latest` runners.
+
+### Changed
+
+- **README slimmed to Frontier-first** — Benchmarks section, comparison
+  charts, and Quick Start prose removed from the root `README.md`; depth
+  content relocated to `docs/` and `benchmarks/` for a leaner landing page.
 
 ## [1.3.2] - 2026-06-15
 
