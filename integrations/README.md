@@ -4,15 +4,16 @@ The Claude Code plugin ships Maestro's slash commands (`/maestro:*`) plus
 enforcement hooks and auto-run. Other agent CLIs support **custom slash commands**
 too, but only as *prompt templates* — they inject instruction text, they do not run
 wrapper logic, gate tools, or auto-run on every prompt. So these ports are typing
-shortcuts that tell the agent to shell out to the portable Frontier engine
-(`frontier/cli.cjs`); they are **not** a plugin equivalent.
+shortcuts that tell the agent to shell out to the portable Frontier engine via
+`maestro frontier ...`; they are **not** a plugin equivalent.
 
 Only `/frontier` and `/update` are ported. `/frontier` drives the portable engine
-(`frontier/cli.cjs`); `/update` refreshes the install (git pull or re-download +
-re-copy `frontier/` and the command files). `terse`, `context-bar`, and `settings`
-depend on Claude Code hooks/status line and would only inject text elsewhere;
-`compress` operates on memory files and is partly portable. The orchestration
-doctrine itself needs no command — it lives in `AGENTS.md` and loads on demand.
+(`maestro frontier ...`); `/update` refreshes the install (git pull or re-download +
+re-copy `frontier/`, `bin/maestro.cjs`, and the command files). `terse`,
+`context-bar`, and `settings` depend on Claude Code hooks/status line and would only
+inject text elsewhere; `compress` operates on memory files and is partly portable.
+The orchestration doctrine itself needs no command — it lives in `AGENTS.md` and
+loads on demand.
 
 ## Placement
 
@@ -49,6 +50,7 @@ overwrite the copies in your project:
 ```bash
 curl -O https://raw.githubusercontent.com/mbanderas/maestro/main/AGENTS.md
 curl -O https://raw.githubusercontent.com/mbanderas/maestro/main/frontier/cli.cjs
+curl -O https://raw.githubusercontent.com/mbanderas/maestro/main/bin/maestro.cjs
 # Also re-copy the integration command file(s) you installed.
 ```
 
@@ -76,8 +78,9 @@ needed per release.
   prompt file by design.
 - **Codex has no confirmed per-repo prompt path** — `~/.codex/prompts/` is global
   per-user. Cursor's `.cursor/commands/` is the repo-scoped option.
-- **Requires `frontier/` in the project.** The command runs `node frontier/cli.cjs`
-  from the repo root, so the engine must have been copied in during install.
+- **Requires `frontier/` and `bin/maestro.cjs` in the project.** The command runs
+  `maestro frontier ...` (or `node bin/maestro.cjs frontier ...`) from the repo root,
+  so the engine must have been copied in during install.
 - **Windows + Gemini judge/synth.** `gemini` is fine as a panel member, but a poor
   `--judge`/`--synth` on Windows (its arg-passing rejects the newline-bearing
   judge/synth prompts, so the stage degrades). Use `opus` or `gpt-5.5` for
