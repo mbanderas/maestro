@@ -48,7 +48,7 @@ Frontier engine with auto-run. That is the entire install — you are done.
 `npx github:mbanderas/maestro install --target auto --project .` from the project root — it
 fetches the engine, copies the integration files, and verifies the install in one step. Zero
 dependencies; works today from GitHub before any npm publish. Once Maestro is published to
-npm, `npx @maestro/frontier install --target auto` is the equivalent shorthand. Confirm with
+npm, `npx @maestrofrontier/frontier install --target auto` is the equivalent shorthand. Confirm with
 `maestro frontier status` (or `node bin/maestro.cjs frontier status` if maestro is not yet on
 PATH). For a /frontier slash command, the install copies integrations/cursor/commands/frontier.md
 to .cursor/commands/ (Cursor) or integrations/codex/prompts/frontier.md to ~/.codex/prompts/
