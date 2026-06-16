@@ -6,6 +6,24 @@ All notable changes to Maestro are documented here. The format follows
 
 ## [Unreleased]
 
+## [1.6.0] - 2026-06-16
+
+### Added
+
+- **Live Frontier progress on the statusline.** While an armed autorun runs
+  the panel->judge->synth pipeline inside its blocking hook (otherwise silent
+  until it returns), the context-bar now shows a live phase in place of the
+  static `ƒ` badge: `ƒ⠿ fanning 2/3` -> `ƒ⚖ judging` -> `ƒ✶ synth`, snapping
+  back to `ƒO+C+G` when the run ends. New `frontier/progress.cjs` writes a
+  `frontier-progress.<scope>.json` file (wired as the engine's `onProgress` by
+  `hooks/frontier-autorun.cjs`, cleared on completion or error); both
+  `statusline/context-bar.ps1` and `.sh` read it with the same hardening as the
+  badge — symlink/size refusal, a phase whitelist, clamped integer counts (never
+  raw bytes), and a 300s staleness guard so a crashed run never pins a phantom
+  phase. Spike-confirmed: the Claude Code statusline does repaint during a
+  blocking UserPromptSubmit hook. CLI-only (no statusline on Desktop/web), so it
+  complements — does not replace — the universal `⚡ Frontier` reply banner.
+
 ## [1.5.0] - 2026-06-16
 
 ### Added
