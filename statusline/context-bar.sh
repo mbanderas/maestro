@@ -44,6 +44,43 @@ workspace_scope() {
   printf 'cc-%s' "$(printf '%s' "$norm" | sha256sum | cut -c1-8)"
 }
 
+# Live Frontier run progress. Reads frontier-progress.<scope>.json written by
+# frontier/progress.cjs while an armed autorun is mid-pipeline. Same hardening
+# as the badge below: refuse symlinks, size cap, whitelist the phase, and emit
+# only fixed words + clamped integer counts -- never raw bytes. A stale file
+# (ts older than 300s) is ignored. Empty output -> fall through to the static
+# badge. Needs jq.
+frontier_progress() {
+  [ "$have_jq" -eq 1 ] || return
+  local dir="${XDG_CONFIG_HOME:-$HOME/.config}/maestro"
+  local ws; ws="$(workspace_scope "$cwd")"
+  local f="$dir/frontier-progress.${ws}.json"
+  [ -f "$f" ] || { case "$ws" in cc-*) return ;; *) f="$dir/frontier-progress.json" ;; esac; }
+  [ -L "$f" ] && return
+  [ ! -f "$f" ] && return
+  local sz; sz=$(wc -c < "$f" 2>/dev/null | tr -d ' ')
+  [ -n "$sz" ] && [ "$sz" -gt 8192 ] && return
+  local phase ts dn tt now_ms label
+  phase=$(jq -r '.phase // empty' "$f" 2>/dev/null)
+  case "$phase" in panel|judge|synth|single) ;; *) return ;; esac
+  ts=$(jq -r '.ts // 0' "$f" 2>/dev/null)
+  [[ "$ts" =~ ^[0-9]+$ ]] || return
+  [ "$ts" -le 0 ] && return
+  now_ms=$(( $(date +%s) * 1000 ))
+  [ $(( now_ms - ts )) -gt 300000 ] && return
+  dn=$(jq -r '.done // 0' "$f" 2>/dev/null); [[ "$dn" =~ ^[0-9]+$ ]] || dn=0
+  tt=$(jq -r '.total // 0' "$f" 2>/dev/null); [[ "$tt" =~ ^[0-9]+$ ]] || tt=0
+  [ "$dn" -gt 99 ] && dn=99
+  [ "$tt" -gt 99 ] && tt=99
+  case "$phase" in
+    panel)  if [ "$tt" -gt 0 ]; then label="⠿ fanning $dn/$tt"; else label="⠿ fanning"; fi ;;
+    judge)  label="⚖ judging" ;;
+    synth)  label="✦ synth" ;;
+    single) label="⠿ running" ;;
+  esac
+  printf ' %sƒ%s%s' "${esc}[38;5;214m" "$label" "$reset"
+}
+
 # Frontier badge. Reads frontier-state.<scope>.json (configDir = $XDG_CONFIG_HOME/maestro
 # else ~/.config/maestro), written by frontier/config.cjs. Same hardening as the
 # terse badge: refuse symlinks, size cap, and only ever emit letters from the
@@ -52,6 +89,8 @@ workspace_scope() {
 # change. Needs jq. Output: presence = on, absence = off (no ON/OFF text).
 frontier_badge() {
   [ "$have_jq" -eq 1 ] || return
+  local prog; prog="$(frontier_progress)"
+  if [ -n "$prog" ]; then printf '%s' "$prog"; return; fi
   local dir="${XDG_CONFIG_HOME:-$HOME/.config}/maestro"
   local ws; ws="$(workspace_scope "$cwd")"
   local f="$dir/frontier-state.${ws}.json"

@@ -43,10 +43,11 @@ const fusionDepth = parseInt(process.env.FUSION_DEPTH || '0', 10);
 if (Number.isFinite(fusionDepth) && fusionDepth >= 1) noop();
 
 let state;
+let scope;
 try {
   const cfg = require('../frontier/config.cjs');
   const cwd = data.cwd || process.env.CLAUDE_PROJECT_DIR || process.env.CODEX_PROJECT_DIR || process.cwd();
-  const scope = cfg.resolveScope([], { cwd });
+  scope = cfg.resolveScope([], { cwd });
   state = cfg.loadState(scope);
 } catch {
   noop();
@@ -73,14 +74,21 @@ run().catch((e) => {
 async function run() {
   let result;
   const runStart = Date.now();
+  // Live statusline progress: write the current stage as each one starts so
+  // the context-bar can show ƒ⠿ fanning / ƒ⚖ judging / ƒ✶ synth during the
+  // otherwise-silent blocking run. Cleared below on completion or error.
+  const progress = require('../frontier/progress.cjs');
+  const onProgress = progress.makeProgressWriter(scope);
   try {
     const { runFrontier } = require('../frontier/run.cjs');
-    result = await runFrontier({ prompt, state });
+    result = await runFrontier({ prompt, state, deps: { onProgress } });
   } catch (e) {
+    progress.clearProgress(scope);
     process.stderr.write('frontier-autorun: ' + ((e && e.message) || e) + '\n');
     noop();
   }
   const runMs = Date.now() - runStart;
+  progress.clearProgress(scope);
 
   if (!result || result.status !== 'ok' || !result.final) {
     if (result && result.status === 'error') {
