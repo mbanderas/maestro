@@ -108,8 +108,11 @@ store.
   the same pairing the terse hook maintains at session start. If
   `MAESTRO_TERSE_LEVEL` is set in the environment, it overrides the file
   until unset, and `set terse` says so.
-- **frontier**: `<configDir>/frontier-state.json`, read and written through
-  `frontier/config.cjs`.
+- **frontier**: `<configDir>/frontier-state.<scope>.json`, read and written
+  through `frontier/config.cjs`. Claude Code autodetect resolves to a
+  per-workspace scope `cc-<8hex>` (SHA-256 of the git project root), so
+  each workspace has its own state file; no scope defaults to
+  `frontier-state.json`.
 - **context-bar**: an empty `.context-bar-disabled` marker next to the
   status-line script named in `statusLine.command` in
   `${CLAUDE_CONFIG_DIR or ~/.claude}/settings.json`, defaulting to

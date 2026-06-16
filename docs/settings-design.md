@@ -53,7 +53,7 @@ Config directory, identical to `frontier/config.cjs` and the terse hook:
 | Toggle | Store | Owner / reader | Whitelist |
 |---|---|---|---|
 | terse | `<configDir>/config.json` key `terseLevel` (durable) plus the live flag `${CLAUDE_CONFIG_DIR or ~/.claude}/.maestro-terse` | `hooks/maestro-terse-mode.cjs` | `off`, `lite`, `full`, `ultra` |
-| frontier | `<configDir>/frontier-state.json` | `frontier/config.cjs` | mode `off`/`single`/`fusion`; model and preset validated by the frontier config |
+| frontier | `<configDir>/frontier-state.<scope>.json` (Claude Code autodetect = per-workspace `frontier-state.cc-<8hex>.json`; no scope = `frontier-state.json`) | `frontier/config.cjs` | mode `off`/`single`/`fusion`; model and preset validated by the frontier config |
 | context-bar | `.context-bar-disabled` in the status-line script directory | `statusline/context-bar.ps1` and `.sh` | present (disabled) or absent (enabled) |
 
 Three details drive the implementation.

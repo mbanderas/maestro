@@ -8,19 +8,25 @@ All notable changes to Maestro are documented here. The format follows
 
 ### Fixed
 
-- **Per-CLI Frontier state isolation.** The engine stored its armed
-  mode/preset in a single global `frontier-state.json`, so arming a mode
-  in one CLI (Claude Code, Codex, Cursor, Gemini) silently changed it in
-  every other CLI on the same machine. State is now scoped per runtime —
-  `frontier-state.<scope>.json` (e.g. `frontier-state.claude-code.json`,
-  `frontier-state.codex.json`). Scope resolves from `--scope <name>` >
-  `MAESTRO_SCOPE` > autodetect (`CLAUDE_PLUGIN_ROOT`/`CLAUDECODE` =>
-  `claude-code`) > `default`. A one-time read-only migration seeds a new
-  scope from the legacy `frontier-state.json` so existing armed state is
-  preserved. Wired through `frontier/config.cjs`, `frontier/cli.cjs`,
-  `hooks/frontier-autorun.cjs`, `settings/config.cjs`, `settings/cli.cjs`,
-  both statusline badges, and the Codex/Cursor integration commands
-  (`--scope codex` / `--scope cursor`).
+- **Per-CLI Frontier state isolation; Claude Code now per-workspace.**
+  The engine previously stored armed mode/preset in a single global
+  `frontier-state.json`, so arming in one CLI silently changed it in every
+  other CLI on the same machine. State is now scoped per runtime —
+  `frontier-state.<scope>.json`. Scope resolves from `--scope <name>` >
+  `MAESTRO_SCOPE` > autodetect > `default`. Claude Code autodetect now
+  resolves to **`cc-<8hex>`** — a SHA-256 of the workspace's git project
+  root (nearest ancestor `.git` dir), so each workspace gets its own file
+  (e.g. `frontier-state.cc-a1b2c3d4.json`). Arming in workspace A does not
+  affect workspace B. `cc-*` workspace scopes do **not** auto-migrate from
+  the legacy files: after upgrading, every Claude Code workspace starts
+  `off` and must be re-armed in that workspace. Codex and Cursor remain
+  per-CLI-global via explicit `--scope codex` / `--scope cursor` and still
+  receive the one-time read-only legacy migration. The statusline badge now
+  reads **only** the workspace-scoped file for a `cc-*` workspace — it no
+  longer falls back to the legacy global `frontier-state.json`, so a
+  workspace that is off never shows a stale global armed badge. Wired through
+  `frontier/config.cjs`, `frontier/cli.cjs`, `hooks/frontier-autorun.cjs`,
+  both statusline badges, and `settings/cli.cjs`.
 
 ### Changed
 
@@ -36,6 +42,15 @@ All notable changes to Maestro are documented here. The format follows
 
 ### Added
 
+- **`/maestro:frontier adopt`** — explicit, opt-in escape hatch for the
+  per-workspace isolation above. Copies the legacy global
+  `frontier-state.json` into the current Claude Code workspace's
+  `frontier-state.cc-<hash>.json` so a workspace can inherit a
+  previously-armed global mode on demand. Reads the legacy file read-only
+  (never deletes it), refuses to overwrite an existing workspace state
+  unless `--force`, and only targets a `cc-*` workspace scope. New
+  `adoptLegacyState` in `frontier/config.cjs`, `adopt` subcommand in
+  `frontier/cli.cjs`.
 - **`/maestro:update`** (Claude Code) — one command that runs the
   marketplace update, reports what changed, and points the user at
   `/reload-plugins` (or a restart) to apply it.

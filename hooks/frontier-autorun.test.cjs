@@ -14,12 +14,14 @@ const { execFileSync } = require('child_process');
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
+const { workspaceHash } = require('../frontier/config.cjs');
 
 const HOOK = path.join(__dirname, 'frontier-autorun.cjs');
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'frontier-autorun-test-'));
 const xdgDir = path.join(tmp, 'xdg');
 fs.mkdirSync(path.join(xdgDir, 'maestro'), { recursive: true });
-const statePath = path.join(xdgDir, 'maestro', 'frontier-state.json');
+const ccScope = 'cc-' + workspaceHash(process.cwd());
+const statePath = path.join(xdgDir, 'maestro', 'frontier-state.' + ccScope + '.json');
 
 // Fake claude bin: a .cjs node script emitting claude-json with a fixed
 // result. dispatch runs a .cjs bin through node cross-platform, so single
@@ -41,6 +43,7 @@ function runHook(payload, env) {
       XDG_CONFIG_HOME: xdgDir,
       MAESTRO_CLAUDE_BIN: fakeClaude,
       FUSION_DEPTH: '',
+      MAESTRO_SCOPE: '',
       ...env,
     },
   });

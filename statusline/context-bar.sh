@@ -31,7 +31,20 @@ terse_badge() {
   printf ' %s%s%s' "${esc}[38;5;172m" "$(printf '%s' "$mode" | tr '[:lower:]' '[:upper:]')" "$reset"
 }
 
-# Frontier badge. Reads frontier-state.json (configDir = $XDG_CONFIG_HOME/maestro
+# Derive a per-workspace scope string matching frontier/config.cjs workspaceHash()
+# (non-win32 normalization: backslash->slash, preserve case, strip trailing slash).
+workspace_scope() {
+  local wscwd="$1" norm last=""
+  [ -n "$wscwd" ] || return
+  norm="$wscwd"
+  while [ "$norm" != "$last" ] && [ ! -e "$norm/.git" ]; do
+    last="$norm"; norm="$(dirname "$norm")"
+  done
+  norm="$(printf '%s' "$norm" | sed 's#\\#/#g')"; norm="${norm%/}"
+  printf 'cc-%s' "$(printf '%s' "$norm" | sha256sum | cut -c1-8)"
+}
+
+# Frontier badge. Reads frontier-state.<scope>.json (configDir = $XDG_CONFIG_HOME/maestro
 # else ~/.config/maestro), written by frontier/config.cjs. Same hardening as the
 # terse badge: refuse symlinks, size cap, and only ever emit letters from the
 # whitelist below or an integer count -- never raw bytes from the file. Letter
@@ -40,8 +53,9 @@ terse_badge() {
 frontier_badge() {
   [ "$have_jq" -eq 1 ] || return
   local dir="${XDG_CONFIG_HOME:-$HOME/.config}/maestro"
-  local f="$dir/frontier-state.claude-code.json"
-  [ -f "$f" ] || f="$dir/frontier-state.json"
+  local ws; ws="$(workspace_scope "$cwd")"
+  local f="$dir/frontier-state.${ws}.json"
+  [ -f "$f" ] || { case "$ws" in cc-*) return ;; *) f="$dir/frontier-state.json" ;; esac; }
   [ -L "$f" ] && return
   [ ! -f "$f" ] && return
   local sz

@@ -4,7 +4,7 @@
 'use strict';
 
 const fs = require('fs');
-const { DEFAULTS, loadState, saveState, resolveScope, validateMode, validatePreset, validateModel } = require('./config.cjs');
+const { DEFAULTS, loadState, saveState, resolveScope, validateMode, validatePreset, validateModel, adoptLegacyState } = require('./config.cjs');
 const { runFrontier } = require('./run.cjs');
 
 // ---------- arg helpers ----------
@@ -44,7 +44,8 @@ function usage() {
     'Usage:\n' +
     '  frontier mode <off|single|fusion> [--model X] [--preset Y] [--models a,b,c] [--scope <name>]\n' +
     '  frontier status [--scope <name>]\n' +
-    '  frontier run [<prompt>|-] [--scope <name>]\n'
+    '  frontier run [<prompt>|-] [--scope <name>]\n' +
+    '  frontier adopt [--force] [--scope <name>]\n'
   );
 }
 
@@ -168,6 +169,52 @@ async function cmdRun(argv, scope) {
   process.exit(0);
 }
 
+// Adopt the legacy global frontier-state.json into the current Claude Code
+// workspace scope (cc-*). Source is read-only; never overwrites an existing
+// workspace state file unless --force. This is the explicit escape hatch the
+// per-workspace isolation change requires: a workspace never inherits the old
+// global armed mode automatically, so a user who wants it copies it once.
+function cmdAdopt(argv, scope) {
+  const res = adoptLegacyState(scope, { force: hasFlag(argv, '--force') });
+
+  if (res.ok) {
+    process.stdout.write(
+      'frontier adopted legacy state into ' + res.scope + ': ' +
+      JSON.stringify(loadState(res.scope)) + '\n');
+    return;
+  }
+
+  let msg;
+  switch (res.reason) {
+    case 'not-cc-scope':
+      msg = 'adopt only targets a Claude Code per-workspace scope (cc-*); current ' +
+            'scope is "' + res.scope + '". Run it inside a Claude Code workspace ' +
+            '(under a git project root), or arm Codex/Cursor with `mode --scope`.';
+      break;
+    case 'missing-legacy':
+      msg = 'no legacy global state to adopt (frontier-state.json not found). ' +
+            'Nothing to do — arm this workspace with `mode` instead.';
+      break;
+    case 'invalid-legacy':
+      msg = 'legacy state file is unreadable, a symlink, or invalid; refusing to adopt.';
+      break;
+    case 'exists':
+      msg = 'this workspace already has frontier state (' +
+            JSON.stringify(loadState(res.scope)) + '); pass --force to overwrite.';
+      break;
+    case 'unsafe-target':
+      msg = 'refusing to write workspace state (symlink or unsafe path): ' + res.path;
+      break;
+    case 'write-failed':
+      msg = 'failed to write workspace state file: ' + res.path;
+      break;
+    default:
+      msg = 'adopt failed (' + res.reason + ').';
+  }
+  process.stderr.write('ERROR [' + res.reason + ']: ' + msg + '\n');
+  process.exit(2);
+}
+
 // ---------- main ----------
 
 async function main() {
@@ -183,6 +230,8 @@ async function main() {
     cmdStatus(scope);
   } else if (cmd === 'run') {
     await cmdRun(argv.slice(1), scope);
+  } else if (cmd === 'adopt') {
+    cmdAdopt(argv.slice(1), scope);
   } else {
     usage();
     process.exit(2);
