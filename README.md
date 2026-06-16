@@ -176,7 +176,7 @@ Maestro separates **portable orchestration doctrine** from **runtime-specific ad
 | `.cursorrules` | Cursor adapter | Kernel copy (Cursor does not support imports); full S2-S6 in docs/orchestration.md |
 | [`docs/codex.md`](docs/codex.md) | Codex guide | AGENTS.md precedence and 32 KiB cap, Codex subagent mapping, Automations long-horizon mapping (Codex reads `AGENTS.md` natively) |
 
-Codex skills (`frontier`, `terse`, `settings`, `update`) are installed to `.agents/skills/<name>/SKILL.md` by `maestro install --target codex`. When Frontier mode is on, the `frontier` skill leads each Codex reply with `Maestro Frontier ON (<label>)` (`single · <model>` or `fusion · <preset>`); run `maestro frontier status --scope codex` to check. This indicator is Codex-scoped only.
+Maestro's tools run on **both Claude Code and Codex** — in Claude Code as `/maestro:*` slash commands, and in Codex as installable skills, with the portable `node settings/cli.cjs` and `maestro frontier ...` CLIs working on any other agent too. The Codex skills (`frontier`, `terse`, `settings`, `update`) are installed to `.agents/skills/<name>/SKILL.md` by `maestro install --target codex`. When Frontier mode is on, the `frontier` skill leads each Codex reply with `Maestro Frontier ON (<label>)` (`single · <model>` or `fusion · <preset>`) — the Codex analog of Claude Code's armed Frontier indicator; run `maestro frontier status --scope codex` to check. This indicator is Codex-scoped only.
 
 GitHub Copilot, Cline, and Windsurf read `AGENTS.md` directly, so the portable core works there with no adapter. Maestro's always-on kernel (`AGENTS.md`) is ~8 KB, under Windsurf's 12,000-character limit and roughly a quarter of Codex's 32 KiB budget; the full multi-agent protocol loads on demand from `docs/orchestration.md`.
 
@@ -200,7 +200,7 @@ Optional Claude Code machinery; full install steps in the linked docs.
 
 ## Commands & Settings
 
-Every Maestro slash command in Claude Code is namespaced `/maestro:<name>`. On Codex and other CLIs without slash commands, the same actions run through the scripts noted below.
+Every Maestro slash command in Claude Code is namespaced `/maestro:<name>`. The same tools run on Codex as installed skills (`.agents/skills/<name>/SKILL.md`, via `maestro install --target codex`); on any CLI the same actions also run through the portable scripts noted below.
 
 | Command | What it does | Usage |
 |---|---|---|

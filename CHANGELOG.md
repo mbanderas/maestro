@@ -30,6 +30,11 @@ All notable changes to Maestro are documented here. The format follows
 
 ### Changed
 
+- **Tools are cross-platform (Claude Code + Codex).** README now states
+  plainly that Maestro's tools run as `/maestro:*` commands in Claude Code
+  and as installed skills (`.agents/skills/<name>/SKILL.md`) in Codex, with
+  the portable `node settings/cli.cjs` / `maestro frontier ...` CLIs on any
+  other agent.
 - **Fluent updates: the plugin version is no longer pinned.** Removed the
   `version` field from `.claude-plugin/plugin.json` and
   `.claude-plugin/marketplace.json`; the plugin now resolves to the latest
