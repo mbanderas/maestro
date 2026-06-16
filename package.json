@@ -1,6 +1,6 @@
 {
   "name": "@maestrofrontier/frontier",
-  "version": "1.4.3",
+  "version": "1.4.4",
   "description": "Achieve Frontier AI performance in your CLI by fusing the model CLIs you already run. Maestro Frontier is an opt-in, zero-dependency local multi-CLI fusion engine for AI coding agents: fan a prompt across a panel of any 1 to 8 local model CLIs you pick, have a judge model and a synthesizer you choose read the answers into a structured analysis and write one grounded synthesis (default Opus 4.8, override either with --judge/--synth). On a 100-task benchmark every fusion panel outscored its individual member models. Three adapters ship today: Opus 4.8, GPT-5.5, Gemini 3.1 Pro, with Kimi, DeepSeek, GLM, and Qwen to follow. Off, single, and fusion modes switch via /maestro:frontier. Built on Maestro orchestration discipline: decision-gated routing, verified done-claims, surgical scope, and structural enforcement hooks.",
   "keywords": ["multi-cli-fusion", "fusion-engine", "frontier", "multi-agent", "orchestration", "claude-code", "gemini", "codex", "agents", "hooks", "doctrine"],
   "license": "MIT",
