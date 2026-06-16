@@ -85,6 +85,8 @@ function mkTmpTracked() {
   check('2: creates frontier/cli.cjs', fs.existsSync(path.join(TMP, 'frontier', 'cli.cjs')));
   check('2: creates bin/maestro.cjs', fs.existsSync(path.join(TMP, 'bin', 'maestro.cjs')));
   check('2: creates .gemini/commands/frontier.toml', fs.existsSync(path.join(TMP, '.gemini', 'commands', 'frontier.toml')));
+  check('2: creates docs/orchestration.md', fs.existsSync(path.join(TMP, 'docs', 'orchestration.md')));
+  check('2: creates GEMINI.md adapter (gemini target)', fs.existsSync(path.join(TMP, 'GEMINI.md')));
 }
 
 // ---- test 3: idempotent ----
@@ -189,6 +191,38 @@ function mkTmpTracked() {
   const result = run(['--target', 'gemini', '--project', TMP]);
   check('7b: run returns a number', typeof result === 'number');
   check('7c: run returns 0 on success', result === 0);
+}
+
+// ---- test 8: per-target adapter — only that tool's stuff ----
+{
+  // claude -> CLAUDE.md, and NOT the other tools' adapters
+  const C = mkTmpTracked();
+  run(['--target', 'claude', '--project', C]);
+  check('8a: claude installs CLAUDE.md adapter', fs.existsSync(path.join(C, 'CLAUDE.md')));
+  check('8b: claude does NOT install GEMINI.md', !fs.existsSync(path.join(C, 'GEMINI.md')));
+  check('8c: claude does NOT install .cursorrules', !fs.existsSync(path.join(C, '.cursorrules')));
+  check('8d: claude still gets docs/orchestration.md', fs.existsSync(path.join(C, 'docs', 'orchestration.md')));
+
+  // cursor -> .cursorrules adapter + .cursor wrapper
+  const U = mkTmpTracked();
+  run(['--target', 'cursor', '--project', U]);
+  check('8e: cursor installs .cursorrules adapter', fs.existsSync(path.join(U, '.cursorrules')));
+  check('8f: cursor installs .cursor/commands/frontier.md wrapper', fs.existsSync(path.join(U, '.cursor', 'commands', 'frontier.md')));
+
+  // codex -> AGENTS.md only, no runtime adapter file
+  const X = mkTmpTracked();
+  run(['--target', 'codex', '--project', X]);
+  check('8g: codex installs AGENTS.md', fs.existsSync(path.join(X, 'AGENTS.md')));
+  check('8h: codex installs no adapter file', !fs.existsSync(path.join(X, 'CLAUDE.md')) && !fs.existsSync(path.join(X, 'GEMINI.md')) && !fs.existsSync(path.join(X, '.cursorrules')));
+
+  // adapter is append-only / no-clobber
+  const K = mkTmpTracked();
+  fs.writeFileSync(path.join(K, 'CLAUDE.md'), 'USER KEEP\n', 'utf8');
+  run(['--target', 'claude', '--project', K]);
+  const cm = fs.readFileSync(path.join(K, 'CLAUDE.md'), 'utf8');
+  check('8i: adapter append-only keeps user content above the block',
+    cm.includes('USER KEEP') && cm.includes('<!-- maestro:begin -->') &&
+    cm.indexOf('USER KEEP') < cm.indexOf('<!-- maestro:begin -->'));
 }
 
 // ---- cleanup ----

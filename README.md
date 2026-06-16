@@ -25,22 +25,29 @@
   <sub>13 fixture tasks &middot; 123 valid A/B runs &middot; 11 voids excluded &amp; re-run &middot; 6 hooks, all tested &middot; ~8 KB always-on kernel &middot; 2-line plugin install</sub>
 </p>
 
-> **⚡ Install — one command, any CLI:**
+> **⚡ Install — run the one line for your tool, inside that tool.** Each installs only that tool's setup (the portable `AGENTS.md` doctrine, that tool's adapter, `docs/orchestration.md`, the Frontier engine, and that tool's `/frontier` command) — **append-only; it never overwrites or deletes your files.**
 
-```bash
-npx github:mbanderas/maestro install --target auto --project .
-```
-
-It installs the orchestration doctrine (appended to `AGENTS.md`), the Frontier fusion engine, and your tool's `/frontier` wrapper — **append-only, it never overwrites or deletes your files**. Confirm with `maestro frontier status` (or `node bin/maestro.cjs frontier status` if `maestro` is not yet on PATH). Once published, `npx @maestrofrontier/frontier install --target auto` is the equivalent shorthand.
-
-**Claude Code** gets the full plugin — enforcement hooks, `/maestro:*` commands, skills, status line, Frontier auto-run — in two lines:
+**Claude Code / Desktop** — native plugin (enforcement hooks, `/maestro:*` commands, skills, status line, Frontier auto-run):
 
 ```text
 /plugin marketplace add mbanderas/maestro
 /plugin install maestro@maestro
 ```
 
-Frontier stays **off** until you arm it: `/maestro:frontier fusion opus-gpt` on Claude Code, or `maestro frontier mode fusion --preset opus-gpt --scope <tool>` elsewhere (armed state stays per-CLI-global; add `--scope codex`/`cursor`/`gemini`/`cline`/`windsurf`).
+**Every other CLI / Desktop app** — run its line in that tool's terminal, or just ask its agent to run it. It auto-targets that tool and installs nothing for the others:
+
+| Tool | Install (run inside the tool) |
+|------|-------------------------------|
+| Codex (CLI / Desktop) | `npx github:mbanderas/maestro install --target codex` |
+| Cursor | `npx github:mbanderas/maestro install --target cursor` |
+| Gemini CLI | `npx github:mbanderas/maestro install --target gemini` |
+| Cline | `npx github:mbanderas/maestro install --target cline` |
+| Windsurf / Devin | `npx github:mbanderas/maestro install --target windsurf` |
+| Not sure / auto-detect | `npx github:mbanderas/maestro install --target auto` |
+
+Per tool it lays down `AGENTS.md` + that tool's adapter (`CLAUDE.md` / `GEMINI.md` / `.cursorrules`; Codex, Cline, and Windsurf read `AGENTS.md` directly), `docs/orchestration.md`, the zero-dependency Frontier engine, and that tool's `/frontier` command. Confirm with `maestro frontier status` (or `node bin/maestro.cjs frontier status` if `maestro` is not on PATH). Once published, swap `github:mbanderas/maestro` for `@maestrofrontier/frontier`.
+
+Frontier stays **off** until you arm it: `/maestro:frontier fusion opus-gpt` (Claude Code) or `maestro frontier mode fusion --preset opus-gpt --scope <tool>` elsewhere (armed state stays per-CLI-global; `--scope codex`/`cursor`/`gemini`/`cline`/`windsurf`).
 
 ---
 

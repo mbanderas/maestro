@@ -49,6 +49,15 @@ const WRAPPER_MAP = {
   },
 };
 
+// Runtime adapter per target. The adapter imports @AGENTS.md (Cursor has no
+// imports, so .cursorrules embeds the kernel). codex/cline/windsurf read
+// AGENTS.md directly and need no adapter.
+const ADAPTER_MAP = {
+  claude: 'CLAUDE.md',
+  gemini: 'GEMINI.md',
+  cursor: '.cursorrules',
+};
+
 // Marker dirs used for auto-detection (scanned inside project root)
 const AUTO_MARKERS = [
   { dir: '.cursor',  target: 'cursor'   },
@@ -177,48 +186,53 @@ function detectTarget(projectRoot) {
 // ---- install actions ----
 
 /**
- * Install doctrine (AGENTS.md) into project root. Append-only, idempotent.
- * @param {string} projectRoot
+ * Read a file from the package root. Returns string, or null (logs) on error.
+ * @param {string} rel
+ * @param {(msg: string) => void} log
+ * @returns {string|null}
+ */
+function readPkgFile(rel, log) {
+  try {
+    return fs.readFileSync(path.join(PKG_ROOT, rel), 'utf8');
+  } catch (err) {
+    log(`ERROR: cannot read package ${rel}: ${err.message}`);
+    return null;
+  }
+}
+
+/**
+ * Install a doctrine/adapter markdown file. Append-only, idempotent, never
+ * clobbers user content above the maestro block; refuses symlinks.
+ * @param {string} dest absolute destination path
+ * @param {string} srcContent content to install
+ * @param {string} label short name for logs (e.g. "AGENTS.md")
  * @param {boolean} dryRun
  * @param {(msg: string) => void} log
  * @returns {boolean} true = success (or no-op), false = error
  */
-function installDoctrine(projectRoot, dryRun, log) {
-  const dest     = path.join(projectRoot, 'AGENTS.md');
-  const srcPath  = path.join(PKG_ROOT, 'AGENTS.md');
-
-  let srcContent;
-  try {
-    srcContent = fs.readFileSync(srcPath, 'utf8');
-  } catch (err) {
-    log(`ERROR: cannot read package AGENTS.md: ${err.message}`);
-    return false;
-  }
-
+function appendOnlyDoctrine(dest, srcContent, label, dryRun, log) {
   const block = `\n${SENTINEL}\n${srcContent}\n${SENTINEL_END}\n`;
 
-  // Check if dest exists
   let existsStat;
   try { existsStat = fs.lstatSync(dest); } catch { existsStat = null; }
 
   if (existsStat) {
     if (existsStat.isSymbolicLink()) {
-      log(`ERROR: AGENTS.md is a symlink — refusing to write through it: ${dest}`);
+      log(`ERROR: ${label} is a symlink — refusing to write through it: ${dest}`);
       return false;
     }
 
     let existing;
     try { existing = fs.readFileSync(dest, 'utf8'); } catch (err) {
-      log(`ERROR: cannot read existing AGENTS.md: ${err.message}`);
+      log(`ERROR: cannot read existing ${label}: ${err.message}`);
       return false;
     }
 
     if (existing.includes(SENTINEL)) {
-      log(`[doctrine] AGENTS.md already contains sentinel — skipping`);
+      log(`[doctrine] ${label} already contains sentinel — skipping`);
       return true;
     }
 
-    // Append block
     if (dryRun) {
       log(`[dry-run] would append maestro doctrine to existing ${dest}`);
       return true;
@@ -226,14 +240,14 @@ function installDoctrine(projectRoot, dryRun, log) {
 
     const res = safeWrite(dest, existing + block);
     if (!res.ok) {
-      log(`ERROR: failed to append to AGENTS.md: ${res.reason}`);
+      log(`ERROR: failed to append to ${label}: ${res.reason}`);
       return false;
     }
-    log(`[doctrine] appended maestro block to existing AGENTS.md`);
+    log(`[doctrine] appended maestro block to existing ${label}`);
     return true;
   }
 
-  // Absent — write fresh. Wrap in sentinel block so subsequent runs detect it.
+  // Absent — write fresh, wrapped in the sentinel so re-runs detect it.
   if (dryRun) {
     log(`[dry-run] would create ${dest}`);
     return true;
@@ -247,11 +261,41 @@ function installDoctrine(projectRoot, dryRun, log) {
   const freshContent = SENTINEL + '\n' + srcContent + '\n' + SENTINEL_END + '\n';
   const res = safeWrite(dest, freshContent);
   if (!res.ok) {
-    log(`ERROR: failed to write AGENTS.md: ${res.reason}`);
+    log(`ERROR: failed to write ${label}: ${res.reason}`);
     return false;
   }
-  log(`[doctrine] wrote AGENTS.md`);
+  log(`[doctrine] wrote ${label}`);
   return true;
+}
+
+/**
+ * Install the portable doctrine core (AGENTS.md) into the project root.
+ * @param {string} projectRoot
+ * @param {boolean} dryRun
+ * @param {(msg: string) => void} log
+ * @returns {boolean}
+ */
+function installDoctrine(projectRoot, dryRun, log) {
+  const src = readPkgFile('AGENTS.md', log);
+  if (src === null) return false;
+  return appendOnlyDoctrine(path.join(projectRoot, 'AGENTS.md'), src, 'AGENTS.md', dryRun, log);
+}
+
+/**
+ * Install the runtime adapter for a target (CLAUDE.md / GEMINI.md /
+ * .cursorrules). codex/cline/windsurf read AGENTS.md directly -> no-op.
+ * @param {string} target
+ * @param {string} projectRoot
+ * @param {boolean} dryRun
+ * @param {(msg: string) => void} log
+ * @returns {boolean}
+ */
+function installAdapter(target, projectRoot, dryRun, log) {
+  const rel = ADAPTER_MAP[target];
+  if (!rel) return true; // no adapter for this target
+  const src = readPkgFile(rel, log);
+  if (src === null) return false;
+  return appendOnlyDoctrine(path.join(projectRoot, rel), src, rel, dryRun, log);
 }
 
 /**
@@ -342,6 +386,26 @@ function installEngine(projectRoot, dryRun, log) {
         log(`ERROR: failed to copy bin/maestro.cjs: ${err.message}`);
         ok = false;
       }
+    }
+  }
+
+  // docs/orchestration.md — the on-demand S2-S6 multi-agent protocol the
+  // kernel references. Maestro-owned reference file; copy (refuse symlinks).
+  const srcDocs  = path.join(PKG_ROOT, 'docs', 'orchestration.md');
+  const destDocs = path.join(projectRoot, 'docs', 'orchestration.md');
+  if (dryRun) {
+    log(`[dry-run] would write ${destDocs}`);
+  } else if (isSymlink(destDocs)) {
+    log(`ERROR: docs/orchestration.md is a symlink — refusing: ${destDocs}`);
+    ok = false;
+  } else {
+    try {
+      fs.mkdirSync(path.dirname(destDocs), { recursive: true });
+      fs.writeFileSync(destDocs, fs.readFileSync(srcDocs));
+      log(`[doctrine] copied ${destDocs}`);
+    } catch (err) {
+      log(`ERROR: failed to copy docs/orchestration.md: ${err.message}`);
+      ok = false;
     }
   }
 
@@ -461,13 +525,14 @@ function run(argv) {
 
   let anyError = false;
 
-  // 1. Doctrine
+  // 1. Doctrine — portable AGENTS.md kernel + this target's runtime adapter.
   if (!installDoctrine(project, dryRun, log)) anyError = true;
+  if (!installAdapter(target, project, dryRun, log)) anyError = true;
 
-  // 2. Engine
+  // 2. Engine — frontier/ + bin/maestro.cjs + docs/orchestration.md.
   if (!installEngine(project, dryRun, log)) anyError = true;
 
-  // 3. Wrapper (skip if no specific target detected)
+  // 3. Wrapper — this target's /frontier command (skip if no target detected).
   if (target !== 'none') {
     if (!installWrapper(target, project, userGlobal, dryRun, log)) anyError = true;
   }
