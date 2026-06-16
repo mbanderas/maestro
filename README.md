@@ -226,7 +226,7 @@ Portable everywhere, Codex included: `node settings/cli.cjs status | list | help
 
 Maestro no longer pins a plugin version. The marketplace always resolves to the latest `main`, so updating is a single refresh — no version bump needed in any file.
 
-### Claude Code (recommended)
+### Claude Code 
 
 `/maestro:update` is the one-command path — it pulls the latest marketplace code, reports what changed, and tells you when to reload:
 
@@ -242,8 +242,6 @@ It can't run the reload for you (a slash command can't invoke another slash comm
 ```
 
 `/reload-plugins` applies the update in the running session; if Claude Code warns that a restart is required, restart it. Non-interactive equivalent of the pull: `claude plugin marketplace update maestro`.
-
-> **Note:** There is no `/plugin update <name>` command in Claude Code. Use `/maestro:update`, or `/plugin marketplace update maestro` + `/reload-plugins`.
 
 ### Codex / Cursor (portable installs, no plugin system)
 
