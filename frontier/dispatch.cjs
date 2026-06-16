@@ -222,14 +222,18 @@ function spawnOne(prompt, adapter, opts) {
  * @param {string} prompt
  * @param {string[]} modelIds
  * @param {{ adapters: object, timeoutMs: number, concurrency: number }} cfg
- * @param {{ fusionDepth?: number, concurrency?: number }} [opts]
+ * @param {{ fusionDepth?: number, concurrency?: number, onProgress?: function }} [opts]
  * @returns {Promise<import('./schema.cjs').PanelResponse[]>}
  */
 async function fanOut(prompt, modelIds, cfg, opts) {
-  const fusionDepth = (opts && opts.fusionDepth != null) ? opts.fusionDepth : 1;
-  const concurrency = (opts && opts.concurrency != null)
+  const fusionDepth  = (opts && opts.fusionDepth  != null) ? opts.fusionDepth  : 1;
+  const concurrency  = (opts && opts.concurrency  != null)
     ? opts.concurrency
     : Math.min(modelIds.length, (cfg && cfg.concurrency) || 4);
+  const onProgress   = (opts && typeof opts.onProgress === 'function') ? opts.onProgress : null;
+
+  const total = modelIds.length;
+  let done = 0;
 
   const settled = await mapLimit(modelIds, concurrency, (id) => {
     const adapter = cfg && cfg.adapters && cfg.adapters[id];
@@ -237,6 +241,14 @@ async function fanOut(prompt, modelIds, cfg, opts) {
     return spawnOne(prompt, adapter, {
       timeoutMs: (cfg && cfg.timeoutMs) || 180000,
       fusionDepth,
+    }).then((result) => {
+      done++;
+      if (onProgress) {
+        try {
+          onProgress({ phase: 'panel-progress', done, total, model: result.model, ms: result.durationMs });
+        } catch (_) {}
+      }
+      return result;
     });
   });
 

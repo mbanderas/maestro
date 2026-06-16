@@ -149,7 +149,34 @@ async function cmdRun(argv, scope) {
     process.exit(0);
   }
 
-  const result = await runFrontier({ prompt, state });
+  function onProgress(ev) {
+    switch (ev.phase) {
+      case 'panel-start':
+        process.stderr.write('⚡ Activating Frontier Intelligence\n');
+        process.stderr.write('Fanning prompt to the panel — ' + ev.models.join(' \xb7 ') + '\n');
+        break;
+      case 'panel-progress':
+        process.stderr.write('Panel responding… ' + ev.done + '/' + ev.total + ' in\n');
+        break;
+      case 'judge-start':
+        process.stderr.write('Convening the judge (' + ev.model + ')\n');
+        break;
+      case 'synth-start':
+        process.stderr.write('Synthesizing the verdict\n');
+        break;
+      case 'degraded':
+        process.stderr.write('Frontier degraded — relaying best available (' + ev.failed + ' down)\n');
+        break;
+      case 'done':
+        process.stderr.write('Frontier verdict ready — ' + ev.models + ' models \xb7 ' + Math.round(ev.ms / 1000) + 's\n');
+        break;
+      case 'single-start':
+        process.stderr.write('⚡ Activating Frontier Intelligence (single \xb7 ' + ev.model + ')\n');
+        break;
+    }
+  }
+
+  const result = await runFrontier({ prompt, state, deps: { onProgress } });
 
   if (result.status === 'error') {
     process.stderr.write('ERROR [' + result.failure_reason + ']: ' + result.error + '\n');

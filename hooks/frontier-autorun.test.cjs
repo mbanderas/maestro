@@ -219,6 +219,26 @@ out = runHook(
 check('FUSION_DEPTH=1 codex -> empty stdout', out === '');
 check('FUSION_DEPTH=1 -> engine module not required', !fs.existsSync(requireSentinel));
 
+// 16. Banner instruction: single mode context includes the branded banner line.
+setState({ mode: 'single', model: 'opus' });
+out = runHook({ hook_event_name: 'UserPromptSubmit', prompt: 'explain pooling' });
+check('banner: context includes ⚡ Frontier',
+  (ctx(out) || '').includes('⚡ Frontier'));
+check('banner: context includes model count',
+  (ctx(out) || '').includes('1 models'));
+check('banner: context includes seconds',
+  /\d+s/.test(ctx(out) || ''));
+check('banner: context includes relay instruction',
+  (ctx(out) || '').includes('Begin your response with this exact'));
+
+// 17. Banner instruction: fusion mode context includes the preset header.
+setState({ mode: 'fusion', preset: 'opus-duo' });
+out = runHook({ hook_event_name: 'UserPromptSubmit', prompt: 'explain fusion pooling' });
+check('banner fusion: context includes opus-duo',
+  (ctx(out) || '').includes('opus-duo'));
+check('banner fusion: context includes ⚡ Frontier',
+  (ctx(out) || '').includes('⚡ Frontier'));
+
 fs.rmSync(tmp, { recursive: true, force: true });
 
 if (failures) { console.error(failures + ' failure(s)'); process.exit(1); }

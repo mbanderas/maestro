@@ -49,6 +49,30 @@ function run(args, xdgDir, opts) {
   }
 }
 
+// ---------- helpers for progress tests ----------
+
+function makeTmpDirGlobal() {
+  return fs.mkdtempSync(path.join(os.tmpdir(), 'frontier-cli-progress-test-'));
+}
+
+function runWithStderr(args, xdgDir, env) {
+  const { spawnSync } = require('child_process');
+  const r = spawnSync(
+    process.execPath,
+    [cliPath].concat(args),
+    {
+      env: { ...process.env, XDG_CONFIG_HOME: xdgDir, ...(env || {}) },
+      encoding: 'utf8',
+      stdio: ['pipe', 'pipe', 'pipe'],
+    }
+  );
+  return {
+    code: r.status != null ? r.status : 1,
+    stdout: r.stdout || '',
+    stderr: r.stderr || '',
+  };
+}
+
 // ---------- tests ----------
 
 function runTests() {
@@ -155,6 +179,37 @@ function runTests() {
     const r5 = run(['adopt', '--scope', 'cc-test9999'], dir2);
     check('(h) adopt missing legacy exit 2', r5.code === 2, 'exit code ' + r5.code);
     check('(h) refusal names missing-legacy', r5.stderr.includes('missing-legacy'), 'stderr: ' + r5.stderr.trim());
+  }
+
+  // (i) single mode run emits progress lines to stderr
+  {
+    const dir = makeTmpDirGlobal();
+    // Create a fake claude stub that returns a valid claude-json response.
+    const fakeClaude = path.join(dir, 'fake-claude.cjs');
+    fs.writeFileSync(fakeClaude,
+      "#!/usr/bin/env node\n'use strict';\n" +
+      "process.stdout.write(JSON.stringify({ is_error: false, result: 'ANSWER' }));\n");
+    run(['mode', 'single', '--model', 'opus'], dir);
+    const r = runWithStderr(['run', 'hello world'], dir, { MAESTRO_CLAUDE_BIN: fakeClaude });
+    check('(i) single run exit 0', r.code === 0, 'exit ' + r.code + ' stderr: ' + r.stderr.trim());
+    check('(i) single-start progress in stderr',
+      r.stderr.includes('Activating Frontier Intelligence'),
+      'stderr: ' + r.stderr.trim());
+    check('(i) done progress in stderr',
+      r.stderr.includes('Frontier verdict ready'),
+      'stderr: ' + r.stderr.trim());
+    check('(i) answer in stdout', r.stdout.trim() === 'ANSWER', 'stdout: ' + r.stdout.trim());
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+
+  // (j) absent onProgress: mode=off path unchanged
+  {
+    const dir = makeTmpDir();
+    // mode=off -> no progress output, just "Frontier off" message
+    const r = run(['run', 'hello'], dir);
+    check('(j) off exit 0 still works', r.code === 0, 'exit ' + r.code);
+    check('(j) off stdout unchanged',
+      r.stdout.includes('Frontier off'), 'stdout: ' + r.stdout.trim());
   }
 
   // ---------- report ----------

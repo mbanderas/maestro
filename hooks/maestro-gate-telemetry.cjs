@@ -34,7 +34,9 @@ try { data = JSON.parse(fs.readFileSync(0, 'utf8')); } catch { process.exit(0); 
 // verdict line too and record verdict vs spawned separately; mismatch
 // flags either direction (multi verdict with 0 spawns, single verdict
 // with spawns). Last verdict line wins (re-gated mid-session).
-const verdictRe = /GATE:\s*files=\S+\s+concerns=\S+\s*->\s*(single|multi)-agent/;
+// Matches BOTH the legacy `GATE: files=...` line and the rebranded
+// `Maestro · frontier <on|off> — files=...` badge line.
+const verdictRe = /(?:GATE|Maestro)[:\s·].*?files=\S+\s+concerns=\S+\s*->\s*(single|multi)-agent/;
 let agentCount = 0;
 let verdict = null;
 if (data.transcript_path && fs.existsSync(data.transcript_path)) {

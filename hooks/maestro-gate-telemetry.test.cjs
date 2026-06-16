@@ -57,6 +57,14 @@ const noVerdictTx = transcript('no-verdict.jsonl', [
   { type: 'user', message: { content: [{ type: 'text', text: 'fix typo' }] } },
   { type: 'assistant', message: { content: [{ type: 'tool_use', name: 'Edit', input: { file_path: 'a.ts' } }] } }
 ]);
+// Rebranded badge verdict line (frontier off) — must parse like the legacy GATE: line.
+const newFormatTx = transcript('new-format.jsonl', [
+  { type: 'user', message: { content: [{ type: 'text', text: 'build the feature' }] } },
+  say('Maestro · frontier off — files=6 concerns=2 -> multi-agent — y'),
+  spawn('Task'),
+  spawn('Agent'),
+  say('done')
+]);
 
 let failures = 0;
 function check(name, cond) {
@@ -97,14 +105,20 @@ runHook({ transcript_path: noVerdictTx, cwd: tmp, session_id: 's2c', reason: 'cl
 rows = readRows();
 check('no verdict line -> verdict null, no mismatch', rows[3].verdict === null && rows[3].mismatch === false);
 
+// 3d. Backward compat: the rebranded `Maestro · frontier off — ...` line parses too.
+runHook({ transcript_path: newFormatTx, cwd: tmp, session_id: 's2d', reason: 'clear' }, { MAESTRO_TELEMETRY: '1' });
+rows = readRows();
+check('new Maestro badge line -> verdict multi, 2 spawned, no mismatch',
+  rows[4].verdict === 'multi' && rows[4].agent_count === 2 && rows[4].mismatch === false);
+
 // 4. Missing transcript: still records (gate=single, count 0), no crash.
 runHook({ transcript_path: path.join(tmp, 'missing.jsonl'), cwd: tmp, session_id: 's3', reason: 'logout' }, { MAESTRO_TELEMETRY: '1' });
 rows = readRows();
-check('missing transcript -> row with 0 agents', rows.length === 5 && rows[4].agent_count === 0);
+check('missing transcript -> row with 0 agents', rows.length === 6 && rows[5].agent_count === 0);
 
 // 5. Garbage stdin with opt-in: exit 0, no new row.
 runHook('not json', { MAESTRO_TELEMETRY: '1' });
-check('garbage stdin -> no crash, no row', readRows().length === 5);
+check('garbage stdin -> no crash, no row', readRows().length === 6);
 
 fs.rmSync(tmp, { recursive: true, force: true });
 

@@ -72,6 +72,7 @@ run().catch((e) => {
 
 async function run() {
   let result;
+  const runStart = Date.now();
   try {
     const { runFrontier } = require('../frontier/run.cjs');
     result = await runFrontier({ prompt, state });
@@ -79,6 +80,7 @@ async function run() {
     process.stderr.write('frontier-autorun: ' + ((e && e.message) || e) + '\n');
     noop();
   }
+  const runMs = Date.now() - runStart;
 
   if (!result || result.status !== 'ok' || !result.final) {
     if (result && result.status === 'error') {
@@ -88,11 +90,16 @@ async function run() {
     noop();
   }
 
+  const modelCount = result.responses ? result.responses.length : 1;
+  const banner = '⚡ Frontier \xb7 ' + presetHeader(state) + ' \xb7 ' + modelCount + ' models \xb7 ' + Math.round(runMs / 1000) + 's';
+
   const context =
     'MAESTRO FRONTIER AUTORUN — ' + presetHeader(state) + '\n\n' +
     'The Maestro Frontier engine already ran this prompt through the panel ' +
-    'above and produced the answer below. Relay it as your response — you ' +
-    'may reformat for clarity, but do not redo the work or contradict it:\n\n' +
+    'above and produced the answer below. Begin your response with this exact ' +
+    'banner line (verbatim, on its own line): ' + banner + '\n\n' +
+    'Then relay the answer — you may reformat for clarity, but do not redo ' +
+    'the work or contradict it:\n\n' +
     result.final;
 
   // fs.writeSync (synchronous, unbuffered) guarantees the full payload reaches

@@ -34,7 +34,9 @@ console.log('maestro-gate-reminder tests');
 // 1. First prompt of a session: emits gate checklist as additionalContext.
 const s1 = sid(); cleanup.push(markerFor(s1));
 let out = runHook({ session_id: s1, prompt: 'add an export subsystem' });
-check('first prompt -> fires', out.includes('GATE: files='));
+check('first prompt -> fires', out.includes('Maestro · frontier <on|off> — files=<n>'));
+check('teaches the new badge verdict format', out.includes('concerns=<m> -> single-agent | multi-agent'));
+check('injects a live frontier badge line', /Current frontier state for the badge: frontier (off|on \()/.test(out));
 check('valid UserPromptSubmit JSON', (() => {
   try { return JSON.parse(out).hookSpecificOutput.hookEventName === 'UserPromptSubmit'; }
   catch { return false; }
@@ -48,7 +50,7 @@ check('same session again -> silent', out === '');
 // 3. New session: fires again.
 const s2 = sid(); cleanup.push(markerFor(s2));
 out = runHook({ session_id: s2, prompt: 'fix a bug' });
-check('new session -> fires again', out.includes('GATE: files='));
+check('new session -> fires again', out.includes('Maestro · frontier <on|off> — files=<n>'));
 
 // 4. Opt-out env: silent, writes no marker.
 const s3 = sid(); cleanup.push(markerFor(s3));

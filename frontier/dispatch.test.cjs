@@ -214,6 +214,49 @@ check('(g) results[0] ok=true',                  gResults && gResults[0].ok === 
 check('(g) results[1] ok=false (unknown id)',    gResults && gResults[1].ok === false);
 
 // ------------------------------------------------------------------ //
+// (f3) fanOut fires panel-progress per model via onProgress
+// ------------------------------------------------------------------ //
+const stubF3 = stub('f3-progress', `
+const id = process.env.STUB_ID || 'x';
+process.stdout.write(JSON.stringify({is_error:false, result: id}));
+`);
+
+const cfgF3 = {
+  adapters: {
+    m1: adapter(stubF3, { model: 'm1', env: { STUB_ID: 'm1' }, parse: 'claude-json' }),
+    m2: adapter(stubF3, { model: 'm2', env: { STUB_ID: 'm2' }, parse: 'claude-json' }),
+    m3: adapter(stubF3, { model: 'm3', env: { STUB_ID: 'm3' }, parse: 'claude-json' }),
+  },
+  timeoutMs: 5000,
+  concurrency: 3,
+};
+
+const progressEvents = [];
+const f3Results = await fanOut('hello', ['m1', 'm2', 'm3'], cfgF3, {
+  fusionDepth: 1,
+  concurrency: 3,
+  onProgress: (ev) => progressEvents.push(ev),
+});
+check('(f3) fanOut returns 3 results',               f3Results.length === 3);
+check('(f3) panel-progress fired 3 times',           progressEvents.length === 3);
+check('(f3) all events are panel-progress',
+  progressEvents.every(e => e.phase === 'panel-progress'));
+check('(f3) done counts go 1,2,3',
+  progressEvents.map(e => e.done).sort((a, b) => a - b).join(',') === '1,2,3');
+check('(f3) total is 3 on all events',
+  progressEvents.every(e => e.total === 3));
+check('(f3) each event has a model string',
+  progressEvents.every(e => typeof e.model === 'string' && e.model.length > 0));
+check('(f3) each event has numeric ms',
+  progressEvents.every(e => typeof e.ms === 'number'));
+
+// (f4) fanOut without onProgress: unchanged behavior
+const f4Events = [];
+const f4Results = await fanOut('hello', ['m1', 'm2'], cfgF3, { fusionDepth: 1, concurrency: 2 });
+check('(f4) no onProgress — still returns 2 results', f4Results.length === 2);
+check('(f4) no spurious progress events',              f4Events.length === 0);
+
+// ------------------------------------------------------------------ //
 // (h) unsafeForShellArg: pure-function metachar guard (cross-platform)
 // ------------------------------------------------------------------ //
 check('(h) plain prose is safe',          unsafeForShellArg('list three benefits of code review') === false);

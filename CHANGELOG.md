@@ -6,6 +6,40 @@ All notable changes to Maestro are documented here. The format follows
 
 ## [Unreleased]
 
+## [1.5.0] - 2026-06-16
+
+### Added
+
+- **Frontier run progress feedback.** `frontier run` (and any path that
+  surfaces the engine's stderr) now prints a staged progress log as the
+  pipeline advances — `Activating Frontier Intelligence` -> `Fanning prompt
+  to the panel` -> per-model `Panel responding… N/M in` -> `Convening the
+  judge` -> `Synthesizing the verdict` -> `Frontier verdict ready — N models
+  · Xs`, with a degraded variant on partial panel failure. Implemented as an
+  optional, no-op-by-default `onProgress(event)` callback threaded through
+  `runFrontier` (`frontier/run.cjs`) and `fanOut` (`frontier/dispatch.cjs`)
+  and rendered to stderr by `frontier/cli.cjs`; behavior is unchanged when no
+  callback is supplied. The armed autorun (`hooks/frontier-autorun.cjs`) also
+  prefixes its relayed answer with a one-line
+  `⚡ Frontier · <preset> · N models · Xs` banner so a fusion turn is no
+  longer silent.
+
+### Changed
+
+- **Decision Gate verdict line rebranded to a Maestro frontier badge.**
+  The model-emitted S1 verdict changed from
+  `GATE: files=<n> concerns=<m> -> single-agent — <reason>` to
+  `Maestro · frontier <on|off> — files=<n> concerns=<m> -> single-agent — <reason>`.
+  The `frontier <on|off>` badge states the engine state —
+  `frontier on (<mode>/<preset-or-model>)` when armed, else
+  `frontier off`. On Claude Code the `maestro-gate-reminder.cjs` hook now
+  reads the live workspace-scoped frontier state and injects the current
+  badge value into the gate reminder. `maestro-gate-telemetry.cjs` parses
+  both the new badge line and the legacy `GATE:` line, so historical
+  transcripts still audit correctly. Doctrine updated in `AGENTS.md` and
+  `.cursorrules`. The `assets/discipline-demo.svg` README hero now renders
+  the new badge line.
+
 ### Fixed
 
 - **`frontier/dispatch.test.cjs` (f) parallel test de-flaked structurally
