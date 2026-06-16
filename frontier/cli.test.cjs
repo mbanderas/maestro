@@ -113,6 +113,17 @@ function runTests() {
     check('(g) bad judge exit 2', r.code === 2, 'exit code ' + r.code);
   }
 
+  // (g2) chatgpt and chatgpt-duo aliases persist as canonical old names
+  {
+    const dir = makeTmpDir();
+    const r1 = run(['mode', 'fusion', '--preset', 'chatgpt-duo', '--judge', 'chatgpt', '--synth', 'chatgpt'], dir);
+    check('(g2) chatgpt aliases exit 0', r1.code === 0, 'exit ' + r1.code + ' stderr: ' + r1.stderr.trim());
+    const r2 = run(['status'], dir);
+    check('(g2) preset alias canonical', r2.stdout.includes('"preset":"gpt-duo"'), 'stdout: ' + r2.stdout.trim());
+    check('(g2) judge alias canonical', r2.stdout.includes('"judgeModel":"gpt-5.5"'), 'stdout: ' + r2.stdout.trim());
+    check('(g2) synth alias canonical', r2.stdout.includes('"synthModel":"gpt-5.5"'), 'stdout: ' + r2.stdout.trim());
+  }
+
   // (h) adopt: legacy global state -> per-workspace cc-* scope
   {
     const dir = makeTmpDir();

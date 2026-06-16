@@ -1,0 +1,6 @@
+{
+  "name": "maestro",
+  "version": "1.4.4",
+  "description": "Maestro Frontier orchestration, Codex skills, and lifecycle hooks.",
+  "hooks": "./hooks/hooks.json"
+}

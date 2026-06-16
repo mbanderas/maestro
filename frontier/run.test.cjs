@@ -296,9 +296,62 @@ async function runTests() {
       'got ' + (synthCfg && synthCfg.synthModel));
   }
 
+  // (m) chatgpt aliases resolve for panel, judge, and synth in fusion
+  {
+    let panelIds = null;
+    let judgeCfg = null;
+    let synthCfg = null;
+    const result = await runFrontier({
+      prompt: 'hello',
+      state: {
+        mode: 'fusion',
+        preset: 'custom',
+        models: ['chatgpt', 'gemini', 'opus'],
+        judgeModel: 'chatgpt',
+        synthModel: 'chatgpt',
+      },
+      cfg: baseCfg,
+      deps: {
+        fanOut: async (_p, ids) => {
+          panelIds = ids;
+          return [makeOk('gpt-5.5', 'a'), makeOk('gemini', 'b'), makeOk('opus', 'c')];
+        },
+        runJudge: async (_p, _r, cfg) => { judgeCfg = cfg; return VALID_ANALYSIS; },
+        runSynth: async (_p, _b, cfg) => { synthCfg = cfg; return 'FINAL'; },
+      },
+    });
+    check('(m) chatgpt alias fusion ok', result.status === 'ok', 'got ' + result.status);
+    check('(m) panel alias normalized', panelIds && panelIds.join(',') === 'gpt-5.5,gemini,opus',
+      'got ' + (panelIds && panelIds.join(',')));
+    check('(m) judge alias normalized', judgeCfg && judgeCfg.judgeModel === 'gpt-5.5',
+      'got ' + (judgeCfg && judgeCfg.judgeModel));
+    check('(m) synth alias normalized', synthCfg && synthCfg.synthModel === 'gpt-5.5',
+      'got ' + (synthCfg && synthCfg.synthModel));
+  }
+
+  // (n) chatgpt-duo preset alias preserves gpt-duo behavior
+  {
+    let panelIds = null;
+    await runFrontier({
+      prompt: 'hello',
+      state: { mode: 'fusion', preset: 'chatgpt-duo' },
+      cfg: baseCfg,
+      deps: {
+        fanOut: async (_p, ids) => {
+          panelIds = ids;
+          return [makeOk('gpt-5.5', 'a'), makeOk('gpt-5.5', 'b')];
+        },
+        runJudge: async () => VALID_ANALYSIS,
+        runSynth: async () => 'FINAL',
+      },
+    });
+    check('(n) preset alias normalized', panelIds && panelIds.join(',') === 'gpt-5.5,gpt-5.5',
+      'got ' + (panelIds && panelIds.join(',')));
+  }
+
   // ---------- report ----------
   if (failures.length === 0) {
-    process.stdout.write('\nAll ' + 12 + ' cases passed.\n');
+    process.stdout.write('\nAll ' + 14 + ' cases passed.\n');
     process.exit(0);
   } else {
     process.stderr.write('\n' + failures.length + ' failure(s):\n');

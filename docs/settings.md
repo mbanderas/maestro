@@ -15,7 +15,7 @@ The design and the staff-engineer review are recorded in
 | Toggle | Values | What it controls |
 |---|---|---|
 | `terse` | `off`, `lite`, `full`, `ultra` | Output-token reduction (`/maestro:terse`). |
-| `frontier` | `off`; `single:` `opus` / `gpt-5.5` / `gemini`; `fusion:` `opus-duo` / `opus-gpt` / `gpt-duo` / `frontier-trio` / `custom`, each with optional `--judge` / `--synth` | The local multi-CLI fusion engine (`/maestro:frontier`). Any non-`off` value arms auto-run: every prompt is routed through the engine and the answer relayed; `off` disables it. |
+| `frontier` | `off`; `single:` `opus` / `gpt-5.5` / `gemini`; `fusion:` `opus-duo` / `opus-gpt` / `chatgpt-duo` / `frontier-trio` / `custom`, each with optional `--judge` / `--synth` | The local multi-CLI fusion engine (`/maestro:frontier`). Any non-`off` value arms auto-run: every prompt is routed through the engine and the answer relayed; `off` disables it. |
 | `context-bar` | `on`, `off` | The status-line context progress bar (`/maestro:context-bar`). |
 
 The frontier models and presets above are not a second list maintained here:
@@ -72,10 +72,10 @@ path.
 
 ## Codex and any other CLI: the portable command
 
-Codex has no user-hook system, no `AskUserQuestion`, and no way for a plugin
-to draw a picker, so Codex Desktop cannot host an interactive selector. That
-is expected, not a missing feature. On Codex and any other agent, use the
-CLI directly. It is the same writer the Claude Code command calls.
+Codex does not expose Claude Code's `AskUserQuestion` picker UI, so Codex
+Desktop cannot host this interactive selector. That is expected, not a
+missing feature. On Codex and any other agent, use the CLI directly. It is
+the same writer the Claude Code command calls.
 
 ```text
 node settings/cli.cjs status            # all three current values
@@ -86,10 +86,11 @@ node settings/cli.cjs list --json       # machine-readable catalog
 node settings/cli.cjs set terse ultra
 node settings/cli.cjs set context-bar off
 node settings/cli.cjs set frontier fusion:opus-gpt
-node settings/cli.cjs set frontier fusion:opus-gpt --judge opus --synth gpt-5.5
+node settings/cli.cjs set frontier fusion:chatgpt-duo --scope codex-project
+node settings/cli.cjs set frontier fusion:frontier-trio --judge chatgpt --synth chatgpt --scope codex-project
 node settings/cli.cjs set frontier fusion:custom --models opus,gpt-5.5,gemini
 node settings/cli.cjs set frontier single:opus
-node settings/cli.cjs set frontier off
+node settings/cli.cjs set frontier off --scope codex-project
 ```
 
 `set` validates against the same whitelists the existing toggles use and
@@ -111,7 +112,12 @@ store.
 - **frontier**: `<configDir>/frontier-state.<scope>.json`, read and written
   through `frontier/config.cjs`. Claude Code autodetect resolves to a
   per-workspace scope `cc-<8hex>` (SHA-256 of the git project root), so
-  each workspace has its own state file; no scope defaults to
+  each workspace has its own state file. Codex plugin contexts resolve to
+  a separate per-workspace `codex-<8hex>` scope. From a shell in the repo,
+  pass `--scope codex-project` to resolve that same project scope.
+  Project/workspace scope is the recommended default for repo installs;
+  global/user scope is optional when you intentionally want shared state.
+  Passing no scope outside a recognized runtime falls back to the legacy
   `frontier-state.json`.
 - **context-bar**: an empty `.context-bar-disabled` marker next to the
   status-line script named in `statusLine.command` in
@@ -132,16 +138,16 @@ line.
 
 ## Updating the installed plugin
 
-`/maestro:settings` runs from the installed plugin cache, which is pinned to a
-version at `…/.claude/plugins/cache/maestro/maestro/<version>`. After a new
-release, refresh it so the new command and CLI load:
+`/maestro:settings` runs from the installed plugin cache. After a new release,
+refresh it so the new command and CLI load:
 
 ```text
 /plugin marketplace update maestro
-/plugin update maestro
+/reload-plugins
 ```
 
-The cache is keyed by the version in `.claude-plugin/plugin.json` and
-`.claude-plugin/marketplace.json`, so any release that changes the command
-bumps that version; otherwise `/plugin update` sees the same version and does
-nothing.
+Codex installs are refreshed by re-running `maestro install --target codex`
+in the intended scope. The updater refreshes Maestro-managed files, preserves
+user-edited files, and safely migrates older unprefixed Codex skills to the
+current `maestro-frontier`, `maestro-settings`, `maestro-terse`, and
+`maestro-update` names where possible.

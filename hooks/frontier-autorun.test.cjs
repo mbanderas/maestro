@@ -22,6 +22,11 @@ const xdgDir = path.join(tmp, 'xdg');
 fs.mkdirSync(path.join(xdgDir, 'maestro'), { recursive: true });
 const ccScope = 'cc-' + workspaceHash(process.cwd());
 const statePath = path.join(xdgDir, 'maestro', 'frontier-state.' + ccScope + '.json');
+const codexWorkspace = path.join(tmp, 'codex-workspace');
+fs.mkdirSync(path.join(codexWorkspace, '.git'), { recursive: true });
+const codexScope = 'codex-' + workspaceHash(codexWorkspace);
+const codexStatePath = path.join(xdgDir, 'maestro', 'frontier-state.' + codexScope + '.json');
+const legacyStatePath = path.join(xdgDir, 'maestro', 'frontier-state.json');
 
 // Fake claude bin: a .cjs node script emitting claude-json with a fixed
 // result. dispatch runs a .cjs bin through node cross-platform, so single
@@ -32,7 +37,11 @@ fs.writeFileSync(fakeClaude,
   "process.stdout.write(JSON.stringify({ is_error: false, result: 'FAKE_ENGINE_ANSWER' }));\n");
 
 function setState(obj) { fs.writeFileSync(statePath, JSON.stringify(obj)); }
+function setCodexState(obj) { fs.writeFileSync(codexStatePath, JSON.stringify(obj)); }
 function clearState() { try { fs.unlinkSync(statePath); } catch {} }
+function clearCodexState() { try { fs.unlinkSync(codexStatePath); } catch {} }
+function setLegacyState(obj) { fs.writeFileSync(legacyStatePath, JSON.stringify(obj)); }
+function clearLegacyState() { try { fs.unlinkSync(legacyStatePath); } catch {} }
 
 function runHook(payload, env) {
   return execFileSync(process.execPath, [HOOK], {
@@ -44,6 +53,11 @@ function runHook(payload, env) {
       MAESTRO_CLAUDE_BIN: fakeClaude,
       FUSION_DEPTH: '',
       MAESTRO_SCOPE: '',
+      CLAUDE_PLUGIN_ROOT: path.join(tmp, 'claude-plugin-root'),
+      CLAUDECODE: '',
+      CLAUDE_PROJECT_DIR: '',
+      PLUGIN_ROOT: '',
+      PLUGIN_DATA: '',
       ...env,
     },
   });
@@ -135,6 +149,75 @@ out = runHook({ hook_event_name: 'UserPromptSubmit', prompt: 'explain pooling' }
 check('FUSION_DEPTH=0 -> runs (not a child)', (ctx(out) || '').includes('FAKE_ENGINE_ANSWER'));
 out = runHook({ hook_event_name: 'UserPromptSubmit', prompt: 'explain pooling' }, { FUSION_DEPTH: '2' });
 check('FUSION_DEPTH=2 -> no-op (nested child)', out === '');
+
+// 12. Codex plugin env: off by default for a project/workspace scope.
+clearCodexState();
+clearLegacyState();
+out = runHook(
+  { hook_event_name: 'UserPromptSubmit', cwd: codexWorkspace, prompt: 'codex default off' },
+  {
+    CLAUDE_PLUGIN_ROOT: '',
+    PLUGIN_ROOT: path.join(tmp, 'plugin-root'),
+    PLUGIN_DATA: path.join(tmp, 'plugin-data'),
+  }
+);
+check('codex plugin no state -> empty stdout', out === '');
+
+// 13. Codex plugin env: armed project/workspace state autoruns.
+setCodexState({ mode: 'single', model: 'opus' });
+out = runHook(
+  { hook_event_name: 'UserPromptSubmit', cwd: codexWorkspace, prompt: 'codex armed prompt' },
+  {
+    CLAUDE_PLUGIN_ROOT: '',
+    PLUGIN_ROOT: path.join(tmp, 'plugin-root'),
+    PLUGIN_DATA: path.join(tmp, 'plugin-data'),
+  }
+);
+check('codex plugin armed -> UserPromptSubmit JSON', eventName(out) === 'UserPromptSubmit');
+check('codex plugin armed -> injects engine answer', (ctx(out) || '').includes('FAKE_ENGINE_ANSWER'));
+
+// 14. Codex project scope is distinct from legacy default and Claude cc scope.
+clearCodexState();
+setLegacyState({ mode: 'single', model: 'opus' });
+setState({ mode: 'single', model: 'opus' });
+out = runHook(
+  { hook_event_name: 'UserPromptSubmit', cwd: codexWorkspace, prompt: 'codex isolation prompt' },
+  {
+    CLAUDE_PLUGIN_ROOT: '',
+    PLUGIN_ROOT: path.join(tmp, 'plugin-root'),
+    PLUGIN_DATA: path.join(tmp, 'plugin-data'),
+  }
+);
+check('codex plugin ignores legacy/default and cc armed states', out === '');
+clearLegacyState();
+clearState();
+
+// 15. Recursion guard exits before requiring the Frontier engine.
+const requireSentinel = path.join(tmp, 'engine-required.txt');
+const requireGuard = path.join(tmp, 'require-guard.cjs');
+fs.writeFileSync(requireGuard,
+  "'use strict';\n" +
+  "const fs = require('fs');\n" +
+  "const Module = require('module');\n" +
+  "const orig = Module._load;\n" +
+  "Module._load = function(request) {\n" +
+  "  if (String(request).includes('frontier/run.cjs')) fs.writeFileSync(process.env.REQUIRE_SENTINEL, 'required');\n" +
+  "  return orig.apply(this, arguments);\n" +
+  "};\n");
+setCodexState({ mode: 'single', model: 'opus' });
+out = runHook(
+  { hook_event_name: 'UserPromptSubmit', cwd: codexWorkspace, prompt: 'codex recursive prompt' },
+  {
+    CLAUDE_PLUGIN_ROOT: '',
+    PLUGIN_ROOT: path.join(tmp, 'plugin-root'),
+    PLUGIN_DATA: path.join(tmp, 'plugin-data'),
+    FUSION_DEPTH: '1',
+    NODE_OPTIONS: '--require=' + JSON.stringify(requireGuard),
+    REQUIRE_SENTINEL: requireSentinel,
+  }
+);
+check('FUSION_DEPTH=1 codex -> empty stdout', out === '');
+check('FUSION_DEPTH=1 -> engine module not required', !fs.existsSync(requireSentinel));
 
 fs.rmSync(tmp, { recursive: true, force: true });
 
