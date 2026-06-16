@@ -290,13 +290,18 @@ function mkTmpTracked() {
 
 // ---- test 10: codex skills install to --user scope ----
 {
+  const OLD_HOME_ENV = process.env.HOME;
   const OLD_HOME = process.env.USERPROFILE;
   const HOME = mkTmpTracked();
+  process.env.HOME = HOME;
   process.env.USERPROFILE = HOME;
 
   const code = run(['--target', 'codex', '--project', mkTmpTracked(), '--user']);
 
-  process.env.USERPROFILE = OLD_HOME;
+  if (OLD_HOME_ENV === undefined) delete process.env.HOME;
+  else process.env.HOME = OLD_HOME_ENV;
+  if (OLD_HOME === undefined) delete process.env.USERPROFILE;
+  else process.env.USERPROFILE = OLD_HOME;
 
   const skillPath = (name) => path.join(HOME, '.agents', 'skills', name, 'SKILL.md');
   check('10a: codex --user install returns 0', code === 0);
