@@ -26,6 +26,8 @@
     "frontier/synthesize.cjs",
     "scripts/install.cjs",
     ".codex-plugin/",
+    ".agents/plugins/marketplace.json",
+    "skills/",
     "AGENTS.md",
     "CLAUDE.md",
     "GEMINI.md",

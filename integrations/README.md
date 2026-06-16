@@ -1,9 +1,9 @@
 # Maestro integrations — slash commands for other CLIs
 
 The Claude Code plugin ships Maestro's slash commands (`/maestro:*`) plus
-enforcement hooks and auto-run. Codex CLI/Desktop can use Codex-native skills,
-trusted project config, and plugin-bundled hooks; after the Maestro Codex plugin
-is installed, enabled, and trusted, Frontier can auto-route normal Codex prompts
+enforcement hooks and auto-run. Codex CLI/Desktop can install Maestro as a
+native plugin from the repo marketplace; after the Maestro Codex plugin is
+installed, enabled, and trusted, Frontier can auto-route normal Codex prompts
 when you arm a project/workspace scope. Other agent CLIs mostly support
 **custom slash commands** as prompt templates: they inject
 instruction text, but do not run wrapper logic, gate tools, or auto-run every
@@ -23,7 +23,7 @@ loads on demand.
 | Runtime | Source in this repo | Install to | Invoke |
 |---|---|---|---|
 | Cursor | `integrations/cursor/commands/frontier.md` | `.cursor/commands/frontier.md` (per-repo) or `~/.cursor/commands/` (global) | `/frontier` |
-| Codex (CLI + Desktop) | `integrations/codex/skills/maestro-frontier/SKILL.md` (plus `maestro-terse`, `maestro-settings`, `maestro-update`) | `.agents/skills/<name>/SKILL.md` (project/workspace) or `~/.agents/skills/<name>/SKILL.md` (global/user) | ask for the Maestro skill |
+| Codex (CLI + Desktop) | `skills/maestro-frontier/SKILL.md` in the plugin; `integrations/codex/skills/` mirrors the same files for portable installs | bundled by the `maestro@maestro` Codex plugin; portable fallback copies to `.agents/skills/<name>/SKILL.md` | ask for the Maestro skill |
 
 After adding a file, restart the tool or open a new chat so it loads.
 
@@ -84,13 +84,15 @@ needed per release.
   armed. Cursor, Gemini, Cline, and Windsurf/Devin command ports are manual
   shortcuts unless those runtimes add an equivalent trusted hook surface. Use
   `maestro frontier run "<prompt>" ...` there for one-off panels.
-- **Codex uses skills, not prompts.** `maestro install --target codex` installs the
-  `maestro-frontier`, `maestro-terse`, `maestro-settings`, and `maestro-update`
-  skills to `.agents/skills/<name>/SKILL.md` (project/workspace) or
-  `~/.agents/skills/<name>/SKILL.md` (global/user). Safe migration/update refreshes
-  Maestro-managed files, preserves user-edited files, and migrates older unprefixed
-  skill names where safe. Deprecated `~/.codex/prompts/*.md` prompt files remain
-  compatibility bridges only.
+- **Codex uses plugin-bundled skills, not prompts.** Install the marketplace
+  once with `codex plugin marketplace add mbanderas/maestro`, then install
+  `maestro@maestro` with `codex plugin add maestro@maestro`. The portable
+  fallback `maestro install --target codex` still copies the
+  `maestro-frontier`, `maestro-terse`, `maestro-settings`, and
+  `maestro-update` skills to `.agents/skills/<name>/SKILL.md`
+  (project/workspace) or `~/.agents/skills/<name>/SKILL.md` (global/user).
+  Deprecated `~/.codex/prompts/*.md` prompt files remain compatibility bridges
+  only.
 - **Codex per-repo skill path:** `.agents/skills/<name>/SKILL.md` is the
   repo-scoped option for Codex skills. The global path is
   `~/.agents/skills/<name>/SKILL.md`.
@@ -99,9 +101,10 @@ needed per release.
   instructs Codex to lead its reply with `Maestro Frontier ON (<label>)` —
   `single · <model>` or `fusion · <preset>`. When mode is off, no indicator line
   appears. This is Codex-scoped only and has no effect on Claude Code.
-- **Requires `frontier/` and `bin/maestro.cjs` in the project.** The command runs
-  `maestro frontier ...` (or `node bin/maestro.cjs frontier ...`) from the repo root,
-  so the engine must have been copied in during install.
+- **Engine location.** Plugin installs run the bundled engine from the
+  installed plugin; portable/manual installs run `maestro frontier ...` (or
+  `node bin/maestro.cjs frontier ...`) from the repo root, so the engine must
+  have been copied in during install.
 - **Windows + Gemini judge/synth.** `gemini` is fine as a panel member, but a poor
   `--judge`/`--synth` on Windows (its arg-passing rejects the newline-bearing
   judge/synth prompts, so the stage degrades). Use `opus` or `gpt-5.5` for
