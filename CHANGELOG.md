@@ -8,6 +8,16 @@ All notable changes to Maestro are documented here. The format follows
 
 ### Fixed
 
+- **`frontier/dispatch.test.cjs` (f) parallel test de-flaked structurally
+  (Windows CI).** The case asserted an absolute wall-clock bound on parallel
+  `fanOut` (`elapsed < 900ms`); cold Windows process-spawn jitter is
+  unbounded and additive, so it re-flaked despite the earlier 400→900ms
+  bump. Replaced the absolute threshold with a relative comparison: run the
+  same stubs serially (`concurrency:1`) and in parallel (`concurrency:2`) and
+  assert `serialMs - parallelMs > 250ms`. The signal is ~one stub sleep
+  (500ms) and spawn jitter hits both runs and cancels, so no wall-clock
+  bound needs re-tuning. Order/content assertions unchanged.
+
 - **Per-CLI Frontier state isolation; Claude Code now per-workspace.**
   The engine previously stored armed mode/preset in a single global
   `frontier-state.json`, so arming in one CLI silently changed it in every

@@ -125,10 +125,13 @@ check('(e) content includes PX',           e.content.includes('PX'));
 // ------------------------------------------------------------------ //
 // (f) fanOut bounded-parallel + order preserved
 // ------------------------------------------------------------------ //
-// Stub sleeps ~500ms then emits its model id as result. The sleep is kept
-// well above per-process spawn jitter (notably high/cold on Windows CI) so the
-// parallel(~1x) vs serial(~2x) signal survives: parallel elapses ~500ms+jitter,
-// serial would elapse ~1000ms+, comfortably either side of the 900ms threshold.
+// Stub sleeps ~500ms then emits its model id as result. The sleep is the
+// parallelism signal: run the SAME stubs serially (concurrency 1) and in
+// parallel (concurrency 2), then assert parallel beats serial by ~one sleep.
+// serial ~= 2*sleep + spawn, parallel ~= sleep + spawn, so (serial - parallel)
+// ~= one sleep (500ms) regardless of per-process spawn jitter — which is high
+// and unbounded on cold Windows CI and hits BOTH runs, so it cancels. This
+// replaces a fragile absolute wall-clock threshold that re-flaked on Windows.
 const stubF = stub('f-parallel', `
 const id = process.env.STUB_ID || 'x';
 setTimeout(() => {
@@ -145,16 +148,21 @@ const cfgF = {
   concurrency: 2,
 };
 
+const tSerial0 = Date.now();
+await fanOut('prompt', ['a', 'b'], cfgF, { fusionDepth: 1, concurrency: 1 });
+const serialMs = Date.now() - tSerial0;
+
 const t0 = Date.now();
 const fResults = await fanOut('prompt', ['a', 'b'], cfgF, { fusionDepth: 1, concurrency: 2 });
-const elapsed = Date.now() - t0;
+const parallelMs = Date.now() - t0;
 
 check('(f) fanOut returns 2 results',        fResults.length === 2);
 check('(f) order: results[0].model===a',     fResults[0].model === 'a');
 check('(f) order: results[1].model===b',     fResults[1].model === 'b');
 check('(f) order: results[0].content===a',   fResults[0].content === 'a');
 check('(f) order: results[1].content===b',   fResults[1].content === 'b');
-check('(f) parallel: elapsed < 900ms',       elapsed < 900);
+// signal is ~one sleep (500ms); 250ms margin clears run-to-run jitter variance.
+check('(f) parallel beats serial by >250ms', serialMs - parallelMs > 250);
 
 // ------------------------------------------------------------------ //
 // (f2) fanOut passes FUSION_DEPTH to mixed codex/claude/gemini children
