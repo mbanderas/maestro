@@ -57,10 +57,19 @@ async function runFrontier({ prompt, state, cfg, deps }) {
   deps = deps || {};
   state = normalizeStateAliases(state || {});
 
-  const spawnOne  = deps.spawnOne  || dispatch.spawnOne;
-  const fanOut    = deps.fanOut    || dispatch.fanOut;
-  const runJudge  = deps.runJudge  || judge.runJudge;
-  const runSynth  = deps.runSynth  || synthesize.runSynth;
+  const spawnOne   = deps.spawnOne   || dispatch.spawnOne;
+  const fanOut     = deps.fanOut     || dispatch.fanOut;
+  const runJudge   = deps.runJudge   || judge.runJudge;
+  const runSynth   = deps.runSynth   || synthesize.runSynth;
+  const onProgress = (deps && typeof deps.onProgress === 'function') ? deps.onProgress : null;
+
+  const startMs = Date.now();
+
+  /** Emit a progress event; swallows any error thrown by the callback. */
+  function emit(eventObj) {
+    if (!onProgress) return;
+    try { onProgress(eventObj); } catch (_) {}
+  }
 
   const rawDepth = parseInt(process.env.FUSION_DEPTH || '0', 10);
   const depth    = isNaN(rawDepth) ? 0 : rawDepth;
@@ -95,6 +104,7 @@ async function runFrontier({ prompt, state, cfg, deps }) {
         failure_reason: 'unexpected_error',
       };
     }
+    emit({ phase: 'single-start', model: state.model });
     const resp = await spawnOne(prompt, adapter, { timeoutMs: cfg.timeoutMs, fusionDepth: depth + 1 });
     if (!resp.ok) {
       return {
@@ -105,6 +115,7 @@ async function runFrontier({ prompt, state, cfg, deps }) {
         failure_reason: classify([toFailedModel(resp)]),
       };
     }
+    emit({ phase: 'done', models: 1, ms: Date.now() - startMs });
     return { status: 'ok', mode: 'single', model: state.model, final: resp.content, response: resp };
   }
 
@@ -138,9 +149,12 @@ async function runFrontier({ prompt, state, cfg, deps }) {
       }
     }
 
-    const panel  = await fanOut(prompt, panelIds, cfg, { fusionDepth: depth + 1 });
+    emit({ phase: 'panel-start', models: panelIds });
+    const panel  = await fanOut(prompt, panelIds, cfg, { fusionDepth: depth + 1, onProgress });
     const ok     = panel.filter(p => p.ok);
     const failed = panel.filter(p => !p.ok);
+
+    emit({ phase: 'panel-done', ok: ok.length, failed: failed.length });
 
     if (ok.length === 0) {
       return {
@@ -160,12 +174,19 @@ async function runFrontier({ prompt, state, cfg, deps }) {
       judgeModel: resolveJudgeModel(state, cfg),
       synthModel: resolveSynthModel(state, cfg),
     };
+    emit({ phase: 'judge-start', model: stageCfg.judgeModel });
     const analysis = await runJudge(prompt, ok, stageCfg);
+    emit({ phase: 'synth-start', model: stageCfg.synthModel });
     let final = await runSynth(prompt, { analysis, responses: ok }, stageCfg);
     if (!final) {
       // synth-fail fallback: longest ok response
       final = ok.reduce((a, b) => b.content.length > a.content.length ? b : a).content;
     }
+
+    if (failed.length > 0 && ok.length > 0) {
+      emit({ phase: 'degraded', failed: failed.length });
+    }
+    emit({ phase: 'done', models: ok.length, ms: Date.now() - startMs });
 
     const result = { status: 'ok', mode: 'fusion', preset: state.preset, final, responses: ok };
     if (analysis !== undefined) result.analysis = analysis;
