@@ -1,0 +1,41 @@
+# Publish: npm publish on a pushed v* tag.
+# Tag the release commit (e.g. `git tag v1.4.6 && git push origin v1.4.6`).
+# Requires repo secret NPM_TOKEN (npm Automation/granular publish token).
+name: Publish
+
+on:
+  push:
+    tags: ['v*']
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write   # npm provenance
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Tag matches package.json version
+        shell: bash
+        run: |
+          tag="${GITHUB_REF_NAME#v}"
+          pkg="$(node -p "require('./package.json').version")"
+          if [ "$tag" != "$pkg" ]; then
+            echo "FAIL tag v$tag != package.json $pkg" >&2
+            exit 1
+          fi
+          echo "version $pkg matches tag"
+
+      - name: Tests
+        run: npm test
+
+      - name: Publish
+        run: npm publish --access public --provenance
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
