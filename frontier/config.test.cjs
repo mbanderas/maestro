@@ -32,7 +32,15 @@ function expectedClaudeWorkspaceScope(cwd) {
     last = normalized;
     normalized = path.dirname(normalized);
   }
-  normalized = normalized.replace(/\\/g, '/').toLowerCase().replace(/\/+$/g, '');
+  // Mirror production workspaceHash(): lowercase ONLY on win32 (case-insensitive
+  // FS). On case-sensitive Linux/macOS the path case is preserved, otherwise a
+  // mixed-case mkdtemp dir diverges from production and fails the *matches
+  // helper* checks on those platforms only.
+  if (process.platform === 'win32') {
+    normalized = normalized.replace(/\\/g, '/').toLowerCase().replace(/\/+$/g, '');
+  } else {
+    normalized = normalized.replace(/\\/g, '/').replace(/\/+$/g, '');
+  }
   return 'cc-' + crypto.createHash('sha256').update(normalized).digest('hex').slice(0, 8);
 }
 
