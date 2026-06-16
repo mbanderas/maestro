@@ -146,8 +146,15 @@ refresh it so the new command and CLI load:
 /reload-plugins
 ```
 
-Codex installs are refreshed by re-running `maestro install --target codex`
-in the intended scope. The updater refreshes Maestro-managed files, preserves
-user-edited files, and safely migrates older unprefixed Codex skills to the
-current `maestro-frontier`, `maestro-settings`, `maestro-terse`, and
-`maestro-update` names where possible.
+Codex plugin installs are refreshed with:
+
+```text
+codex plugin marketplace upgrade maestro
+codex plugin add maestro@maestro
+```
+
+Portable/manual Codex installs can still be refreshed by re-running
+`maestro install --target codex` in the intended scope. The updater refreshes
+Maestro-managed files, preserves user-edited files, and safely migrates older
+unprefixed Codex skills to the current `maestro-frontier`,
+`maestro-settings`, `maestro-terse`, and `maestro-update` names where possible.

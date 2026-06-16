@@ -34,22 +34,49 @@
 /plugin install maestro@maestro
 ```
 
-**Codex CLI / Desktop** — use the npm/GitHub installer for project doctrine and skills. Frontier autorun also requires installing/enabling the Maestro Codex plugin and trusting its hooks; this package now ships the `.codex-plugin/plugin.json` manifest and hook bundle Codex needs.
+**Codex CLI / Desktop** — native Codex plugin via the Maestro repo
+marketplace (skills, hooks, and Frontier auto-run after you trust hooks):
+
+```text
+codex plugin marketplace add mbanderas/maestro
+codex plugin add maestro@maestro
+```
 
 **Other CLI / Desktop apps** — run the matching line in that tool's terminal, or ask its agent to run it. These integrations are prompt/skill/workflow shortcuts around the portable CLI unless the tool has native hook support.
 
 | Tool | Install (run inside the tool) |
 |------|-------------------------------|
-| Codex (CLI / Desktop) | `npx github:mbanderas/maestro install --target codex` for project skills; enable the Maestro Codex plugin for autorun |
+| Codex (CLI / Desktop) | `codex plugin marketplace add mbanderas/maestro`, then `codex plugin add maestro@maestro` |
 | Cursor | `npx github:mbanderas/maestro install --target cursor` |
 | Gemini CLI | `npx github:mbanderas/maestro install --target gemini` |
 | Cline | `npx github:mbanderas/maestro install --target cline` |
 | Windsurf / Devin | `npx github:mbanderas/maestro install --target windsurf` |
 | Not sure / auto-detect | `npx github:mbanderas/maestro install --target auto` |
 
-Per tool it lays down `AGENTS.md` + that tool's adapter (`CLAUDE.md` / `GEMINI.md` / `.cursorrules`; Codex, Cline, and Windsurf read `AGENTS.md` directly), `docs/orchestration.md`, the zero-dependency Frontier engine, and that tool's command/skill files. Confirm with `maestro frontier status` (or `node bin/maestro.cjs frontier status` if `maestro` is not on PATH). This README is the npm package README; the package includes only the files listed in `package.json`, including `.codex-plugin/`, `bin/`, `frontier/`, `commands/`, `hooks/`, `settings/`, `docs/codex.md`, and `integrations/`. For Codex autorun, install or expose that packaged plugin through Codex's plugin directory or a local/repo marketplace, then review and trust the bundled hooks. Once published, swap `github:mbanderas/maestro` for `@maestrofrontier/frontier`.
+Per tool it lays down `AGENTS.md` + that tool's adapter (`CLAUDE.md` /
+`GEMINI.md` / `.cursorrules`; Codex, Cline, and Windsurf read `AGENTS.md`
+directly), `docs/orchestration.md`, the zero-dependency Frontier engine, and
+that tool's command/skill files. Codex is different: the repo now ships a
+Codex marketplace catalog at `.agents/plugins/marketplace.json`, a plugin
+manifest at `.codex-plugin/plugin.json`, bundled Codex skills, and trusted-hook
+support. Add the marketplace once, install `maestro@maestro`, then review and
+trust the bundled hooks in Codex. Confirm with `maestro frontier status` (or
+`node bin/maestro.cjs frontier status` if `maestro` is not on PATH). This
+README is the npm package README; the package includes only the files listed in
+`package.json`, including `.agents/plugins/marketplace.json`,
+`.codex-plugin/`, `skills/`, `bin/`, `frontier/`, `commands/`, `hooks/`,
+`settings/`, `docs/codex.md`, and `integrations/`. Once published, swap
+`github:mbanderas/maestro` for `@maestrofrontier/frontier` for portable npm
+installs.
 
-> **Want the bare `maestro` command (and the `/frontier` command it powers) on your `PATH`?** The `npx … install` above copies files into the project but does **not** register a global `maestro` binary — so the dropped `/frontier` command and the Codex skills, which call a bare `maestro`, will report `maestro: not recognized` until you add it. Install it once globally — `npm install -g github:mbanderas/maestro` (swap for `@maestrofrontier/frontier` once published) — then fully restart the tool so it picks up the new `PATH`. Without the global install, drive the engine with the `node bin/maestro.cjs frontier …` form from the project root instead.
+> **Want the bare `maestro` command (and the `/frontier` command it powers) on
+> your `PATH`?** Codex plugin installs can run the bundled engine from the
+> plugin cache, but portable non-plugin installs do **not** register a global
+> `maestro` binary. Install it once globally — `npm install -g
+> github:mbanderas/maestro` (swap for `@maestrofrontier/frontier` once
+> published) — then fully restart the tool so it picks up the new `PATH`.
+> Without the global install, drive the engine with the `node bin/maestro.cjs
+> frontier …` form from a Maestro checkout or installed project root instead.
 
 Frontier stays **off** until you arm it, then normal prompts auto-route until disabled in runtimes with trusted hooks. Claude Code: `/maestro:frontier fusion opus-gpt`. Codex after the Maestro plugin hook is enabled and trusted: use the active project/workspace scope, for example:
 
@@ -192,7 +219,17 @@ Maestro separates **portable orchestration doctrine** from **runtime-specific ad
 | `.cursorrules` | Cursor adapter | Kernel copy (Cursor does not support imports); full S2-S6 in docs/orchestration.md |
 | [`docs/codex.md`](docs/codex.md) | Codex guide | AGENTS.md precedence and 32 KiB cap, Codex subagent mapping, Automations long-horizon mapping (Codex reads `AGENTS.md` natively) |
 
-Maestro's tools run on **both Claude Code and Codex** — in Claude Code as `/maestro:*` slash commands, and in Codex as installable skills plus plugin/config surfaces, with the portable `node settings/cli.cjs` and `maestro frontier ...` CLIs working on any other agent too. The Codex skills (`maestro-frontier`, `maestro-terse`, `maestro-settings`, `maestro-update`) are installed to `.agents/skills/<name>/SKILL.md` by `maestro install --target codex`; personal/global installs use `~/.agents/skills`. Safe migration/update refreshes Maestro-managed files, preserves user-edited files, and handles older unprefixed skill names where possible. When Frontier mode is on, the `maestro-frontier` skill leads each Codex reply with `Maestro Frontier ON (<label>)` (`single · <model>` or `fusion · <preset>`) — the Codex analog of Claude Code's armed Frontier indicator; run `maestro frontier status --scope codex-project` to check.
+Maestro's tools run on **both Claude Code and Codex** — in Claude Code as
+`/maestro:*` slash commands, and in Codex as plugin-bundled skills plus
+trusted hooks, with the portable `node settings/cli.cjs` and `maestro frontier
+...` CLIs working on any other agent too. The Codex skills
+(`maestro-frontier`, `maestro-terse`, `maestro-settings`, `maestro-update`)
+ship from the Maestro plugin; the older `maestro install --target codex` path
+still works for manual project copies. When Frontier mode is on, the
+`maestro-frontier` skill leads each Codex reply with `Maestro Frontier ON
+(<label>)` (`single · <model>` or `fusion · <preset>`) — the Codex analog of
+Claude Code's armed Frontier indicator; run `maestro frontier status --scope
+codex-project` to check.
 
 GitHub Copilot, Cline, and Windsurf read `AGENTS.md` directly, so the portable core works there with no adapter. Maestro's always-on kernel (`AGENTS.md`) is ~8 KB, under Windsurf's 12,000-character limit and roughly a quarter of Codex's 32 KiB budget; the full multi-agent protocol loads on demand from `docs/orchestration.md`.
 
@@ -216,7 +253,9 @@ Optional Claude Code machinery; full install steps in the linked docs.
 
 ## Commands & Settings
 
-Every Maestro slash command in Claude Code is namespaced `/maestro:<name>`. The same tools run on Codex as installed skills (`.agents/skills/<name>/SKILL.md`, via `maestro install --target codex`); on any CLI the same actions also run through the portable scripts noted below.
+Every Maestro slash command in Claude Code is namespaced `/maestro:<name>`.
+The same tools run on Codex as plugin-bundled skills; on any CLI the same
+actions also run through the portable scripts noted below.
 
 | Command | What it does | Usage |
 |---|---|---|
@@ -240,7 +279,8 @@ Portable everywhere, Codex included: `node settings/cli.cjs status | list | help
 
 ## Updating Maestro
 
-Maestro no longer pins a plugin version. The marketplace always resolves to the latest `main`, so updating is a single refresh — no version bump needed in any file.
+Maestro's marketplaces track `main`, so updating is a refresh rather than a
+manual version edit.
 
 ### Claude Code
 
@@ -259,7 +299,17 @@ It can't run the reload for you (a slash command can't invoke another slash comm
 
 `/reload-plugins` applies the update in the running session; if Claude Code warns that a restart is required, restart it. Non-interactive equivalent of the pull: `claude plugin marketplace update maestro`.
 
-### Codex / Cursor (portable installs, no plugin system)
+### Codex
+
+```text
+codex plugin marketplace upgrade maestro
+codex plugin add maestro@maestro
+```
+
+Open a new thread after reinstalling so Codex reloads bundled skills and hook
+definitions.
+
+### Cursor / Portable Installs
 
 - **Git clone:** `git pull` inside the Maestro clone directory.
 - **Downloaded copy:** re-run `npx github:mbanderas/maestro install --target auto --project .` from the project root, or re-download the tarball and re-copy `frontier/`, `bin/maestro.cjs`, plus your integration command file from the latest `main`.

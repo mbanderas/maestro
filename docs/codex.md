@@ -55,14 +55,24 @@ review and trust the plugin before enabling them. Codex sets
 `PLUGIN_ROOT` and `PLUGIN_DATA` for plugin hooks, and also sets
 `CLAUDE_PLUGIN_ROOT` and `CLAUDE_PLUGIN_DATA` for compatibility.
 
-`maestro install --target codex` installs project doctrine, the portable
-Frontier engine, the compatibility prompt, and Maestro-owned Codex skills.
-It does not by itself enable plugin hooks. Frontier autorun requires the
-Maestro package to be installed or exposed as a Codex plugin, then enabled
-and trusted in Codex. This package includes `.codex-plugin/plugin.json`
-pointing at `./hooks/hooks.json`, so a Codex marketplace or local plugin
-entry can load the bundled hook set directly. Restart Codex or start a new
-thread after changing plugin installation/trust state.
+For Codex CLI/Desktop, install Maestro as a native Codex plugin:
+
+```text
+codex plugin marketplace add mbanderas/maestro
+codex plugin add maestro@maestro
+```
+
+The repo is a Codex marketplace because it ships
+`.agents/plugins/marketplace.json`; the plugin itself is described by
+`.codex-plugin/plugin.json`. That manifest points at the plugin-bundled Codex
+skills (`./skills/`); the hook bundle lives at Codex's default plugin hook path
+`./hooks/hooks.json`, so Codex can install the plugin without `npx`. Restart
+Codex or start a new thread after changing plugin installation/trust state,
+then review and trust the bundled hooks before expecting autorun.
+
+`maestro install --target codex` remains as a portable/manual fallback when
+you specifically want to copy files into a project instead of installing the
+Codex plugin.
 
 ## Multi-agent routing (S2-S6 mapping)
 
@@ -143,13 +153,13 @@ context-usage indicator (`/statusline` picker, or `context` in
 
 ## Skills and the Frontier ON indicator
 
-Codex skills can live in personal `$HOME/.agents/skills` or repo
-`.agents/skills`. `maestro install --target codex` installs Maestro-owned
-skills named `maestro-frontier`, `maestro-settings`, `maestro-terse`, and
-`maestro-update` to `.agents/skills/<name>/SKILL.md` for project installs
-or `~/.agents/skills/<name>/SKILL.md` for global/user installs. Re-running
-install/update safely refreshes Maestro-managed files, preserves
-user-edited files, and migrates older unprefixed skill names where safe.
+Codex skills can live in personal `$HOME/.agents/skills`, repo
+`.agents/skills`, or installed plugins. The normal Codex path is the Maestro
+plugin, which bundles `maestro-frontier`, `maestro-settings`, `maestro-terse`,
+and `maestro-update` from `./skills/`. The portable
+`maestro install --target codex` fallback still installs those same skills to
+`.agents/skills/<name>/SKILL.md` for project installs or
+`~/.agents/skills/<name>/SKILL.md` for global/user installs.
 
 When `maestro frontier status --scope codex-project` reports mode != off,
 the `maestro-frontier` skill instructs Codex to lead its reply with
