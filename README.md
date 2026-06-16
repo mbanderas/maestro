@@ -44,18 +44,20 @@ from it on demand.
 - Claude Code: run `/plugin marketplace add mbanderas/maestro` then `/plugin install maestro@maestro`.
 Those two lines wire the enforcement hooks, /maestro:* commands, skills, status line, and the
 Frontier engine with auto-run. That is the entire install — you are done.
-- Any other CLI (Codex, Cursor, Gemini, Cline, Windsurf, …): clone the repo (or download the main
-tarball) and copy the frontier/ directory into the project. Run the engine with
-`node frontier/cli.cjs status`, `node frontier/cli.cjs mode <off|single|fusion> --preset <preset>`,
-or `node frontier/cli.cjs run "<prompt>"` — it is zero-dependency Node, works anywhere, and keeps
-its state in ~/.config/maestro. For a /frontier slash command, also copy
-integrations/cursor/commands/frontier.md to .cursor/commands/ (Cursor) or
-integrations/codex/prompts/frontier.md to ~/.codex/prompts/ (Codex) — these are typing shortcuts
-that call the engine, not auto-run hooks. The plugin's enforcement hooks, /maestro:* commands, and
-skills can't load outside Claude Code, so the doctrine from step 1 is what governs the agent there.
+- Any other CLI (Codex, Cursor, Gemini, Cline, Windsurf, …): run
+`npx github:mbanderas/maestro install --target auto --project .` from the project root — it
+fetches the engine, copies the integration files, and verifies the install in one step. Zero
+dependencies; works today from GitHub before any npm publish. Once Maestro is published to
+npm, `npx @maestro/frontier install --target auto` is the equivalent shorthand. Confirm with
+`maestro frontier status` (or `node bin/maestro.cjs frontier status` if maestro is not yet on
+PATH). For a /frontier slash command, the install copies integrations/cursor/commands/frontier.md
+to .cursor/commands/ (Cursor) or integrations/codex/prompts/frontier.md to ~/.codex/prompts/
+(Codex). The plugin's enforcement hooks, /maestro:* commands, and skills can't load outside Claude
+Code, so the doctrine from step 1 is what governs the agent there. Per non-Claude tool add
+--scope <tool> (e.g. --scope codex, --scope cursor) so armed state stays per-CLI-global.
 
 Leave Frontier off (its default) until I arm it — /maestro:frontier on Claude Code, or
-node frontier/cli.cjs mode fusion --preset opus-gpt elsewhere.
+`maestro frontier mode fusion --preset opus-gpt` elsewhere.
 ```
 
 ---
@@ -400,7 +402,7 @@ It can't run the reload for you (a slash command can't invoke another slash comm
 Run `/update` if your integration file exposes it, or update manually:
 
 - **Git clone:** `git pull` inside the Maestro clone directory.
-- **Downloaded copy:** re-download the tarball and re-copy `frontier/` plus your integration command file (`integrations/codex/prompts/frontier.md` or `integrations/cursor/commands/frontier.md`) from the latest `main`.
+- **Downloaded copy:** re-run `npx github:mbanderas/maestro install --target auto --project .` from the project root, or re-download the tarball and re-copy `frontier/`, `bin/maestro.cjs`, plus your integration command file (`integrations/codex/prompts/frontier.md` or `integrations/cursor/commands/frontier.md`) from the latest `main`.
 
 ### Gemini / other CLIs
 

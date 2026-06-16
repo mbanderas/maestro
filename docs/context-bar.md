@@ -64,7 +64,7 @@ The toggle is a flag file (`.context-bar-disabled`) next to the script. No setti
 ████████░░░░░░░░░░░░ 42% 84k/200k · my-project  ULTRA ƒO+C
 ```
 
-Both read their state files symlink-refusing, size-capped, and whitelisted: the badge only ever renders letters from a fixed table or a count, never bytes from the file. The frontier badge reads `frontier-state.json` and, on macOS / Linux, needs `jq` (same as the bar).
+Both read their state files symlink-refusing, size-capped, and whitelisted: the badge only ever renders letters from a fixed table or a count, never bytes from the file. The frontier badge reads the per-workspace scoped file `frontier-state.cc-<hash>.json` when running under Claude Code (falling back to `frontier-state.json` for other scopes) and, on macOS / Linux, needs `jq` (same as the bar).
 
 **Codex CLI:** this script does not apply. Codex CLI has no command-backed
 status line; it only renders a fixed set of built-in items. It already

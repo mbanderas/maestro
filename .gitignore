@@ -3,3 +3,5 @@ _*
 
 # Machine-specific downstream repo list; see scripts/downstream.txt.example
 scripts/downstream.txt
+
+.npmrc

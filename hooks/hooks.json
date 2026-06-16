@@ -77,6 +77,15 @@
             "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/maestro-phase-scope.cjs\""
           }
         ]
+      },
+      {
+        "matcher": "Edit|Write|NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/maestro-toolbudget-advisory.cjs\""
+          }
+        ]
       }
     ],
     "SessionEnd": [

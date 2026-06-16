@@ -7,6 +7,7 @@
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
+const crypto = require('crypto');
 
 // Set temp configDir BEFORE requiring config.cjs so configDir() picks it up.
 const tmpBase = fs.mkdtempSync(path.join(os.tmpdir(), 'frontier-test-'));
@@ -14,7 +15,7 @@ process.env.XDG_CONFIG_HOME = tmpBase;
 
 const { DEFAULTS, loadState, saveState, resolvePanel, validatePreset,
   resolveJudgeModel, resolveSynthModel, sanitizeScope, resolveScope,
-  statePath, legacyStatePath, configDir } = require('./config.cjs');
+  statePath, legacyStatePath, configDir, adoptLegacyState } = require('./config.cjs');
 
 let failures = 0;
 function check(name, cond) {
@@ -22,6 +23,17 @@ function check(name, cond) {
     console.error('FAIL: ' + name);
     failures++;
   }
+}
+
+function expectedClaudeWorkspaceScope(cwd) {
+  let normalized = path.resolve(cwd);
+  let last = null;
+  while (normalized !== last && !fs.existsSync(path.join(normalized, '.git'))) {
+    last = normalized;
+    normalized = path.dirname(normalized);
+  }
+  normalized = normalized.replace(/\\/g, '/').toLowerCase().replace(/\/+$/g, '');
+  return 'cc-' + crypto.createHash('sha256').update(normalized).digest('hex').slice(0, 8);
 }
 
 async function main() {
@@ -199,6 +211,90 @@ async function main() {
     try { fs.unlinkSync(legacyStatePath()); } catch {}
   }
 
+  // (3b) CC WORKSPACE SCOPES NEVER IMPLICITLY MIGRATE LEGACY
+  {
+    delete process.env.MAESTRO_SCOPE;
+    delete process.env.CLAUDE_PLUGIN_ROOT;
+    delete process.env.CLAUDECODE;
+
+    try { fs.unlinkSync(legacyStatePath()); } catch {}
+    try { fs.unlinkSync(statePath('cc-deadbeef')); } catch {}
+    try { fs.unlinkSync(statePath('codex')); } catch {}
+
+    const legacyDir = path.dirname(legacyStatePath());
+    fs.mkdirSync(legacyDir, { recursive: true });
+    fs.writeFileSync(legacyStatePath(), JSON.stringify({ mode: 'single', model: 'opus' }), 'utf8');
+
+    const ccState = loadState('cc-deadbeef');
+    check('cc legacy armed without scoped file -> off', ccState.mode === 'off');
+
+    const codexState = loadState('codex');
+    check('non-cc named scope still seeds legacy mode', codexState.mode === 'single');
+    check('non-cc named scope still seeds legacy model', codexState.model === 'opus');
+
+    try { fs.unlinkSync(statePath('cc-deadbeef')); } catch {}
+    try { fs.unlinkSync(statePath('codex')); } catch {}
+    try { fs.unlinkSync(legacyStatePath()); } catch {}
+  }
+
+  // (3c) EXPLICIT CC LEGACY ADOPTION
+  {
+    delete process.env.MAESTRO_SCOPE;
+    delete process.env.CLAUDE_PLUGIN_ROOT;
+    delete process.env.CLAUDECODE;
+
+    try { fs.unlinkSync(legacyStatePath()); } catch {}
+    try { fs.unlinkSync(statePath('cc-deadbeef')); } catch {}
+
+    const legacyDir = path.dirname(legacyStatePath());
+    fs.mkdirSync(legacyDir, { recursive: true });
+    const legacyState = { mode: 'fusion', preset: 'opus-gpt' };
+    fs.writeFileSync(legacyStatePath(), JSON.stringify(legacyState), 'utf8');
+
+    const adopted = adoptLegacyState('cc-deadbeef');
+    check('adoptLegacyState cc succeeds', adopted.ok === true);
+    check('adoptLegacyState writes scoped cc file', fs.existsSync(statePath('cc-deadbeef')));
+    check('adoptLegacyState preserves legacy file', fs.existsSync(legacyStatePath()));
+    check('adoptLegacyState adopted mode round-trips', loadState('cc-deadbeef').mode === 'fusion');
+    check('adoptLegacyState adopted preset round-trips', loadState('cc-deadbeef').preset === 'opus-gpt');
+
+    fs.writeFileSync(legacyStatePath(), JSON.stringify({ mode: 'single', model: 'opus' }), 'utf8');
+    const refused = adoptLegacyState('cc-deadbeef');
+    check('adoptLegacyState refuses overwrite by default', refused.ok === false && refused.reason === 'exists');
+    check('adoptLegacyState refused overwrite leaves scoped file intact',
+      loadState('cc-deadbeef').mode === 'fusion' && loadState('cc-deadbeef').preset === 'opus-gpt');
+
+    const forced = adoptLegacyState('cc-deadbeef', { force: true });
+    check('adoptLegacyState force overwrites', forced.ok === true);
+    check('adoptLegacyState force copies latest legacy', loadState('cc-deadbeef').mode === 'single');
+    check('adoptLegacyState force copies latest model', loadState('cc-deadbeef').model === 'opus');
+    check('adoptLegacyState force still preserves legacy', fs.existsSync(legacyStatePath()));
+
+    fs.writeFileSync(legacyStatePath(), JSON.stringify({ mode: 'bogus' }), 'utf8');
+    try { fs.unlinkSync(statePath('cc-deadbeef')); } catch {}
+    const invalid = adoptLegacyState('cc-deadbeef');
+    check('adoptLegacyState rejects invalid legacy', invalid.ok === false && invalid.reason === 'invalid-legacy');
+    check('adoptLegacyState invalid legacy writes no scoped file', !fs.existsSync(statePath('cc-deadbeef')));
+
+    // A valid {mode:'off'} legacy IS adoptable (locks the documented
+    // "off is adoptable" semantics — off is a real state, not a no-op).
+    try { fs.unlinkSync(statePath('cc-deadbeef')); } catch {}
+    fs.writeFileSync(legacyStatePath(), JSON.stringify({ mode: 'off' }), 'utf8');
+    const offAdopt = adoptLegacyState('cc-deadbeef');
+    check('adoptLegacyState adopts valid off legacy', offAdopt.ok === true);
+    check('adoptLegacyState off legacy writes off scoped file',
+      fs.existsSync(statePath('cc-deadbeef')) && loadState('cc-deadbeef').mode === 'off');
+
+    // Non-cc scope is rejected before any read/write (unit-level guard).
+    try { fs.unlinkSync(statePath('codex')); } catch {}
+    const notCc = adoptLegacyState('codex');
+    check('adoptLegacyState rejects non-cc scope', notCc.ok === false && notCc.reason === 'not-cc-scope');
+    check('adoptLegacyState non-cc scope writes no scoped file', !fs.existsSync(statePath('codex')));
+
+    try { fs.unlinkSync(statePath('cc-deadbeef')); } catch {}
+    try { fs.unlinkSync(legacyStatePath()); } catch {}
+  }
+
   // (4) resolveScope PRECEDENCE + sanitizeScope
   // resolveScope(argv) takes string[]; flag value is sanitized.
   {
@@ -217,12 +313,12 @@ async function main() {
       resolveScope([]) === 'bar');
     delete process.env.MAESTRO_SCOPE;
 
-    // (4c) CLAUDECODE set (no flag, no MAESTRO_SCOPE) -> 'claude-code'.
+    // (4c) CLAUDECODE set (no flag, no MAESTRO_SCOPE) -> 'cc-<8hex>'.
     delete process.env.MAESTRO_SCOPE;
     delete process.env.CLAUDE_PLUGIN_ROOT;
     process.env.CLAUDECODE = '1';
-    check('resolveScope: CLAUDECODE set -> claude-code',
-      resolveScope([]) === 'claude-code');
+    check('resolveScope: CLAUDECODE set -> cc-<8hex>',
+      /^cc-[0-9a-f]{8}$/.test(resolveScope([])));
     delete process.env.CLAUDECODE;
 
     // (4d) Nothing set -> 'default'.
@@ -253,21 +349,22 @@ async function main() {
     const savedClaudeCode = process.env.CLAUDECODE;
 
     try {
-      // Part 1: CLAUDE_PLUGIN_ROOT set -> writes frontier-state.claude-code.json
+      // Part 1: CLAUDE_PLUGIN_ROOT set -> writes frontier-state.cc-<8hex>.json
       delete process.env.MAESTRO_SCOPE;
       delete process.env.CLAUDECODE;
       process.env.CLAUDE_PLUGIN_ROOT = 'x';
 
+      const ccScope = expectedClaudeWorkspaceScope(process.cwd());
       const saved1 = saveState({ mode: 'fusion', preset: 'opus-gpt' }); // no scope arg
       check('(auto) saveState returns true under CLAUDE_PLUGIN_ROOT', saved1 === true);
-      check('(auto) claude-code file exists when CLAUDE_PLUGIN_ROOT set',
-        fs.existsSync(path.join(configDir(), 'frontier-state.claude-code.json')));
+      check('(auto) cc-<8hex> file exists when CLAUDE_PLUGIN_ROOT set',
+        fs.existsSync(path.join(configDir(), 'frontier-state.' + ccScope + '.json')));
       const loaded1 = loadState(); // no scope arg
       check('(auto) loadState reads correct scope preset under CLAUDE_PLUGIN_ROOT',
         loaded1.preset === 'opus-gpt');
 
       // Cleanup scoped file
-      try { fs.unlinkSync(path.join(configDir(), 'frontier-state.claude-code.json')); } catch {}
+      try { fs.unlinkSync(path.join(configDir(), 'frontier-state.' + ccScope + '.json')); } catch {}
 
       // Part 2: nothing set -> writes frontier-state.json (default)
       delete process.env.MAESTRO_SCOPE;
@@ -292,6 +389,114 @@ async function main() {
       else process.env.CLAUDE_PLUGIN_ROOT = savedClaudePlugin;
       if (savedClaudeCode === undefined) delete process.env.CLAUDECODE;
       else process.env.CLAUDECODE = savedClaudeCode;
+    }
+  }
+
+  // (workspace) CLAUDE CODE SCOPE IS PER WORKSPACE
+  // Planned API: resolveScope(argv, { cwd }) accepts the strongest local cwd
+  // signal and normalizes it to project root before deriving cc-<8hex>.
+  // This is the closest regression test before implementation because the
+  // current API has no explicit workspace/cwd parameter.
+  {
+    const savedMaestroScope = process.env.MAESTRO_SCOPE;
+    const savedClaudePlugin = process.env.CLAUDE_PLUGIN_ROOT;
+    const savedClaudeCode = process.env.CLAUDECODE;
+
+    const workspaceA = path.join(tmpBase, 'workspace-a');
+    const workspaceB = path.join(tmpBase, 'workspace-b');
+    const nestedA = path.join(workspaceA, 'packages', 'one');
+    fs.mkdirSync(path.join(workspaceA, '.git'), { recursive: true });
+    fs.mkdirSync(path.join(workspaceB, '.git'), { recursive: true });
+    fs.mkdirSync(nestedA, { recursive: true });
+
+    try {
+      delete process.env.MAESTRO_SCOPE;
+      delete process.env.CLAUDECODE;
+      process.env.CLAUDE_PLUGIN_ROOT = 'x';
+
+      const scopeA = resolveScope([], { cwd: nestedA });
+      const scopeAFromRoot = resolveScope([], { cwd: workspaceA });
+      const scopeB = resolveScope([], { cwd: workspaceB });
+      const expectedA = expectedClaudeWorkspaceScope(workspaceA);
+      const expectedB = expectedClaudeWorkspaceScope(workspaceB);
+
+      check('claude workspace scope A is cc-<8hex>',
+        /^cc-[0-9a-f]{8}$/.test(scopeA));
+      check('claude workspace nested cwd normalizes to project root',
+        scopeA === scopeAFromRoot && scopeA === expectedA);
+      check('claude workspace distinct cwd signals resolve distinct scopes',
+        scopeA !== scopeB && scopeB === expectedB);
+
+      saveState({ mode: 'fusion', preset: 'opus-duo' }, scopeA);
+      const loadedA = loadState(scopeA);
+      const loadedB = loadState(scopeB);
+      check('claude workspace A fusion round-trip mode', loadedA.mode === 'fusion');
+      check('claude workspace A fusion round-trip preset', loadedA.preset === 'opus-duo');
+      check('claude workspace B remains off after A is armed', loadedB.mode === 'off');
+
+      fs.writeFileSync(statePath('claude-code'), JSON.stringify({ mode: 'single', model: 'opus' }), 'utf8');
+      const legacyClaudeLoaded = loadState(scopeA);
+      check('claude workspace scope does not seed from legacy claude-code state',
+        legacyClaudeLoaded.mode === 'fusion' && legacyClaudeLoaded.preset === 'opus-duo');
+
+      try { fs.unlinkSync(statePath(scopeA)); } catch {}
+      try { fs.unlinkSync(statePath(scopeB)); } catch {}
+      try { fs.unlinkSync(statePath('claude-code')); } catch {}
+    } finally {
+      if (savedMaestroScope === undefined) delete process.env.MAESTRO_SCOPE;
+      else process.env.MAESTRO_SCOPE = savedMaestroScope;
+      if (savedClaudePlugin === undefined) delete process.env.CLAUDE_PLUGIN_ROOT;
+      else process.env.CLAUDE_PLUGIN_ROOT = savedClaudePlugin;
+      if (savedClaudeCode === undefined) delete process.env.CLAUDECODE;
+      else process.env.CLAUDECODE = savedClaudeCode;
+    }
+  }
+
+  // (env) CLAUDE_PROJECT_DIR drives the per-workspace scope (criterion #1)
+  // The CLI calls resolveScope(argv) with NO opts, so the env var is the
+  // workspace signal. Two distinct dirs must yield two distinct cc-scopes,
+  // and arming one must leave the other off.
+  {
+    const savedMaestroScope = process.env.MAESTRO_SCOPE;
+    const savedClaudePlugin = process.env.CLAUDE_PLUGIN_ROOT;
+    const savedClaudeCode = process.env.CLAUDECODE;
+    const savedProjectDir = process.env.CLAUDE_PROJECT_DIR;
+
+    const wsA = path.join(tmpBase, 'cpd-a');
+    const wsB = path.join(tmpBase, 'cpd-b');
+    fs.mkdirSync(path.join(wsA, '.git'), { recursive: true });
+    fs.mkdirSync(path.join(wsB, '.git'), { recursive: true });
+
+    try {
+      delete process.env.MAESTRO_SCOPE;
+      delete process.env.CLAUDECODE;
+      process.env.CLAUDE_PLUGIN_ROOT = 'x';
+
+      process.env.CLAUDE_PROJECT_DIR = wsA;
+      const scopeA = resolveScope([]); // no opts -> uses CLAUDE_PROJECT_DIR
+      process.env.CLAUDE_PROJECT_DIR = wsB;
+      const scopeB = resolveScope([]);
+
+      check('env: CLAUDE_PROJECT_DIR A -> cc-<8hex>', /^cc-[0-9a-f]{8}$/.test(scopeA));
+      check('env: distinct CLAUDE_PROJECT_DIR -> distinct scopes', scopeA !== scopeB);
+      check('env: CLAUDE_PROJECT_DIR A matches helper', scopeA === expectedClaudeWorkspaceScope(wsA));
+      check('env: CLAUDE_PROJECT_DIR B matches helper', scopeB === expectedClaudeWorkspaceScope(wsB));
+
+      saveState({ mode: 'fusion', preset: 'opus-duo' }, scopeA);
+      check('env: workspace A armed round-trips fusion', loadState(scopeA).mode === 'fusion');
+      check('env: workspace B stays off after A armed', loadState(scopeB).mode === 'off');
+
+      try { fs.unlinkSync(statePath(scopeA)); } catch {}
+      try { fs.unlinkSync(statePath(scopeB)); } catch {}
+    } finally {
+      if (savedMaestroScope === undefined) delete process.env.MAESTRO_SCOPE;
+      else process.env.MAESTRO_SCOPE = savedMaestroScope;
+      if (savedClaudePlugin === undefined) delete process.env.CLAUDE_PLUGIN_ROOT;
+      else process.env.CLAUDE_PLUGIN_ROOT = savedClaudePlugin;
+      if (savedClaudeCode === undefined) delete process.env.CLAUDECODE;
+      else process.env.CLAUDECODE = savedClaudeCode;
+      if (savedProjectDir === undefined) delete process.env.CLAUDE_PROJECT_DIR;
+      else process.env.CLAUDE_PROJECT_DIR = savedProjectDir;
     }
   }
 

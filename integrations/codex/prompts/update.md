@@ -23,12 +23,13 @@ from latest `main`:
 ```bash
 curl -O https://raw.githubusercontent.com/mbanderas/maestro/main/AGENTS.md
 curl -O https://raw.githubusercontent.com/mbanderas/maestro/main/frontier/cli.cjs
+curl -O https://raw.githubusercontent.com/mbanderas/maestro/main/bin/maestro.cjs
 # Re-copy any integration command files you installed:
 #   integrations/codex/prompts/frontier.md -> ~/.codex/prompts/frontier.md
 #   integrations/codex/prompts/update.md   -> ~/.codex/prompts/update.md
 ```
 
-After updating, run `node frontier/cli.cjs status` to confirm the engine is present.
+After updating, run `node bin/maestro.cjs frontier status` to confirm the engine is present.
 
 Report what was refreshed and note any errors.
 

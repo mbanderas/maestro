@@ -1,6 +1,6 @@
 ---
 description: Maestro Frontier local multi-CLI engine: arm a mode (off/single/fusion) so it auto-runs every prompt, pick a model/preset, or run a one-off prompt
-argument-hint: "<off | single <model> | fusion <preset> | status | run <prompt>>"
+argument-hint: "<off | single <model> | fusion <preset> | status | run <prompt> | adopt>"
 allowed-tools: Bash, Read
 ---
 
@@ -23,11 +23,11 @@ self-contained; do not edit its state file yourself.
 1. Mode switch (persists across sessions; default `off`):
 
    ```bash
-   node "${CLAUDE_PLUGIN_ROOT}/frontier/cli.cjs" mode off
-   node "${CLAUDE_PLUGIN_ROOT}/frontier/cli.cjs" mode single --model <model>
-   node "${CLAUDE_PLUGIN_ROOT}/frontier/cli.cjs" mode fusion --preset <preset>
-   node "${CLAUDE_PLUGIN_ROOT}/frontier/cli.cjs" mode fusion --preset custom --models <a,b,c>
-   node "${CLAUDE_PLUGIN_ROOT}/frontier/cli.cjs" mode fusion --preset <preset> --judge <model> --synth <model>
+   node "${CLAUDE_PLUGIN_ROOT}/bin/maestro.cjs" frontier mode off
+   node "${CLAUDE_PLUGIN_ROOT}/bin/maestro.cjs" frontier mode single --model <model>
+   node "${CLAUDE_PLUGIN_ROOT}/bin/maestro.cjs" frontier mode fusion --preset <preset>
+   node "${CLAUDE_PLUGIN_ROOT}/bin/maestro.cjs" frontier mode fusion --preset custom --models <a,b,c>
+   node "${CLAUDE_PLUGIN_ROOT}/bin/maestro.cjs" frontier mode fusion --preset <preset> --judge <model> --synth <model>
    ```
 
    Models: `opus` (Claude Opus 4.8), `gpt-5.5` (Codex), `gemini`
@@ -40,7 +40,7 @@ self-contained; do not edit its state file yourself.
 2. Show current mode/preset:
 
    ```bash
-   node "${CLAUDE_PLUGIN_ROOT}/frontier/cli.cjs" status
+   node "${CLAUDE_PLUGIN_ROOT}/bin/maestro.cjs" frontier status
    ```
 
 3. Run a prompt through the current mode (prompt as the argument, or
@@ -49,7 +49,7 @@ self-contained; do not edit its state file yourself.
    you, so `run` is mainly for scripting or an explicit re-run:
 
    ```bash
-   node "${CLAUDE_PLUGIN_ROOT}/frontier/cli.cjs" run "<prompt>"
+   node "${CLAUDE_PLUGIN_ROOT}/bin/maestro.cjs" frontier run "<prompt>"
    ```
 
    - `off`: prints a notice and exits without spawning anything;
@@ -59,8 +59,27 @@ self-contained; do not edit its state file yourself.
      synthesizer models; prints the final answer (a one-line run meta of
      preset, models, analysis present, and failed models goes to stderr).
 
-4. Report the result, matched to the action:
+4. Adopt a previously-armed **global** mode into this workspace
+   (per-workspace isolation means a workspace never inherits the old
+   global state automatically — this copies it in once, on demand):
+
+   ```bash
+   node "${CLAUDE_PLUGIN_ROOT}/bin/maestro.cjs" frontier adopt
+   node "${CLAUDE_PLUGIN_ROOT}/bin/maestro.cjs" frontier adopt --force
+   ```
+
+   Reads the legacy global `frontier-state.json` read-only and writes it
+   into this workspace's `frontier-state.cc-<hash>.json`. It refuses to
+   overwrite an existing workspace state unless `--force`, never touches
+   the legacy file, and only targets a Claude Code `cc-*` scope. If
+   there is no legacy state (`missing-legacy`) it does nothing — arm the
+   workspace with `mode` instead.
+
+5. Report the result, matched to the action:
    - `run`: report the engine's stdout verbatim.
+   - `adopt`: confirm the adopted mode/preset, or relay the
+     `ERROR [<reason>]` (e.g. `exists` — suggest `--force`; `missing-legacy`
+     — nothing to adopt). Arming now auto-runs on every prompt.
    - arming a mode (`single`/`fusion`): confirm the mode, then tell the
      user plainly that the engine now **auto-runs on every prompt** —
      they just chat normally and the synthesized answer is relayed.
@@ -74,6 +93,12 @@ self-contained; do not edit its state file yourself.
 
 Notes:
 
+- **Arming in Claude Code is per-workspace.** State is stored in a
+  workspace-scoped file (`frontier-state.cc-<hash>.json`, keyed to the
+  git project root). Arming in one workspace does not affect any other.
+  After upgrading Maestro, each Claude Code workspace starts `off` and
+  must be re-armed — no automatic migration into workspace scopes.
+  `adopt` (step 4) is the explicit opt-in to copy a prior global mode in.
 - Real `single`/`fusion` runs spawn local CLIs and cost tokens; each
   cold `claude -p` panel/judge/synth call is non-trivial. Use small
   prompts. `off` is free.

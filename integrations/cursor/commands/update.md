@@ -21,12 +21,13 @@ from latest `main`:
 curl -O https://raw.githubusercontent.com/mbanderas/maestro/main/AGENTS.md
 curl -O https://raw.githubusercontent.com/mbanderas/maestro/main/.cursorrules
 curl -O https://raw.githubusercontent.com/mbanderas/maestro/main/frontier/cli.cjs
+curl -O https://raw.githubusercontent.com/mbanderas/maestro/main/bin/maestro.cjs
 # Re-copy the Cursor command files you installed:
 #   integrations/cursor/commands/frontier.md -> .cursor/commands/frontier.md
 #   integrations/cursor/commands/update.md   -> .cursor/commands/update.md
 ```
 
-After updating, run `node frontier/cli.cjs status` to confirm the engine is present.
+After updating, run `node bin/maestro.cjs frontier status` to confirm the engine is present.
 
 Report what was refreshed and note any errors.
 

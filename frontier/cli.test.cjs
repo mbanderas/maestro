@@ -113,6 +113,39 @@ function runTests() {
     check('(g) bad judge exit 2', r.code === 2, 'exit code ' + r.code);
   }
 
+  // (h) adopt: legacy global state -> per-workspace cc-* scope
+  {
+    const dir = makeTmpDir();
+    fs.mkdirSync(path.join(dir, 'maestro'), { recursive: true });
+    fs.writeFileSync(
+      path.join(dir, 'maestro', 'frontier-state.json'),
+      JSON.stringify({ mode: 'fusion', preset: 'opus-duo' }), 'utf8');
+
+    // Explicit --scope so the test is deterministic regardless of host env.
+    const r1 = run(['adopt', '--scope', 'cc-test1234'], dir);
+    check('(h) adopt exit 0', r1.code === 0, 'exit ' + r1.code + ' stderr: ' + r1.stderr.trim());
+    check('(h) adopt reports opus-duo', r1.stdout.includes('opus-duo'), 'stdout: ' + r1.stdout.trim());
+
+    const r2 = run(['status', '--scope', 'cc-test1234'], dir);
+    check('(h) adopted scope round-trips', r2.stdout.includes('opus-duo'), 'stdout: ' + r2.stdout.trim());
+
+    // Re-adopt without --force refused.
+    const r3 = run(['adopt', '--scope', 'cc-test1234'], dir);
+    check('(h) re-adopt refused exit 2', r3.code === 2, 'exit code ' + r3.code);
+    check('(h) refusal names exists', r3.stderr.includes('exists'), 'stderr: ' + r3.stderr.trim());
+
+    // Non-cc scope refused.
+    const r4 = run(['adopt', '--scope', 'codex'], dir);
+    check('(h) adopt non-cc scope exit 2', r4.code === 2, 'exit code ' + r4.code);
+    check('(h) refusal names not-cc-scope', r4.stderr.includes('not-cc-scope'), 'stderr: ' + r4.stderr.trim());
+
+    // No legacy global state present -> missing-legacy, exit 2.
+    const dir2 = makeTmpDir();
+    const r5 = run(['adopt', '--scope', 'cc-test9999'], dir2);
+    check('(h) adopt missing legacy exit 2', r5.code === 2, 'exit code ' + r5.code);
+    check('(h) refusal names missing-legacy', r5.stderr.includes('missing-legacy'), 'stderr: ' + r5.stderr.trim());
+  }
+
   // ---------- report ----------
   if (failures.length === 0) {
     process.stdout.write('\nAll CLI cases passed.\n');

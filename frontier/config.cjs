@@ -6,6 +6,7 @@
 
 'use strict';
 
+const crypto = require('crypto');
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
@@ -32,6 +33,30 @@ function getFlag(argv, flag) {
   return i !== -1 && i + 1 < argv.length ? argv[i + 1] : null;
 }
 
+// ---------- workspace hash ----------
+
+/**
+ * Derive a stable 8-hex workspace identifier from cwd by walking up to the
+ * nearest .git root, normalizing the path, and hashing it.
+ * On win32 the path is lowercased (filesystem is case-insensitive).
+ * @param {string} cwd
+ * @returns {string} 8 hex characters
+ */
+function workspaceHash(cwd) {
+  let normalized = path.resolve(cwd);
+  let last = null;
+  while (normalized !== last && !fs.existsSync(path.join(normalized, '.git'))) {
+    last = normalized;
+    normalized = path.dirname(normalized);
+  }
+  if (process.platform === 'win32') {
+    normalized = normalized.replace(/\\/g, '/').toLowerCase().replace(/\/+$/g, '');
+  } else {
+    normalized = normalized.replace(/\\/g, '/').replace(/\/+$/g, '');
+  }
+  return crypto.createHash('sha256').update(normalized).digest('hex').slice(0, 8);
+}
+
 // ---------- scope helpers ----------
 
 /**
@@ -50,17 +75,23 @@ function sanitizeScope(v) {
  * Resolve the active scope from argv + environment. Precedence:
  *   1. --scope <value> flag in argv
  *   2. process.env.MAESTRO_SCOPE
- *   3. Autodetect: CLAUDE_PLUGIN_ROOT || CLAUDECODE truthy -> 'claude-code'
+ *   3. Autodetect: CLAUDE_PLUGIN_ROOT || CLAUDECODE truthy -> 'cc-<8hex>'
+ *      where <8hex> is derived from the workspace root (opts.cwd,
+ *      CLAUDE_PROJECT_DIR, or process.cwd()) via workspaceHash().
  *   4. 'default'
- * The chosen value is always passed through sanitizeScope.
+ * The chosen value for steps 1-2 is always passed through sanitizeScope.
  * @param {string[]} argv
+ * @param {{ cwd?: string }} [opts]
  * @returns {string}
  */
-function resolveScope(argv) {
+function resolveScope(argv, opts) {
   const flagVal = getFlag(argv, '--scope');
   if (flagVal !== null) return sanitizeScope(flagVal);
   if (process.env.MAESTRO_SCOPE) return sanitizeScope(process.env.MAESTRO_SCOPE);
-  if (process.env.CLAUDE_PLUGIN_ROOT || process.env.CLAUDECODE) return 'claude-code';
+  if (process.env.CLAUDE_PLUGIN_ROOT || process.env.CLAUDECODE) {
+    const cwd = (opts && opts.cwd) || process.env.CLAUDE_PROJECT_DIR || process.cwd();
+    return 'cc-' + workspaceHash(cwd);
+  }
   return 'default';
 }
 
@@ -110,10 +141,34 @@ function _readStateFile(p) {
 }
 
 /**
+ * Strict state read for explicit adoption paths. Unlike _readStateFile, this
+ * distinguishes invalid legacy content from a valid {mode:'off'} state.
+ * @param {string} p
+ * @returns {{ ok: true, state: object }|{ ok: false, reason: 'missing'|'invalid' }}
+ */
+function _readValidatedStateFile(p) {
+  let st;
+  try { st = fs.lstatSync(p); } catch { return { ok: false, reason: 'missing' }; }
+  if (st.isSymbolicLink()) return { ok: false, reason: 'invalid' };
+  try {
+    const raw = fs.readFileSync(p, 'utf8');
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== 'object') return { ok: false, reason: 'invalid' };
+    if (!['off', 'single', 'fusion'].includes(parsed.mode)) return { ok: false, reason: 'invalid' };
+    return { ok: true, state: parsed };
+  } catch {
+    return { ok: false, reason: 'invalid' };
+  }
+}
+
+/**
  * Load frontier state for the given scope.
- * D3 MIGRATION: if scope !== 'default' and the scoped file does NOT exist
- * AND the legacy frontier-state.json DOES exist, seed from the legacy file
- * (read-only — never write during load). Same symlink/parse guards apply.
+ * D3 MIGRATION: if scope !== 'default' and scope does NOT match /^cc-/
+ * and the scoped file does NOT exist AND the legacy frontier-state.json
+ * DOES exist, seed from the legacy file (read-only — never write during
+ * load). Same symlink/parse guards apply. cc-* scopes are excluded from
+ * migration because they are per-workspace and must not inherit global
+ * legacy state. Named scopes (e.g. 'codex', 'cursor') still migrate.
  * Falls back to {mode:'off'} on any failure.
  * @param {string} [scope] Omit to autodetect the runtime scope via resolveScope([]).
  * @returns {object}
@@ -125,8 +180,8 @@ function loadState(scope) {
     const result = _readStateFile(p);
     if (result !== null) return result;
 
-    // File absent. For non-default scopes attempt migration from legacy file.
-    if (scope !== 'default') {
+    // File absent. For non-default, non-cc-* scopes attempt migration from legacy file.
+    if (scope !== 'default' && !/^cc-/.test(scope)) {
       const legacyResult = _readStateFile(legacyStatePath());
       if (legacyResult !== null) return legacyResult;
     }
@@ -175,6 +230,47 @@ function saveState(state, scope) {
   } catch {
     return false;
   }
+}
+
+/**
+ * Explicitly adopt the validated legacy frontier-state.json into a cc-* scope.
+ * This copies legacy content into frontier-state.<cc-scope>.json only, never
+ * deletes legacy, and refuses to overwrite an existing scoped file unless
+ * opts.force is true.
+ * @param {string} [scope] Omit to autodetect the runtime scope via resolveScope([]).
+ * @param {{ force?: boolean }} [opts]
+ * @returns {{ ok: true, scope: string, path: string }|{ ok: false, reason: string, scope: string, path?: string }}
+ */
+function adoptLegacyState(scope, opts) {
+  if (scope === undefined) scope = resolveScope([]);
+  const targetScope = sanitizeScope(scope);
+  const targetPath = statePath(targetScope);
+  if (!/^cc-/.test(targetScope)) {
+    return { ok: false, reason: 'not-cc-scope', scope: targetScope, path: targetPath };
+  }
+
+  const legacy = _readValidatedStateFile(legacyStatePath());
+  if (!legacy.ok) {
+    return {
+      ok: false,
+      reason: legacy.reason === 'missing' ? 'missing-legacy' : 'invalid-legacy',
+      scope: targetScope,
+      path: targetPath,
+    };
+  }
+
+  try {
+    const st = fs.lstatSync(targetPath);
+    if (st.isSymbolicLink()) return { ok: false, reason: 'unsafe-target', scope: targetScope, path: targetPath };
+    if (!(opts && opts.force)) return { ok: false, reason: 'exists', scope: targetScope, path: targetPath };
+  } catch (e) {
+    if (e.code !== 'ENOENT') return { ok: false, reason: 'unsafe-target', scope: targetScope, path: targetPath };
+  }
+
+  if (!saveState(legacy.state, targetScope)) {
+    return { ok: false, reason: 'write-failed', scope: targetScope, path: targetPath };
+  }
+  return { ok: true, scope: targetScope, path: targetPath };
 }
 
 // ---------- DEFAULTS ----------
@@ -329,11 +425,13 @@ module.exports = {
   DEFAULTS,
   configDir,
   sanitizeScope,
+  workspaceHash,
   resolveScope,
   statePath,
   legacyStatePath,
   loadState,
   saveState,
+  adoptLegacyState,
   resolvePanel,
   resolveJudgeModel,
   resolveSynthModel,

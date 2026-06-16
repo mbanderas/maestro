@@ -42,7 +42,26 @@ function Get-TerseBadge {
     return " $esc[38;5;172m$($mode.ToUpper())$reset"
 }
 
-# Frontier badge. Reads frontier-state.json written by frontier/config.cjs
+# Derive a per-workspace scope string matching frontier/config.cjs workspaceHash()
+# (win32 normalization: backslash->slash, lowercase, strip trailing slash).
+function Get-WorkspaceScope($wsCwd) {
+    if (-not $wsCwd) { return $null }
+    $norm = $wsCwd
+    $last = $null
+    while ($norm -ne $last -and -not (Test-Path -LiteralPath (Join-Path $norm '.git'))) {
+        $last = $norm
+        $parent = Split-Path -Parent $norm
+        if (-not $parent) { break }
+        $norm = $parent
+    }
+    $norm = (($norm -replace '\\','/').ToLower()) -replace '/+$',''
+    $sha = [System.Security.Cryptography.SHA256]::Create()
+    try { $bytes = $sha.ComputeHash([Text.Encoding]::UTF8.GetBytes($norm)) } finally { $sha.Dispose() }
+    $hex = -join ($bytes | ForEach-Object { $_.ToString('x2') })
+    return 'cc-' + $hex.Substring(0,8)
+}
+
+# Frontier badge. Reads frontier-state.<scope>.json written by frontier/config.cjs
 # (configDir = $XDG_CONFIG_HOME/maestro, else %APPDATA%\maestro). Same
 # hardening as the terse badge: refuse symlinks, size cap, and -- crucially --
 # only ever emit letters from the whitelist tables below or an integer count,
@@ -53,9 +72,11 @@ function Get-FrontierBadge {
     $cfgDir = if ($env:XDG_CONFIG_HOME) { Join-Path $env:XDG_CONFIG_HOME 'maestro' }
               elseif ($env:APPDATA) { Join-Path $env:APPDATA 'maestro' }
               else { Join-Path $HOME 'AppData\Roaming\maestro' }
-    $scoped = Join-Path $cfgDir 'frontier-state.claude-code.json'
+    $ws = Get-WorkspaceScope $cwd
+    $scoped = if ($ws) { Join-Path $cfgDir ('frontier-state.' + $ws + '.json') } else { $null }
     $legacy = Join-Path $cfgDir 'frontier-state.json'
-    $statePath = if (Test-Path -LiteralPath $scoped -PathType Leaf) { $scoped } else { $legacy }
+    $statePath = if ($scoped -and (Test-Path -LiteralPath $scoped -PathType Leaf)) { $scoped } elseif ($ws -like 'cc-*') { $null } else { $legacy }
+    if (-not $statePath) { return '' }
     $item = Get-Item -LiteralPath $statePath -Force -ErrorAction SilentlyContinue
     if (-not $item -or $item.PSIsContainer) { return '' }
     if ($item.Attributes -band [IO.FileAttributes]::ReparsePoint) { return '' }

@@ -83,6 +83,9 @@ State load-bearing assumptions when the task is ambiguous; list
 competing interpretations rather than picking one silently; propose
 the simpler alternative when you spot one. Confusion: stop, name
 what is unclear, ask. No sycophancy — push back when warranted.
+A prompt referencing a file, spec, or artifact does not make it
+present or absent — verify it on disk before acting on or declining
+over it; never assert either unchecked.
 
 ### 7.1 Phase scope
 
@@ -138,7 +141,10 @@ solution that meets requirements: rewrite.
 
 ### 7.7 Communication
 
-Study the code the user points to (working code > English spec).
+Study the code the user points to (working code > English spec);
+verify a referenced artifact on disk before relaying it is missing,
+and re-ground a subprocess or engine's "can't see X" against live
+context before passing it on.
 "yes" / "do it" / "go": execute immediately, no recap. Terse output;
 structured artifacts over transcript prose.
 
