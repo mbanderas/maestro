@@ -157,6 +157,30 @@ check('(f) order: results[1].content===b',   fResults[1].content === 'b');
 check('(f) parallel: elapsed < 900ms',       elapsed < 900);
 
 // ------------------------------------------------------------------ //
+// (f2) fanOut passes FUSION_DEPTH to mixed codex/claude/gemini children
+// ------------------------------------------------------------------ //
+const stubF2 = stub('f2-mixed-depth', `
+const id = process.env.STUB_ID || 'x';
+process.stdout.write(JSON.stringify({is_error:false, result: id + ':' + process.env.FUSION_DEPTH}));
+`);
+
+const cfgF2 = {
+  adapters: {
+    chatgpt: adapter(stubF2, { model: 'gpt-5.5', env: { STUB_ID: 'chatgpt' }, parse: 'claude-json' }),
+    claude: adapter(stubF2, { model: 'opus', env: { STUB_ID: 'claude' }, parse: 'claude-json' }),
+    gemini: adapter(stubF2, { model: 'gemini', env: { STUB_ID: 'gemini' }, parse: 'claude-json', promptVia: 'arg' }),
+  },
+  timeoutMs: 5000,
+  concurrency: 3,
+};
+
+const f2Results = await fanOut('prompt', ['chatgpt', 'claude', 'gemini'], cfgF2, { fusionDepth: 2, concurrency: 3 });
+check('(f2) mixed depth length 3',          f2Results.length === 3);
+check('(f2) chatgpt child depth',          f2Results[0].content === 'chatgpt:2');
+check('(f2) claude child depth',           f2Results[1].content === 'claude:2');
+check('(f2) gemini child depth',           f2Results[2].content === 'gemini:2');
+
+// ------------------------------------------------------------------ //
 // (g) fanOut with unknown adapter id -> failed PanelResponse, no throw
 // ------------------------------------------------------------------ //
 const cfgG = {

@@ -44,6 +44,10 @@ function expectedClaudeWorkspaceScope(cwd) {
   return 'cc-' + crypto.createHash('sha256').update(normalized).digest('hex').slice(0, 8);
 }
 
+function expectedCodexWorkspaceScope(cwd) {
+  return expectedClaudeWorkspaceScope(cwd).replace(/^cc-/, 'codex-');
+}
+
 async function main() {
 
   // (a) loadState() with no file -> {mode:'off'}
@@ -505,6 +509,91 @@ async function main() {
       else process.env.CLAUDECODE = savedClaudeCode;
       if (savedProjectDir === undefined) delete process.env.CLAUDE_PROJECT_DIR;
       else process.env.CLAUDE_PROJECT_DIR = savedProjectDir;
+    }
+  }
+
+  // (codex) PLUGIN_ROOT/PLUGIN_DATA drive a per-workspace Codex scope.
+  // This must be distinct from Claude's cc-* scope and from the legacy
+  // default file, so arming one repo cannot arm unrelated Codex repos.
+  {
+    const savedMaestroScope = process.env.MAESTRO_SCOPE;
+    const savedClaudePlugin = process.env.CLAUDE_PLUGIN_ROOT;
+    const savedClaudeCode = process.env.CLAUDECODE;
+    const savedPluginRoot = process.env.PLUGIN_ROOT;
+    const savedPluginData = process.env.PLUGIN_DATA;
+    const savedCodexProjectDir = process.env.CODEX_PROJECT_DIR;
+
+    const workspaceA = path.join(tmpBase, 'codex-a');
+    const workspaceB = path.join(tmpBase, 'codex-b');
+    const nestedA = path.join(workspaceA, 'packages', 'one');
+    fs.mkdirSync(path.join(workspaceA, '.git'), { recursive: true });
+    fs.mkdirSync(path.join(workspaceB, '.git'), { recursive: true });
+    fs.mkdirSync(nestedA, { recursive: true });
+
+    try {
+      delete process.env.MAESTRO_SCOPE;
+      delete process.env.CLAUDE_PLUGIN_ROOT;
+      delete process.env.CLAUDECODE;
+      process.env.PLUGIN_ROOT = 'x';
+      process.env.PLUGIN_DATA = path.join(tmpBase, 'codex-plugin-data');
+
+      const scopeA = resolveScope([], { cwd: nestedA });
+      const scopeAFromRoot = resolveScope([], { cwd: workspaceA });
+      const scopeB = resolveScope([], { cwd: workspaceB });
+      const expectedA = expectedCodexWorkspaceScope(workspaceA);
+      const expectedB = expectedCodexWorkspaceScope(workspaceB);
+      const claudeA = expectedClaudeWorkspaceScope(workspaceA);
+
+      check('codex plugin scope A is codex-<8hex>', /^codex-[0-9a-f]{8}$/.test(scopeA));
+      check('codex plugin nested cwd normalizes to project root',
+        scopeA === scopeAFromRoot && scopeA === expectedA);
+      check('codex-project scope alias matches plugin workspace scope',
+        resolveScope(['--scope', 'codex-project'], { cwd: nestedA }) === expectedA);
+      check('codex-workspace scope alias matches plugin workspace scope',
+        resolveScope(['--scope', 'codex-workspace'], { cwd: nestedA }) === expectedA);
+      check('codex plugin scope is distinct from claude cc scope', scopeA !== claudeA);
+      check('codex plugin distinct workspaces resolve distinct scopes',
+        scopeA !== scopeB && scopeB === expectedB);
+
+      process.env.CLAUDE_PLUGIN_ROOT = path.join(tmpBase, 'compat-claude-plugin-root');
+      check('codex plugin prefers PLUGIN_ROOT over compatibility CLAUDE_PLUGIN_ROOT',
+        resolveScope([], { cwd: nestedA }) === expectedA);
+      check('codex plugin mixed env does not resolve to claude cc scope',
+        resolveScope([], { cwd: nestedA }) !== claudeA);
+
+      fs.writeFileSync(legacyStatePath(), JSON.stringify({ mode: 'single', model: 'opus' }), 'utf8');
+      fs.writeFileSync(statePath(claudeA), JSON.stringify({ mode: 'fusion', preset: 'opus-duo' }), 'utf8');
+      check('codex plugin scope ignores legacy default when unarmed', loadState(scopeA).mode === 'off');
+      check('codex plugin scope ignores matching claude cc state', loadState(scopeA).mode === 'off');
+
+      saveState({ mode: 'single', model: 'opus' }, scopeA);
+      check('codex plugin workspace A armed round-trips single', loadState(scopeA).mode === 'single');
+      check('codex plugin workspace B stays off after A armed', loadState(scopeB).mode === 'off');
+
+      process.env.CODEX_PROJECT_DIR = workspaceB;
+      saveState({ mode: 'fusion', preset: 'frontier-trio' }, 'codex-project');
+      check('codex-project direct save writes active project scope',
+        loadState(scopeB).mode === 'fusion' && loadState(scopeB).preset === 'frontier-trio');
+      check('codex-project direct save does not arm workspace A',
+        loadState(scopeA).mode === 'single');
+
+      try { fs.unlinkSync(statePath(scopeA)); } catch {}
+      try { fs.unlinkSync(statePath(scopeB)); } catch {}
+      try { fs.unlinkSync(statePath(claudeA)); } catch {}
+      try { fs.unlinkSync(legacyStatePath()); } catch {}
+    } finally {
+      if (savedMaestroScope === undefined) delete process.env.MAESTRO_SCOPE;
+      else process.env.MAESTRO_SCOPE = savedMaestroScope;
+      if (savedClaudePlugin === undefined) delete process.env.CLAUDE_PLUGIN_ROOT;
+      else process.env.CLAUDE_PLUGIN_ROOT = savedClaudePlugin;
+      if (savedClaudeCode === undefined) delete process.env.CLAUDECODE;
+      else process.env.CLAUDECODE = savedClaudeCode;
+      if (savedPluginRoot === undefined) delete process.env.PLUGIN_ROOT;
+      else process.env.PLUGIN_ROOT = savedPluginRoot;
+      if (savedPluginData === undefined) delete process.env.PLUGIN_DATA;
+      else process.env.PLUGIN_DATA = savedPluginData;
+      if (savedCodexProjectDir === undefined) delete process.env.CODEX_PROJECT_DIR;
+      else process.env.CODEX_PROJECT_DIR = savedCodexProjectDir;
     }
   }
 

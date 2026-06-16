@@ -5,7 +5,7 @@
 
 const fs = require('fs');
 const { DEFAULTS, loadState, saveState, resolveScope, validateMode, validatePreset, validateModel, adoptLegacyState } = require('./config.cjs');
-const { runFrontier } = require('./run.cjs');
+const { runFrontier, canonicalModelId, canonicalPresetId } = require('./run.cjs');
 
 // ---------- arg helpers ----------
 
@@ -63,7 +63,8 @@ function cmdMode(argv, scope) {
   if (newMode === 'off') {
     state = { mode: 'off' };
   } else if (newMode === 'single') {
-    const model = getFlag(argv, '--model');
+    const rawModel = getFlag(argv, '--model');
+    const model = rawModel && canonicalModelId(rawModel);
     if (!model) {
       process.stderr.write('ERROR: --model required for single mode\n');
       process.exit(2);
@@ -75,7 +76,8 @@ function cmdMode(argv, scope) {
     state = { mode: 'single', model };
   } else {
     // fusion
-    const preset = getFlag(argv, '--preset');
+    const rawPreset = getFlag(argv, '--preset');
+    const preset = rawPreset && canonicalPresetId(rawPreset);
     if (!preset) {
       process.stderr.write('ERROR: --preset required for fusion mode\n');
       process.exit(2);
@@ -90,7 +92,7 @@ function cmdMode(argv, scope) {
         process.stderr.write('ERROR: --models required for custom preset\n');
         process.exit(2);
       }
-      const models = modelsRaw.split(',').map(m => m.trim()).filter(Boolean);
+      const models = modelsRaw.split(',').map(m => canonicalModelId(m.trim())).filter(Boolean);
       state = { mode: 'fusion', preset: 'custom', models };
     } else {
       state = { mode: 'fusion', preset };
@@ -99,7 +101,8 @@ function cmdMode(argv, scope) {
     // Optional judge/synth model overrides — apply to any fusion preset so
     // users can mix freely (e.g. --judge opus --synth gpt-5.5). Unset =
     // the preset's own stage model (presetStages) or the global default.
-    const judge = getFlag(argv, '--judge');
+    const rawJudge = getFlag(argv, '--judge');
+    const judge = rawJudge !== null ? canonicalModelId(rawJudge) : null;
     if (judge !== null) {
       if (!validateModel(judge)) {
         process.stderr.write('ERROR: unknown judge model: ' + judge + '\n');
@@ -107,7 +110,8 @@ function cmdMode(argv, scope) {
       }
       state.judgeModel = judge;
     }
-    const synth = getFlag(argv, '--synth');
+    const rawSynth = getFlag(argv, '--synth');
+    const synth = rawSynth !== null ? canonicalModelId(rawSynth) : null;
     if (synth !== null) {
       if (!validateModel(synth)) {
         process.stderr.write('ERROR: unknown synth model: ' + synth + '\n');

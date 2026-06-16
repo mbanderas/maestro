@@ -25,6 +25,7 @@
     "frontier/semaphore.cjs",
     "frontier/synthesize.cjs",
     "scripts/install.cjs",
+    ".codex-plugin/",
     "AGENTS.md",
     "CLAUDE.md",
     "GEMINI.md",

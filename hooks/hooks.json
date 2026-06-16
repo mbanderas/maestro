@@ -40,7 +40,7 @@
           },
           {
             "type": "command",
-            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/frontier-autorun.cjs\"",
+            "command": "node -e \"require(require('path').join(process.env.CLAUDE_PLUGIN_ROOT || process.env.PLUGIN_ROOT, 'hooks', 'frontier-autorun.cjs'))\"",
             "timeout": 300
           }
         ]

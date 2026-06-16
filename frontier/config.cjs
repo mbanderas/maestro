@@ -71,26 +71,50 @@ function sanitizeScope(v) {
   return s.length > 0 ? s : 'default';
 }
 
+function workspaceCwd(opts) {
+  return (opts && opts.cwd) || process.env.CLAUDE_PROJECT_DIR || process.env.CODEX_PROJECT_DIR || process.cwd();
+}
+
+function resolveScopeAlias(scope, opts) {
+  const clean = sanitizeScope(scope);
+  if (['codex-project', 'codex-workspace', 'codex-repo'].includes(clean)) {
+    return 'codex-' + workspaceHash(workspaceCwd(opts));
+  }
+  if (['claude-project', 'claude-workspace', 'cc-project', 'cc-workspace'].includes(clean)) {
+    return 'cc-' + workspaceHash(workspaceCwd(opts));
+  }
+  return clean;
+}
+
 /**
  * Resolve the active scope from argv + environment. Precedence:
  *   1. --scope <value> flag in argv
  *   2. process.env.MAESTRO_SCOPE
- *   3. Autodetect: CLAUDE_PLUGIN_ROOT || CLAUDECODE truthy -> 'cc-<8hex>'
+ *   3. Autodetect: PLUGIN_ROOT truthy -> 'codex-<8hex>'
+ *   4. Autodetect: CLAUDE_PLUGIN_ROOT || CLAUDECODE truthy -> 'cc-<8hex>'
+ *   5. Autodetect: PLUGIN_DATA truthy -> 'codex-<8hex>'
  *      where <8hex> is derived from the workspace root (opts.cwd,
- *      CLAUDE_PROJECT_DIR, or process.cwd()) via workspaceHash().
- *   4. 'default'
- * The chosen value for steps 1-2 is always passed through sanitizeScope.
+ *      CLAUDE_PROJECT_DIR, CODEX_PROJECT_DIR, or process.cwd()) via
+ *      workspaceHash().
+ *   6. 'default'
+ * The chosen value for steps 1-2 is sanitized, and project aliases such as
+ * codex-project/codex-workspace are expanded to per-workspace scopes.
  * @param {string[]} argv
  * @param {{ cwd?: string }} [opts]
  * @returns {string}
  */
 function resolveScope(argv, opts) {
   const flagVal = getFlag(argv, '--scope');
-  if (flagVal !== null) return sanitizeScope(flagVal);
-  if (process.env.MAESTRO_SCOPE) return sanitizeScope(process.env.MAESTRO_SCOPE);
+  if (flagVal !== null) return resolveScopeAlias(flagVal, opts);
+  if (process.env.MAESTRO_SCOPE) return resolveScopeAlias(process.env.MAESTRO_SCOPE, opts);
+  if (process.env.PLUGIN_ROOT) {
+    return 'codex-' + workspaceHash(workspaceCwd(opts));
+  }
   if (process.env.CLAUDE_PLUGIN_ROOT || process.env.CLAUDECODE) {
-    const cwd = (opts && opts.cwd) || process.env.CLAUDE_PROJECT_DIR || process.cwd();
-    return 'cc-' + workspaceHash(cwd);
+    return 'cc-' + workspaceHash(workspaceCwd(opts));
+  }
+  if (process.env.PLUGIN_DATA) {
+    return 'codex-' + workspaceHash(workspaceCwd(opts));
   }
   return 'default';
 }
@@ -111,6 +135,7 @@ function legacyStatePath() {
  */
 function statePath(scope) {
   if (scope === undefined) scope = resolveScope([]);
+  else scope = resolveScopeAlias(scope);
   if (scope === 'default') return path.join(configDir(), 'frontier-state.json');
   return path.join(configDir(), 'frontier-state.' + scope + '.json');
 }
@@ -163,25 +188,26 @@ function _readValidatedStateFile(p) {
 
 /**
  * Load frontier state for the given scope.
- * D3 MIGRATION: if scope !== 'default' and scope does NOT match /^cc-/
+ * D3 MIGRATION: if scope !== 'default' and scope does NOT match /^(cc|codex)-/
  * and the scoped file does NOT exist AND the legacy frontier-state.json
  * DOES exist, seed from the legacy file (read-only — never write during
- * load). Same symlink/parse guards apply. cc-* scopes are excluded from
- * migration because they are per-workspace and must not inherit global
- * legacy state. Named scopes (e.g. 'codex', 'cursor') still migrate.
+ * load). Same symlink/parse guards apply. cc-* and codex-* scopes are
+ * excluded from migration because they are per-workspace and must not inherit
+ * global legacy state. Named scopes (e.g. 'codex', 'cursor') still migrate.
  * Falls back to {mode:'off'} on any failure.
  * @param {string} [scope] Omit to autodetect the runtime scope via resolveScope([]).
  * @returns {object}
  */
 function loadState(scope) {
   if (scope === undefined) scope = resolveScope([]);
+  else scope = resolveScopeAlias(scope);
   try {
     const p = statePath(scope);
     const result = _readStateFile(p);
     if (result !== null) return result;
 
-    // File absent. For non-default, non-cc-* scopes attempt migration from legacy file.
-    if (scope !== 'default' && !/^cc-/.test(scope)) {
+    // File absent. For non-default, non-workspace scopes attempt migration from legacy file.
+    if (scope !== 'default' && !/^(cc|codex)-/.test(scope)) {
       const legacyResult = _readStateFile(legacyStatePath());
       if (legacyResult !== null) return legacyResult;
     }
@@ -201,6 +227,7 @@ function loadState(scope) {
  */
 function saveState(state, scope) {
   if (scope === undefined) scope = resolveScope([]);
+  else scope = resolveScopeAlias(scope);
   try {
     const p = statePath(scope);
     const dir = path.dirname(p);

@@ -25,7 +25,7 @@
   <sub>13 fixture tasks &middot; 123 valid A/B runs &middot; 11 voids excluded &amp; re-run &middot; 6 hooks, all tested &middot; ~8 KB always-on kernel &middot; 2-line plugin install</sub>
 </p>
 
-> **Install — run the one line for your tool, inside that tool.** Each installs only that tool's setup (the portable `AGENTS.md` doctrine, that tool's adapter, `docs/orchestration.md`, the Frontier engine, and that tool's `/frontier` command) — **append-only; it never overwrites or deletes your files.**
+> **Install — run the one line for your tool, inside that tool.** Each installs only that tool's setup: the portable `AGENTS.md` doctrine, that tool's adapter/integration, `docs/orchestration.md`, the Frontier engine, and the relevant command or skill files. Project/workspace installs are the recommended default; global/user installs are optional when you intentionally want cross-project behavior.
 
 **Claude Code / Desktop** — native plugin (enforcement hooks, `/maestro:*` commands, skills, status line, Frontier auto-run):
 
@@ -34,22 +34,36 @@
 /plugin install maestro@maestro
 ```
 
-**Every other CLI / Desktop app** — run its line in that tool's terminal, or just ask its agent to run it. It auto-targets that tool and installs nothing for the others:
+**Codex CLI / Desktop** — use the npm/GitHub installer for project doctrine and skills. Frontier autorun also requires installing/enabling the Maestro Codex plugin and trusting its hooks; this package now ships the `.codex-plugin/plugin.json` manifest and hook bundle Codex needs.
+
+**Other CLI / Desktop apps** — run the matching line in that tool's terminal, or ask its agent to run it. These integrations are prompt/skill/workflow shortcuts around the portable CLI unless the tool has native hook support.
 
 | Tool | Install (run inside the tool) |
 |------|-------------------------------|
-| Codex (CLI / Desktop) | `npx github:mbanderas/maestro install --target codex` |
+| Codex (CLI / Desktop) | `npx github:mbanderas/maestro install --target codex` for project skills; enable the Maestro Codex plugin for autorun |
 | Cursor | `npx github:mbanderas/maestro install --target cursor` |
 | Gemini CLI | `npx github:mbanderas/maestro install --target gemini` |
 | Cline | `npx github:mbanderas/maestro install --target cline` |
 | Windsurf / Devin | `npx github:mbanderas/maestro install --target windsurf` |
 | Not sure / auto-detect | `npx github:mbanderas/maestro install --target auto` |
 
-Per tool it lays down `AGENTS.md` + that tool's adapter (`CLAUDE.md` / `GEMINI.md` / `.cursorrules`; Codex, Cline, and Windsurf read `AGENTS.md` directly), `docs/orchestration.md`, the zero-dependency Frontier engine, and that tool's `/frontier` command. Confirm with `maestro frontier status` (or `node bin/maestro.cjs frontier status` if `maestro` is not on PATH). Once published, swap `github:mbanderas/maestro` for `@maestrofrontier/frontier`.
+Per tool it lays down `AGENTS.md` + that tool's adapter (`CLAUDE.md` / `GEMINI.md` / `.cursorrules`; Codex, Cline, and Windsurf read `AGENTS.md` directly), `docs/orchestration.md`, the zero-dependency Frontier engine, and that tool's command/skill files. Confirm with `maestro frontier status` (or `node bin/maestro.cjs frontier status` if `maestro` is not on PATH). This README is the npm package README; the package includes only the files listed in `package.json`, including `.codex-plugin/`, `bin/`, `frontier/`, `commands/`, `hooks/`, `settings/`, `docs/codex.md`, and `integrations/`. For Codex autorun, install or expose that packaged plugin through Codex's plugin directory or a local/repo marketplace, then review and trust the bundled hooks. Once published, swap `github:mbanderas/maestro` for `@maestrofrontier/frontier`.
 
 > **Want the bare `maestro` command (and the `/frontier` command it powers) on your `PATH`?** The `npx … install` above copies files into the project but does **not** register a global `maestro` binary — so the dropped `/frontier` command and the Codex skills, which call a bare `maestro`, will report `maestro: not recognized` until you add it. Install it once globally — `npm install -g github:mbanderas/maestro` (swap for `@maestrofrontier/frontier` once published) — then fully restart the tool so it picks up the new `PATH`. Without the global install, drive the engine with the `node bin/maestro.cjs frontier …` form from the project root instead.
 
-Frontier stays **off** until you arm it: `/maestro:frontier fusion opus-gpt` (Claude Code) or `maestro frontier mode fusion --preset opus-gpt --scope <tool>` elsewhere (armed state stays per-CLI-global; `--scope codex`/`cursor`/`gemini`/`cline`/`windsurf`).
+Frontier stays **off** until you arm it, then normal prompts auto-route until disabled in runtimes with trusted hooks. Claude Code: `/maestro:frontier fusion opus-gpt`. Codex after the Maestro plugin hook is enabled and trusted: use the active project/workspace scope, for example:
+
+```text
+maestro frontier mode fusion --preset chatgpt-duo --scope codex-project
+maestro frontier mode fusion --preset frontier-trio --judge chatgpt --synth chatgpt --scope codex-project
+maestro frontier mode off --scope codex-project
+```
+
+Run `maestro frontier status --scope codex-project` to check.
+`codex-project` expands to the repo's `codex-<8hex>` workspace scope,
+matching the trusted Codex plugin hook. `maestro frontier run "<prompt>" ...`
+is still available for advanced/debug one-offs, but arming mode is the normal
+autorun flow.
 
 ---
 
@@ -96,7 +110,7 @@ Presets define the panel; the judge and synthesizer default to Opus 4.8
 
 - **`opus-duo`**: two independent Opus runs, isolating the synthesis lift.
 - **`opus-gpt`**: Opus + GPT-5.5 (via `codex exec`); the recommended default for bounded spend.
-- **`gpt-duo`**: two GPT-5.5 runs whose judge and synthesizer also run on GPT-5.5: a Codex-only fusion that needs no `claude`.
+- **`chatgpt-duo`** (`gpt-duo` alias): two ChatGPT/Codex runs whose judge and synthesizer also run on ChatGPT/Codex: a Codex-only fusion that needs no `claude`.
 - **`frontier-trio`**: Opus + GPT-5.5 + Gemini 3.1 Pro (via `gemini -p`).
 - **`custom`**: 1-8 of the known models.
 
@@ -114,7 +128,7 @@ failure synthesizes from the raw responses; a hard failure returns a typed
 Honest scope, measured rather than implied: the **engine is built,
 unit-tested (degradation, recursion, budget, anti-majority all covered),
 and verified end-to-end on real runs of `single` mode and the
-`opus-gpt`, `opus-duo`, and `frontier-trio` presets**. The `gpt-duo`
+`opus-gpt`, `opus-duo`, and `frontier-trio` presets**. The `chatgpt-duo`
 preset and `--judge`/`--synth` selection share that same code path and
 are unit-tested, but not yet live-run. The quality *lift* of local fusion
 is **measured, not asserted**: on a 100-task suite (93 scored) every
@@ -178,7 +192,7 @@ Maestro separates **portable orchestration doctrine** from **runtime-specific ad
 | `.cursorrules` | Cursor adapter | Kernel copy (Cursor does not support imports); full S2-S6 in docs/orchestration.md |
 | [`docs/codex.md`](docs/codex.md) | Codex guide | AGENTS.md precedence and 32 KiB cap, Codex subagent mapping, Automations long-horizon mapping (Codex reads `AGENTS.md` natively) |
 
-Maestro's tools run on **both Claude Code and Codex** — in Claude Code as `/maestro:*` slash commands, and in Codex as installable skills, with the portable `node settings/cli.cjs` and `maestro frontier ...` CLIs working on any other agent too. The Codex skills (`frontier`, `terse`, `settings`, `update`) are installed to `.agents/skills/<name>/SKILL.md` by `maestro install --target codex`. When Frontier mode is on, the `frontier` skill leads each Codex reply with `Maestro Frontier ON (<label>)` (`single · <model>` or `fusion · <preset>`) — the Codex analog of Claude Code's armed Frontier indicator; run `maestro frontier status --scope codex` to check. This indicator is Codex-scoped only.
+Maestro's tools run on **both Claude Code and Codex** — in Claude Code as `/maestro:*` slash commands, and in Codex as installable skills plus plugin/config surfaces, with the portable `node settings/cli.cjs` and `maestro frontier ...` CLIs working on any other agent too. The Codex skills (`maestro-frontier`, `maestro-terse`, `maestro-settings`, `maestro-update`) are installed to `.agents/skills/<name>/SKILL.md` by `maestro install --target codex`; personal/global installs use `~/.agents/skills`. Safe migration/update refreshes Maestro-managed files, preserves user-edited files, and handles older unprefixed skill names where possible. When Frontier mode is on, the `maestro-frontier` skill leads each Codex reply with `Maestro Frontier ON (<label>)` (`single · <model>` or `fusion · <preset>`) — the Codex analog of Claude Code's armed Frontier indicator; run `maestro frontier status --scope codex-project` to check.
 
 GitHub Copilot, Cline, and Windsurf read `AGENTS.md` directly, so the portable core works there with no adapter. Maestro's always-on kernel (`AGENTS.md`) is ~8 KB, under Windsurf's 12,000-character limit and roughly a quarter of Codex's 32 KiB budget; the full multi-agent protocol loads on demand from `docs/orchestration.md`.
 
@@ -219,10 +233,10 @@ Every Maestro slash command in Claude Code is namespaced `/maestro:<name>`. The 
 | Toggle | Values | What it controls |
 |---|---|---|
 | `terse` | `off`, `lite`, `full`, `ultra` | Output-token reduction. Shows an amber level badge (`ULTRA`) on the status bar. |
-| `frontier` | `off`; `single:` `opus` / `gpt-5.5` / `gemini`; `fusion:` `opus-duo` / `opus-gpt` / `gpt-duo` / `frontier-trio` / `custom`, each with optional `--judge` / `--synth` | The local fusion engine. When armed it auto-runs on every prompt. The blue `f` panel badge means auto-run is on: `fO+C`, `fO+C+G`, `f*3` (`O`=Opus, `C`=ChatGPT/GPT-5.5, `G`=Gemini). |
+| `frontier` | `off`; `single:` `opus` / `gpt-5.5` / `gemini`; `fusion:` `opus-duo` / `opus-gpt` / `chatgpt-duo` / `frontier-trio` / `custom`, each with optional `--judge` / `--synth` | The local fusion engine. When armed it auto-runs on every prompt. The blue `f` panel badge means auto-run is on: `fO+C`, `fO+C+G`, `f*3` (`O`=Opus, `C`=ChatGPT/GPT-5.5, `G`=Gemini). |
 | `context-bar` | `on`, `off` | The status-line context-window progress bar. |
 
-Portable everywhere, Codex included: `node settings/cli.cjs status | list | help | set <key> <value>` (frontier also takes `--judge`, `--synth`, `--models a,b,c`). Full references: [`docs/settings.md`](docs/settings.md) and [`docs/context-bar.md`](docs/context-bar.md).
+Portable everywhere, Codex included: `node settings/cli.cjs status | list | help | set <key> <value>` (frontier also takes `--judge`, `--synth`, `--models a,b,c`, and `--scope <scope>`). Full references: [`docs/settings.md`](docs/settings.md) and [`docs/context-bar.md`](docs/context-bar.md).
 
 ## Updating Maestro
 

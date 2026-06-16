@@ -45,12 +45,8 @@ if (Number.isFinite(fusionDepth) && fusionDepth >= 1) noop();
 let state;
 try {
   const cfg = require('../frontier/config.cjs');
-  const cwd = data.cwd || process.env.CLAUDE_PROJECT_DIR || process.cwd();
-  // This hook only ever runs under Claude Code, so force a per-workspace
-  // scope; resolveScope honors --scope/MAESTRO_SCOPE first, then we ensure
-  // we never fall back to the shared legacy 'default' file.
-  let scope = cfg.resolveScope([], { cwd });
-  if (scope === 'default') scope = 'cc-' + cfg.workspaceHash(cwd);
+  const cwd = data.cwd || process.env.CLAUDE_PROJECT_DIR || process.env.CODEX_PROJECT_DIR || process.cwd();
+  const scope = cfg.resolveScope([], { cwd });
   state = cfg.loadState(scope);
 } catch {
   noop();

@@ -4,6 +4,8 @@ Codex reads `AGENTS.md` natively, no adapter file needed. This page
 maps Maestro's concepts onto Codex specifics. All behavior below was
 verified against the official Codex docs
 ([AGENTS.md guide](https://developers.openai.com/codex/guides/agents-md),
+[config reference](https://developers.openai.com/codex/config-reference#configtoml),
+[plugin-bundled hooks](https://developers.openai.com/codex/hooks#plugin-bundled-hooks),
 [Automations](https://developers.openai.com/codex/app/automations.md),
 [Subagents](https://developers.openai.com/codex/subagents.md))
 on 2026-06-12.
@@ -37,6 +39,30 @@ Practical consequences for Maestro:
 - **Global install:** putting Maestro in `~/.codex/AGENTS.md` applies
   the doctrine to every project; per-repo files then layer on top and
   win where they conflict.
+
+## Config, hooks, and trust
+
+Codex user config lives at `~/.codex/config.toml`. Project overrides can
+live in `.codex/config.toml`, but Codex loads project-local config,
+hooks, and rules only for trusted projects. Untrusted projects skip
+those local surfaces.
+
+Codex also supports plugin-bundled lifecycle hooks. Enabled plugins can
+ship hooks alongside user, project, and managed hooks; the default plugin
+hook file is `hooks/hooks.json`, and manifests can reference `./` paths
+or inline hook definitions. Treat plugin hooks as executable code:
+review and trust the plugin before enabling them. Codex sets
+`PLUGIN_ROOT` and `PLUGIN_DATA` for plugin hooks, and also sets
+`CLAUDE_PLUGIN_ROOT` and `CLAUDE_PLUGIN_DATA` for compatibility.
+
+`maestro install --target codex` installs project doctrine, the portable
+Frontier engine, the compatibility prompt, and Maestro-owned Codex skills.
+It does not by itself enable plugin hooks. Frontier autorun requires the
+Maestro package to be installed or exposed as a Codex plugin, then enabled
+and trusted in Codex. This package includes `.codex-plugin/plugin.json`
+pointing at `./hooks/hooks.json`, so a Codex marketplace or local plugin
+entry can load the bundled hook set directly. Restart Codex or start a new
+thread after changing plugin installation/trust state.
 
 ## Multi-agent routing (S2-S6 mapping)
 
@@ -75,24 +101,57 @@ memory), and an explicit final report instead of a zombie loop. For
 project-scoped automations note the Codex requirement that the local
 app is running and the project is on disk.
 
-## What does not transfer
+## Frontier autorun and scope
 
-Codex has no user-hook system equivalent to Claude Code's, so Maestro's
-structural enforcement pack (subagent guard, loop guard, phase-scope
-guard, gate telemetry) does not run on Codex. The prose doctrine in
-`AGENTS.md` is the enforcement surface; S7.3's verification gate relies
-on the model honoring it rather than on a hook.
+Frontier is off until you arm it. For Codex, the normal workflow is:
 
-The Maestro context bar also does not apply: Codex CLI ships a native
+```text
+maestro frontier mode fusion --preset chatgpt-duo --scope codex-project
+maestro frontier mode fusion --preset frontier-trio --judge chatgpt --synth chatgpt --scope codex-project
+maestro frontier mode off --scope codex-project
+```
+
+Once the Maestro Codex plugin hook is installed, enabled, and trusted,
+normal Codex prompts route through Frontier until you turn it off.
+`maestro frontier run "<prompt>" ...` remains available for advanced/debug
+one-offs, but it is not the everyday Codex flow.
+
+Project/workspace scope is the recommended default for repo installs:
+it keeps one repository's armed state from leaking into another. In a
+Codex plugin context Maestro resolves this automatically to a
+`codex-<8hex>` workspace scope. From a shell in the repo, pass
+`--scope codex-project` (or `codex-workspace`) to resolve the same project
+scope. Global/user scope is optional: choose an explicit name such as
+`--scope codex-global` only when you deliberately want the same state across
+projects.
+
+Use the same active scope for all lifecycle commands:
+
+```text
+maestro frontier status --scope codex-project
+maestro frontier mode off --scope codex-project
+maestro frontier mode fusion --preset chatgpt-duo --scope codex-project
+maestro frontier mode fusion --preset frontier-trio --judge chatgpt --synth chatgpt --scope codex-project
+```
+
+## What differs from Claude Code
+
+Claude Code-specific UI such as the Maestro context bar does not apply:
+Codex CLI ships a native
 context-usage indicator (`/statusline` picker, or `context` in
 `[tui].status_line` in `~/.codex/config.toml`).
 
 ## Skills and the Frontier ON indicator
 
-`maestro install --target codex` installs the `frontier`, `terse`, `settings`,
-and `update` Maestro commands as Codex skills (no-clobber) to
-`.agents/skills/<name>/SKILL.md` (per-repo) or `~/.agents/skills/<name>/SKILL.md`
-(global). When `maestro frontier status --scope codex` reports mode != off, the
-`frontier` skill instructs Codex to lead its reply with
+Codex skills can live in personal `$HOME/.agents/skills` or repo
+`.agents/skills`. `maestro install --target codex` installs Maestro-owned
+skills named `maestro-frontier`, `maestro-settings`, `maestro-terse`, and
+`maestro-update` to `.agents/skills/<name>/SKILL.md` for project installs
+or `~/.agents/skills/<name>/SKILL.md` for global/user installs. Re-running
+install/update safely refreshes Maestro-managed files, preserves
+user-edited files, and migrates older unprefixed skill names where safe.
+
+When `maestro frontier status --scope codex-project` reports mode != off,
+the `maestro-frontier` skill instructs Codex to lead its reply with
 `Maestro Frontier ON (<label>)` — `single · <model>` or `fusion · <preset>`. When
 mode is off, no indicator line appears.

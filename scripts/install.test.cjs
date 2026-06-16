@@ -10,7 +10,7 @@ const fs   = require('fs');
 const os   = require('os');
 const path = require('path');
 
-const { run } = require('./install.cjs');
+const { run, _test } = require('./install.cjs');
 
 // ---- harness ----
 
@@ -83,6 +83,8 @@ function mkTmpTracked() {
   check('2: real run returns 0', code === 0);
   check('2: creates AGENTS.md', fs.existsSync(path.join(TMP, 'AGENTS.md')));
   check('2: creates frontier/cli.cjs', fs.existsSync(path.join(TMP, 'frontier', 'cli.cjs')));
+  check('2: creates settings/cli.cjs', fs.existsSync(path.join(TMP, 'settings', 'cli.cjs')));
+  check('2: creates settings/config.cjs', fs.existsSync(path.join(TMP, 'settings', 'config.cjs')));
   check('2: creates bin/maestro.cjs', fs.existsSync(path.join(TMP, 'bin', 'maestro.cjs')));
   check('2: creates .gemini/commands/frontier.toml', fs.existsSync(path.join(TMP, '.gemini', 'commands', 'frontier.toml')));
   check('2: creates docs/orchestration.md', fs.existsSync(path.join(TMP, 'docs', 'orchestration.md')));
@@ -227,7 +229,7 @@ function mkTmpTracked() {
 
 // ---- test 9: codex skills install ----
 {
-  const SKILLS = ['frontier', 'terse', 'settings', 'update'];
+  const SKILLS = ['maestro-frontier', 'maestro-terse', 'maestro-settings', 'maestro-update'];
   const skillPath = (root, name) =>
     path.join(root, '.agents', 'skills', name, 'SKILL.md');
 
@@ -252,20 +254,24 @@ function mkTmpTracked() {
   check('9d: codex still installs AGENTS.md', fs.existsSync(path.join(TMP, 'AGENTS.md')));
   check('9d: codex still installs .codex/prompts/frontier.md wrapper',
     fs.existsSync(path.join(TMP, '.codex', 'prompts', 'frontier.md')));
+  check('9d: codex installs settings CLI used by settings/terse skills',
+    fs.existsSync(path.join(TMP, 'settings', 'cli.cjs')));
 
   // 9.4 INDICATOR contract delivered by the installed frontier skill
-  const frontier = fs.readFileSync(skillPath(TMP, 'frontier'), 'utf8');
+  const frontier = fs.readFileSync(skillPath(TMP, 'maestro-frontier'), 'utf8');
   check('9e: frontier SKILL.md contains "Maestro Frontier ON" indicator',
     frontier.includes('Maestro Frontier ON'));
-  check('9e: frontier SKILL.md references status --scope codex',
-    frontier.includes('maestro frontier status --scope codex'));
+  check('9e: frontier SKILL.md frontmatter is namespaced',
+    frontier.includes('name: maestro-frontier'));
+  check('9e: frontier SKILL.md references status --scope codex-project',
+    frontier.includes('maestro frontier status --scope codex-project'));
   check('9e: frontier SKILL.md states the off contract (no indicator line)',
     frontier.includes('output no indicator line'));
 
   // 9.5 re-run is no-clobber / idempotent (does not overwrite or error)
   const userEdit = '\nUSER LOCAL EDIT\n';
-  fs.appendFileSync(skillPath(TMP, 'frontier'), userEdit, 'utf8');
-  const edited = fs.readFileSync(skillPath(TMP, 'frontier'), 'utf8');
+  fs.appendFileSync(skillPath(TMP, 'maestro-frontier'), userEdit, 'utf8');
+  const edited = fs.readFileSync(skillPath(TMP, 'maestro-frontier'), 'utf8');
 
   const origWrite = process.stdout.write.bind(process.stdout);
   const captured = [];
@@ -275,9 +281,111 @@ function mkTmpTracked() {
 
   check('9f: re-run returns 0 (no error on existing skill)', rerun === 0);
   check('9f: re-run does not clobber user edit to skill',
-    fs.readFileSync(skillPath(TMP, 'frontier'), 'utf8') === edited);
-  check('9f: re-run logs skipped (exists) for codex skill',
-    captured.join('').includes('skipped (exists'));
+    fs.readFileSync(skillPath(TMP, 'maestro-frontier'), 'utf8') === edited);
+  check('9f: re-run logs user-edited preservation for codex skill',
+    captured.join('').includes('preserved user-edited Codex skill'));
+  check('9g: new install does not create legacy generic skill aliases',
+    !fs.existsSync(skillPath(TMP, 'frontier')));
+}
+
+// ---- test 10: codex skills install to --user scope ----
+{
+  const OLD_HOME = process.env.USERPROFILE;
+  const HOME = mkTmpTracked();
+  process.env.USERPROFILE = HOME;
+
+  const code = run(['--target', 'codex', '--project', mkTmpTracked(), '--user']);
+
+  process.env.USERPROFILE = OLD_HOME;
+
+  const skillPath = (name) => path.join(HOME, '.agents', 'skills', name, 'SKILL.md');
+  check('10a: codex --user install returns 0', code === 0);
+  check('10b: codex --user creates namespaced frontier skill',
+    fs.existsSync(skillPath('maestro-frontier')));
+  check('10c: codex --user creates namespaced update skill',
+    fs.existsSync(skillPath('maestro-update')));
+}
+
+// ---- test 11: managed namespaced skills refresh on re-run ----
+{
+  const TMP = mkTmpTracked();
+  const skillPath = path.join(TMP, '.agents', 'skills', 'maestro-update', 'SKILL.md');
+
+  run(['--target', 'codex', '--project', TMP]);
+  fs.writeFileSync(skillPath, '<!-- maestro-managed:codex-skill name=maestro-update sha256=0000 -->\nSTALE MANAGED\n', 'utf8');
+  run(['--target', 'codex', '--project', TMP]);
+
+  const refreshed = fs.readFileSync(skillPath, 'utf8');
+  check('11a: stale managed namespaced skill is refreshed', !refreshed.includes('STALE MANAGED'));
+  check('11b: refreshed managed skill keeps ownership marker',
+    refreshed.includes('maestro-managed:codex-skill name=maestro-update'));
+}
+
+// ---- test 12: user-edited installed skills are preserved with next steps ----
+{
+  const TMP = mkTmpTracked();
+  const skillPath = path.join(TMP, '.agents', 'skills', 'maestro-settings', 'SKILL.md');
+  fs.mkdirSync(path.dirname(skillPath), { recursive: true });
+  fs.writeFileSync(skillPath, 'USER SETTINGS SKILL\n', 'utf8');
+
+  const origWrite = process.stdout.write.bind(process.stdout);
+  const captured = [];
+  process.stdout.write = (s) => { captured.push(s); origWrite(s); return true; };
+  const code = run(['--target', 'codex', '--project', TMP]);
+  process.stdout.write = origWrite;
+
+  const output = captured.join('');
+  check('12a: user-edited skill preservation returns 0', code === 0);
+  check('12b: user-edited skill is not overwritten',
+    fs.readFileSync(skillPath, 'utf8') === 'USER SETTINGS SKILL\n');
+  check('12c: preservation report includes next steps',
+    output.includes('preserved user-edited Codex skill') && output.includes('next step'));
+}
+
+// ---- test 13: legacy generic skill migration semantics ----
+{
+  const TMP = mkTmpTracked();
+  const LEGACY = [
+    ['frontier', 'maestro-frontier'],
+    ['terse', 'maestro-terse'],
+    ['settings', 'maestro-settings'],
+    ['update', 'maestro-update'],
+  ];
+
+  for (const [legacyName] of LEGACY) {
+    const genericPath = path.join(TMP, '.agents', 'skills', legacyName, 'SKILL.md');
+    fs.mkdirSync(path.dirname(genericPath), { recursive: true });
+    fs.writeFileSync(genericPath, _test.LEGACY_CODEX_SKILL_TEMPLATES[legacyName], 'utf8');
+  }
+
+  const origWrite = process.stdout.write.bind(process.stdout);
+  const captured = [];
+  process.stdout.write = (s) => { captured.push(s); origWrite(s); return true; };
+  run(['--target', 'codex', '--project', TMP]);
+  process.stdout.write = origWrite;
+
+  for (const [legacyName, namespacedName] of LEGACY) {
+    const genericPath = path.join(TMP, '.agents', 'skills', legacyName, 'SKILL.md');
+    const namespacedPath = path.join(TMP, '.agents', 'skills', namespacedName, 'SKILL.md');
+    const migrated = fs.readFileSync(genericPath, 'utf8');
+    check(`13a: namespaced ${namespacedName} skill is installed during legacy migration`, fs.existsSync(namespacedPath));
+    check(`13b: previous tracked ${legacyName} skill is replaced with compatibility shim`,
+      migrated.includes('Legacy Maestro compatibility skill') && migrated.includes(namespacedName));
+  }
+  check('13c: legacy migration is reported',
+    captured.join('').includes('migrated legacy Codex skill'));
+
+  const genericPath = path.join(TMP, '.agents', 'skills', 'frontier', 'SKILL.md');
+  fs.writeFileSync(genericPath, 'USER LEGACY FRONTIER\n', 'utf8');
+  const captured2 = [];
+  process.stdout.write = (s) => { captured2.push(s); origWrite(s); return true; };
+  run(['--target', 'codex', '--project', TMP]);
+  process.stdout.write = origWrite;
+
+  check('13d: user-edited legacy generic skill is preserved',
+    fs.readFileSync(genericPath, 'utf8') === 'USER LEGACY FRONTIER\n');
+  check('13e: preserved legacy generic skill report includes next steps',
+    captured2.join('').includes('preserved user-edited legacy Codex skill'));
 }
 
 // ---- cleanup ----

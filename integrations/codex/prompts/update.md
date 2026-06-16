@@ -30,6 +30,9 @@ curl -O https://raw.githubusercontent.com/mbanderas/maestro/main/bin/maestro.cjs
 ```
 
 After updating, run `node bin/maestro.cjs frontier status` to confirm the engine is present.
+For Codex skills, managed Maestro copies refresh automatically, user-edited
+copies are preserved with next-step output, and older exact unprefixed Maestro
+skills may be migrated to compatibility shims.
 
 Report what was refreshed and note any errors.
 

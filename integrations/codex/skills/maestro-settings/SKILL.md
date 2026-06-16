@@ -1,5 +1,5 @@
 ---
-name: settings
+name: maestro-settings
 description: View and change Maestro toggles (terse, frontier, context-bar) via the settings CLI
 ---
 

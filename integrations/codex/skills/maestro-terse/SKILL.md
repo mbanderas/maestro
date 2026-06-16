@@ -1,5 +1,5 @@
 ---
-name: terse
+name: maestro-terse
 description: Toggle Maestro terse output level (lite, full, ultra, off) via the settings CLI
 ---
 

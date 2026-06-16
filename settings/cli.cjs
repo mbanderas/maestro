@@ -109,7 +109,7 @@ function usageText() {
     '    terse        <off|lite|full|ultra>\n' +
     '    frontier     <off | single:<model> | fusion:<preset>>\n' +
     '    context-bar  <on|off>\n' +
-    '  --scope targets a named frontier state (e.g. codex, cursor); omit to autodetect (Claude Code => per-workspace cc-<hash>)\n'
+    '  --scope targets a frontier state; use codex-project/codex-workspace for Codex repo scope, or an explicit name such as codex-global for shared state\n'
   );
 }
 
