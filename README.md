@@ -25,40 +25,22 @@
   <sub>13 fixture tasks &middot; 123 valid A/B runs &middot; 11 voids excluded &amp; re-run &middot; 6 hooks, all tested &middot; ~8 KB always-on kernel &middot; 2-line plugin install</sub>
 </p>
 
-> **⚡ Universal install** — paste this to your coding agent (Claude Code, Gemini, Codex / Codex Desktop, Cursor, Cline, Windsurf, …) and it installs the full Maestro your runtime can run — orchestration doctrine, the Frontier engine, and on Claude Code the whole plugin:
+> **⚡ Install — one command, any CLI:**
+
+```bash
+npx github:mbanderas/maestro install --target auto --project .
+```
+
+It installs the orchestration doctrine (appended to `AGENTS.md`), the Frontier fusion engine, and your tool's `/frontier` wrapper — **append-only, it never overwrites or deletes your files**. Confirm with `maestro frontier status` (or `node bin/maestro.cjs frontier status` if `maestro` is not yet on PATH). Once published, `npx @maestrofrontier/frontier install --target auto` is the equivalent shorthand.
+
+**Claude Code** gets the full plugin — enforcement hooks, `/maestro:*` commands, skills, status line, Frontier auto-run — in two lines:
 
 ```text
-Install Maestro into this repository — the orchestration doctrine, the Frontier fusion engine,
-and, on Claude Code, the full plugin machinery. Source of truth: the repo at
-https://github.com/mbanderas/maestro (raw base https://raw.githubusercontent.com/mbanderas/maestro/main/).
-
-1. Doctrine — every runtime. Put AGENTS.md in the project root; if one already exists, append
-Maestro's content below what is there and never overwrite or delete it. Add my runtime adapter —
-CLAUDE.md (Claude Code), GEMINI.md (Gemini), or .cursorrules (Cursor); Codex needs only AGENTS.md.
-Merge the adapter into any existing file the same append-only way, and make the adapter — not
-AGENTS.md — import @AGENTS.md at the top (Cursor has no imports, so paste the kernel in). Also
-fetch docs/orchestration.md into docs/ — the doctrine loads the full S2-S6 multi-agent protocol
-from it on demand.
-
-2. Machinery.
-- Claude Code: run `/plugin marketplace add mbanderas/maestro` then `/plugin install maestro@maestro`.
-Those two lines wire the enforcement hooks, /maestro:* commands, skills, status line, and the
-Frontier engine with auto-run. That is the entire install — you are done.
-- Any other CLI (Codex, Cursor, Gemini, Cline, Windsurf, …): run
-`npx github:mbanderas/maestro install --target auto --project .` from the project root — it
-fetches the engine, copies the integration files, and verifies the install in one step. Zero
-dependencies; works today from GitHub before any npm publish. Once Maestro is published to
-npm, `npx @maestrofrontier/frontier install --target auto` is the equivalent shorthand. Confirm with
-`maestro frontier status` (or `node bin/maestro.cjs frontier status` if maestro is not yet on
-PATH). For a /frontier slash command, the install copies integrations/cursor/commands/frontier.md
-to .cursor/commands/ (Cursor) or integrations/codex/prompts/frontier.md to ~/.codex/prompts/
-(Codex). The plugin's enforcement hooks, /maestro:* commands, and skills can't load outside Claude
-Code, so the doctrine from step 1 is what governs the agent there. Per non-Claude tool add
---scope <tool> (e.g. --scope codex, --scope cursor) so armed state stays per-CLI-global.
-
-Leave Frontier off (its default) until I arm it — /maestro:frontier on Claude Code, or
-`maestro frontier mode fusion --preset opus-gpt` elsewhere.
+/plugin marketplace add mbanderas/maestro
+/plugin install maestro@maestro
 ```
+
+Frontier stays **off** until you arm it: `/maestro:frontier fusion opus-gpt` on Claude Code, or `maestro frontier mode fusion --preset opus-gpt --scope <tool>` elsewhere (armed state stays per-CLI-global; add `--scope codex`/`cursor`/`gemini`/`cline`/`windsurf`).
 
 ---
 
