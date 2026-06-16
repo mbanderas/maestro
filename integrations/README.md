@@ -20,7 +20,7 @@ loads on demand.
 | Runtime | Source in this repo | Install to | Invoke |
 |---|---|---|---|
 | Cursor | `integrations/cursor/commands/frontier.md` | `.cursor/commands/frontier.md` (per-repo) or `~/.cursor/commands/` (global) | `/frontier` |
-| Codex (CLI + IDE/Desktop) | `integrations/codex/prompts/frontier.md` | `~/.codex/prompts/frontier.md` (global only) | `/frontier` |
+| Codex (CLI + IDE/Desktop) | `integrations/codex/skills/frontier/SKILL.md` (and `terse`, `settings`, `update`) | `.agents/skills/<name>/SKILL.md` (per-repo) or `~/.agents/skills/<name>/SKILL.md` (global) | `/frontier` |
 
 After adding a file, restart the tool or open a new chat so it loads. Both runtimes
 expand `$ARGUMENTS` to the full argument string — `/frontier fusion opus-gpt` passes
@@ -60,7 +60,7 @@ updates are a single invocation:
 | Runtime | Source in this repo | Install to | Invoke |
 |---|---|---|---|
 | Cursor | `integrations/cursor/commands/update.md` | `.cursor/commands/update.md` (per-repo) or `~/.cursor/commands/` (global) | `/update` |
-| Codex (CLI + IDE/Desktop) | `integrations/codex/prompts/update.md` | `~/.codex/prompts/update.md` (global only) | `/update` |
+| Codex (CLI + IDE/Desktop) | `integrations/codex/skills/update/SKILL.md` | `.agents/skills/update/SKILL.md` (per-repo) or `~/.agents/skills/update/SKILL.md` (global) | `/update` |
 
 **Version model:** Maestro pins no version for portable files. Fetching from
 latest `main` always resolves the newest committed code — no manual version bump
@@ -71,13 +71,20 @@ needed per release.
 - **No auto-run.** Neither runtime has a `UserPromptSubmit` hook, so arming a mode
   (`mode fusion`) only persists state — nothing fuses later prompts automatically.
   Use `/frontier run "<prompt>"` to actually run the panel.
-- **Codex custom prompts are deprecated.** OpenAI's docs say *"Deprecated. Use
-  skills for reusable prompts."* The prompt file still works in current Codex (CLI
-  and IDE), but the forward path is a Codex *skill* (repo-shareable, implicitly
-  invoked) — a different format than this template. This port favors the simple
-  prompt file by design.
-- **Codex has no confirmed per-repo prompt path** — `~/.codex/prompts/` is global
-  per-user. Cursor's `.cursor/commands/` is the repo-scoped option.
+- **Codex uses skills, not prompts.** `maestro install --target codex` installs the
+  `frontier`, `terse`, `settings`, and `update` skills as Codex skills
+  (no-clobber) to `.agents/skills/<name>/SKILL.md` (per-repo) or
+  `~/.agents/skills/<name>/SKILL.md` (global). The deprecated
+  `~/.codex/prompts/frontier.md` prompt file remains as a compatibility bridge but
+  the canonical path is the skill.
+- **Codex per-repo skill path:** `.agents/skills/<name>/SKILL.md` is the
+  repo-scoped option for Codex skills. The global path is
+  `~/.agents/skills/<name>/SKILL.md`.
+- **Maestro Frontier ON indicator (Codex only).** When
+  `maestro frontier status --scope codex` reports mode != off, the `frontier` skill
+  instructs Codex to lead its reply with `Maestro Frontier ON (<label>)` —
+  `single · <model>` or `fusion · <preset>`. When mode is off, no indicator line
+  appears. This is Codex-scoped only and has no effect on Claude Code.
 - **Requires `frontier/` and `bin/maestro.cjs` in the project.** The command runs
   `maestro frontier ...` (or `node bin/maestro.cjs frontier ...`) from the repo root,
   so the engine must have been copied in during install.
