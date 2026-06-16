@@ -1,0 +1,9 @@
+*.test.cjs
+frontier/*.test.cjs
+hooks/*.test.cjs
+bin/*.test.cjs
+settings/*.test.cjs
+_*
+benchmarks/
+*.original.md
+scripts/downstream.txt

@@ -1,6 +1,12 @@
 #!/usr/bin/env node
 // Maestro Frontier — mode router (off / single / fusion).
 // runFrontier({prompt, state, cfg, deps}) -> Promise<FusionResult>.
+//
+// Re-grounding note (Fable T2): the engine fans a prompt to model CLIs
+// that do NOT share this session's file/context. A member or synthesis
+// output asserting "I can't see X" / "no such file" reflects that
+// subprocess's blank context, not ground truth — re-ground such claims
+// against live context before relaying them to the user (AGENTS.md S7.7).
 
 'use strict';
 
