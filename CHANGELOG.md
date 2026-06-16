@@ -78,6 +78,15 @@ All notable changes to Maestro are documented here. The format follows
 - **CI test helper platform divergence** — `cc-scope` test helpers now
   produce identical results on Ubuntu and Windows; CI is green on both
   `ubuntu-latest` and `windows-latest` runners.
+- **README install docs: `maestro` on `PATH`.** `npx … install` copies
+  files into the project but does not register a global `maestro` binary,
+  so the dropped `/frontier` command and Codex skills reported
+  `maestro: not recognized`. README now documents the one-time
+  `npm install -g github:mbanderas/maestro` (or `@maestrofrontier/frontier`)
+  global install and the restart needed to pick up `PATH`.
+- **markdownlint MD009 on `main`** — removed a trailing space in the
+  README "Updating Maestro" heading that failed `npm run lint` and broke CI
+  on the `Update README.md` push.
 
 ### Changed
 

@@ -47,6 +47,8 @@
 
 Per tool it lays down `AGENTS.md` + that tool's adapter (`CLAUDE.md` / `GEMINI.md` / `.cursorrules`; Codex, Cline, and Windsurf read `AGENTS.md` directly), `docs/orchestration.md`, the zero-dependency Frontier engine, and that tool's `/frontier` command. Confirm with `maestro frontier status` (or `node bin/maestro.cjs frontier status` if `maestro` is not on PATH). Once published, swap `github:mbanderas/maestro` for `@maestrofrontier/frontier`.
 
+> **Want the bare `maestro` command (and the `/frontier` command it powers) on your `PATH`?** The `npx … install` above copies files into the project but does **not** register a global `maestro` binary — so the dropped `/frontier` command and the Codex skills, which call a bare `maestro`, will report `maestro: not recognized` until you add it. Install it once globally — `npm install -g github:mbanderas/maestro` (swap for `@maestrofrontier/frontier` once published) — then fully restart the tool so it picks up the new `PATH`. Without the global install, drive the engine with the `node bin/maestro.cjs frontier …` form from the project root instead.
+
 Frontier stays **off** until you arm it: `/maestro:frontier fusion opus-gpt` (Claude Code) or `maestro frontier mode fusion --preset opus-gpt --scope <tool>` elsewhere (armed state stays per-CLI-global; `--scope codex`/`cursor`/`gemini`/`cline`/`windsurf`).
 
 ---
@@ -226,7 +228,7 @@ Portable everywhere, Codex included: `node settings/cli.cjs status | list | help
 
 Maestro no longer pins a plugin version. The marketplace always resolves to the latest `main`, so updating is a single refresh — no version bump needed in any file.
 
-### Claude Code 
+### Claude Code
 
 `/maestro:update` is the one-command path — it pulls the latest marketplace code, reports what changed, and tells you when to reload:
 
