@@ -45,7 +45,7 @@
   <circle cx="524" cy="41" r="5" fill="#2ecc71"/>
   <text class="ttl" x="544" y="45">with Maestro &#183; t12 run 2</text>
 
-  <text class="gate" x="488" y="86">GATE: files=6 concerns=3 -&gt; single-agent &#8230;</text>
+  <text class="gate" x="488" y="86">Maestro &#183; frontier off &#8212; files=6 concerns=3 -&gt; single-agent &#8230;</text>
   <text class="ln" x="488" y="114">[gate verdict written before first edit]</text>
   <text class="ln" x="488" y="142">[edits, then functional check]</text>
   <text class="good" x="488" y="178">UNVERIFIED: no type-checker or linter</text>

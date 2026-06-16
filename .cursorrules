@@ -18,11 +18,14 @@ requested scope.
 ## 1. Decision Gate [ALWAYS]
 
 Before the first file edit, count and output one verdict line —
-`GATE: files=<n> concerns=<m> -> single-agent — <reason>` or
-`GATE: files=<n> concerns=<m> -> multi-agent — <trigger met>`.
+`Maestro · frontier <on|off> — files=<n> concerns=<m> -> single-agent — <reason>` or
+`Maestro · frontier <on|off> — files=<n> concerns=<m> -> multi-agent — <trigger met>`.
 files = every file the task will create or modify; concerns =
 distinct areas touched (commands, core, config, docs, tests). No
-edits before the verdict.
+edits before the verdict. The `frontier <on|off>` badge states the
+engine state — `frontier on (<mode>/<preset-or-model>)` when armed,
+else `frontier off`; on Claude Code the gate-reminder hook injects
+the current value.
 
 Multi-agent triggers (ANY true — check FIRST): 5+ files across 2+
 concerns, independent subtasks, >15 messages single-agent,

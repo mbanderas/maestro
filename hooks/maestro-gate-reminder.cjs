@@ -40,14 +40,29 @@ try { fs.writeFileSync(marker, '1'); } catch { /* still remind */ }
 
 const checklistLines = [
   'Maestro Decision Gate (S1): before the first file edit, output the',
-  'counted verdict line `GATE: files=<n> concerns=<m> -> single-agent',
-  '| multi-agent — <reason>`. files>=5 across 2+ concerns = multi-agent:',
-  'spawn the Planner via the Agent/Task tool BEFORE any edit. A met',
-  'trigger downgrades ONLY on >60% file overlap between subtasks or',
-  '<=3 files total in one dependency chain. Sub-trigger tasks stay',
-  'single-agent.'
+  'counted verdict line `Maestro · frontier <on|off> — files=<n>',
+  'concerns=<m> -> single-agent | multi-agent — <reason>`. files>=5',
+  'across 2+ concerns = multi-agent: spawn the Planner via the',
+  'Agent/Task tool BEFORE any edit. A met trigger downgrades ONLY on',
+  '>60% file overlap between subtasks or <=3 files total in one',
+  'dependency chain. Sub-trigger tasks stay single-agent.'
 ];
-const checklist = checklistLines.join('\n');
+
+// Inject the live frontier engine state so the badge in the verdict
+// line is accurate. Degrades to 'off' on any failure — never throws.
+let badge = 'off';
+try {
+  const cfg = require('../frontier/config.cjs');
+  const cwd = data.cwd || process.env.CLAUDE_PROJECT_DIR || process.cwd();
+  const scope = cfg.resolveScope([], { cwd });
+  const st = cfg.loadState(scope);
+  badge = (!st || st.mode === 'off')
+    ? 'off'
+    : ('on (' + st.mode + '/' + (st.preset || st.model || '') + ')');
+} catch { badge = 'off'; }
+
+const checklist = checklistLines.join('\n') +
+  '\nCurrent frontier state for the badge: frontier ' + badge;
 
 process.stdout.write(JSON.stringify({
   hookSpecificOutput: {
