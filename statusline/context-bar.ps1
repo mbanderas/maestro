@@ -61,6 +61,47 @@ function Get-WorkspaceScope($wsCwd) {
     return 'cc-' + $hex.Substring(0,8)
 }
 
+# Live Frontier run progress. Reads frontier-progress.<scope>.json written by
+# frontier/progress.cjs while an armed autorun is mid-pipeline. Same hardening
+# as the badge below: refuse symlinks/reparse points, size cap, and only ever
+# emit the whitelisted phase words + clamped integer counts -- never raw bytes.
+# A stale file (ts older than 300s) is ignored so a crashed run never pins a
+# phantom phase. Returns '' when no fresh progress exists (-> static badge).
+function Get-FrontierProgress($cfgDir, $ws) {
+    $scoped = if ($ws) { Join-Path $cfgDir ('frontier-progress.' + $ws + '.json') } else { $null }
+    $legacy = Join-Path $cfgDir 'frontier-progress.json'
+    $path = if ($scoped -and (Test-Path -LiteralPath $scoped -PathType Leaf)) { $scoped }
+            elseif ($ws -like 'cc-*') { $null }
+            elseif (Test-Path -LiteralPath $legacy -PathType Leaf) { $legacy }
+            else { $null }
+    if (-not $path) { return '' }
+    $item = Get-Item -LiteralPath $path -Force -ErrorAction SilentlyContinue
+    if (-not $item -or $item.PSIsContainer) { return '' }
+    if ($item.Attributes -band [IO.FileAttributes]::ReparsePoint) { return '' }
+    if ($item.Length -gt 8192) { return '' }
+    try { $p = [IO.File]::ReadAllText($item.FullName) | ConvertFrom-Json } catch { return '' }
+    if (-not $p) { return '' }
+    $phase = [string]$p.phase
+    if ($phase -notin @('panel', 'judge', 'synth', 'single')) { return '' }
+    $ts = 0L
+    try { $ts = [long]$p.ts } catch { return '' }
+    if ($ts -le 0 -or ([DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds() - $ts) -gt 300000) { return '' }
+    $done = 0; $total = 0
+    try { $done = [int]$p.done } catch {}
+    try { $total = [int]$p.total } catch {}
+    if ($done -lt 0) { $done = 0 } elseif ($done -gt 99) { $done = 99 }
+    if ($total -lt 0) { $total = 0 } elseif ($total -gt 99) { $total = 99 }
+    $f = [char]0x0192
+    switch ($phase) {
+        'panel'  { $label = if ($total -gt 0) { "$([char]0x283F) fanning $done/$total" } else { "$([char]0x283F) fanning" } }
+        'judge'  { $label = "$([char]0x2696) judging" }
+        'synth'  { $label = "$([char]0x2726) synth" }
+        'single' { $label = "$([char]0x283F) running" }
+        default  { return '' }
+    }
+    return " $esc[38;5;214m$f$label$reset"
+}
+
 # Frontier badge. Reads frontier-state.<scope>.json written by frontier/config.cjs
 # (configDir = $XDG_CONFIG_HOME/maestro, else %APPDATA%\maestro). Same
 # hardening as the terse badge: refuse symlinks, size cap, and -- crucially --
@@ -73,6 +114,9 @@ function Get-FrontierBadge {
               elseif ($env:APPDATA) { Join-Path $env:APPDATA 'maestro' }
               else { Join-Path $HOME 'AppData\Roaming\maestro' }
     $ws = Get-WorkspaceScope $cwd
+    # A live run takes precedence over the static armed badge.
+    $prog = Get-FrontierProgress $cfgDir $ws
+    if ($prog) { return $prog }
     $scoped = if ($ws) { Join-Path $cfgDir ('frontier-state.' + $ws + '.json') } else { $null }
     $legacy = Join-Path $cfgDir 'frontier-state.json'
     $statePath = if ($scoped -and (Test-Path -LiteralPath $scoped -PathType Leaf)) { $scoped } elseif ($ws -like 'cc-*') { $null } else { $legacy }
