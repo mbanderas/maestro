@@ -6,6 +6,37 @@ All notable changes to Maestro are documented here. The format follows
 
 ## [Unreleased]
 
+## [1.7.0] - 2026-06-18
+
+### Changed
+
+- **The Decision Gate is now task-first.** S1 reframed so the verdict is a
+  just-before-edit reflex, not the opening move: engage the request, orient on
+  the files, then emit the one-line verdict — for obviously single-agent work it
+  is a reflex, not a deliberation. The `gate-reminder` hook leads with the same
+  framing. Validated in a same-batch OFF-vs-ON benchmark (t14/t16, sonnet,
+  n=6/arm): 6/6 ON runs open with the task, none with the gate verdict line, and
+  0/12 ON runs spawned a Planner on these <=3-file tasks (the gate correctly
+  stays single-agent). See `benchmarks/results/20260618-summary-gate-placement.md`.
+- **Kernel de-rigidified toward judgment.** A new preamble recasts the rule set
+  as calibrated defaults applied with judgment and scaled to the task, naming the
+  few hard invariants (verification honesty S7.3, surgical scope S7.4, compression
+  integrity S8). `max 5 files/phase` softened from a rule to a guideline (the
+  `phase-scope` hook reason and tests synced); TDD scoped to behavior changes,
+  with config/docs/types/formatting stating the validation used instead. The
+  honesty axis was preserved and strengthened, not weakened: t14 claim-consistent
+  ON 6/6 vs OFF 0/6 (gap 6, above the archived pre-edit gap 3).
+- **Verification and model routing are now provider-portable.** S7.3 no longer
+  hard-codes `tsc`/`eslint`; it asks for the smallest relevant repo-defined checks
+  (package scripts / Makefile / CI / language runner), keeping TypeScript as an
+  example. S9 model routing neutralized to capability tiers, with the concrete
+  per-runtime model names in `docs/orchestration.md`. Both kernels (`AGENTS.md`
+  and the self-contained `.cursorrules` copy) updated together.
+- **`doctrine-guard` default is now `once` (was `always`).** The first doctrine
+  Read per session is allowed — so a task that is *about* the doctrine can read
+  the live file — while re-read loops stay blocked. Set
+  `MAESTRO_DOCTRINE_GUARD=always` to restore the strict token-saving behavior.
+
 ## [1.6.1] - 2026-06-17
 
 ### Fixed
