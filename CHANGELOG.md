@@ -6,6 +6,24 @@ All notable changes to Maestro are documented here. The format follows
 
 ## [Unreleased]
 
+## [1.6.1] - 2026-06-17
+
+### Fixed
+
+- **Each toggle/action now appears exactly once per runtime.** Claude Code
+  auto-indexes both `commands/*.md` and `skills/<dir>/SKILL.md`, so every
+  feature that shipped as both a command and a Codex skill (settings, terse,
+  update, frontier) was double-listed in the Claude Code slash menu — and
+  `commands/terse.md` collided with `skills/terse/SKILL.md` on the same
+  `/maestro:terse` name. The Codex plugin skills moved from `skills/` to
+  `codex-skills/` (referenced by `.codex-plugin/plugin.json`), which Claude
+  Code does not index. Claude Code now registers each feature once from
+  `commands/`; Codex still resolves every bundled skill from `codex-skills/`.
+  Pure directory rename — `settings/cli.cjs` behavior and all skill contents
+  are unchanged. New `scripts/plugin-dedup.test.cjs` asserts no Claude Code
+  double-registration, full Codex skill resolution, and a settings CLI
+  read/write round-trip.
+
 ## [1.6.0] - 2026-06-16
 
 ### Added

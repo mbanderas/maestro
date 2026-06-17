@@ -23,7 +23,7 @@ loads on demand.
 | Runtime | Source in this repo | Install to | Invoke |
 |---|---|---|---|
 | Cursor | `integrations/cursor/commands/frontier.md` | `.cursor/commands/frontier.md` (per-repo) or `~/.cursor/commands/` (global) | `/frontier` |
-| Codex (CLI + Desktop) | `skills/maestro-frontier/SKILL.md` in the plugin; `integrations/codex/skills/` mirrors the same files for portable installs | bundled by the `maestro@maestro` Codex plugin; portable fallback copies to `.agents/skills/<name>/SKILL.md` | ask for the Maestro skill |
+| Codex (CLI + Desktop) | `codex-skills/maestro-frontier/SKILL.md` in the plugin; `integrations/codex/skills/` mirrors the same files for portable installs | bundled by the `maestro@maestro` Codex plugin; portable fallback copies to `.agents/skills/<name>/SKILL.md` | ask for the Maestro skill |
 
 After adding a file, restart the tool or open a new chat so it loads.
 

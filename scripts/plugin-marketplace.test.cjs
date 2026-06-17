@@ -22,7 +22,7 @@ const marketplace = readJson('.agents/plugins/marketplace.json');
 console.log('plugin marketplace tests');
 
 check('manifest names maestro', manifest.name === 'maestro');
-check('manifest exposes bundled Codex skills', manifest.skills === './skills/');
+check('manifest exposes bundled Codex skills', manifest.skills === './codex-skills/');
 check('manifest skills path exists', fs.existsSync(path.join(root, manifest.skills)));
 check('manifest hooks path exists', fs.existsSync(path.join(root, manifest.hooks || './hooks/hooks.json')));
 check('manifest has install-surface metadata', !!manifest.interface && manifest.interface.displayName === 'Maestro');

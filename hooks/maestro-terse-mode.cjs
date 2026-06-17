@@ -3,7 +3,7 @@
 // hook_event_name):
 // - SessionStart: resolve the level (env > config > off), write the
 //   flag file, inject the level-filtered ruleset from
-//   skills/terse/SKILL.md (single source of truth) as
+//   codex-skills/terse/SKILL.md (single source of truth) as
 //   additionalContext.
 // - UserPromptSubmit: track level switches (/maestro:terse, /terse,
 //   natural-language deactivation) in the flag file and emit a
@@ -115,7 +115,7 @@ function sessionStart() {
 
   let body = '';
   try {
-    const skill = fs.readFileSync(path.join(__dirname, '..', 'skills', 'terse', 'SKILL.md'), 'utf8');
+    const skill = fs.readFileSync(path.join(__dirname, '..', 'codex-skills', 'terse', 'SKILL.md'), 'utf8');
     // Strip frontmatter and maintainer HTML comments, then keep only
     // the active level's intensity row and example lines.
     body = skill
