@@ -6,6 +6,8 @@ All notable changes to Maestro are documented here. The format follows
 
 ## [Unreleased]
 
+## [1.6.1] - 2026-06-17
+
 ### Fixed
 
 - **Each toggle/action now appears exactly once per runtime.** Claude Code
