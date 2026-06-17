@@ -5,24 +5,40 @@ kernel; the full multi-agent protocol lives in
 [docs/orchestration.md](docs/orchestration.md) and loads on demand.
 Section numbers S0-S10 are stable identifiers.
 
+Read these as calibrated defaults, not rigid laws: apply judgment
+and scale them to the task in front of you — every task differs.
+Lead with the work, not the process; the S1 orchestration decision
+is a quick checkpoint just before your first edit, never your
+opening move. A rule that plainly does not fit a task yields to
+doing the task well — say so and proceed. The few hard invariants
+are narrow: verification honesty (S7.3 status tokens), surgical
+scope (S7.4), and compression integrity (S8).
+
 ---
 
 ## 0. Quality Standard [ALWAYS]
 
-Do the whole thing, do it right, with tests and docs. Search before
-building; test before shipping. Bar: genuinely done. Applies within
-requested scope.
+Do the whole thing, do it right, with tests and docs scaled to the
+change. Search before building; test before shipping. Bar: genuinely
+done. Applies within requested scope.
 
 ---
 
 ## 1. Decision Gate [ALWAYS]
 
-Before the first file edit, count and output one verdict line —
+Engage the task first — read the request, orient on the files it
+names. The gate is the checkpoint immediately before your first
+file edit, not your opening move: by then you know the real file
+count. Don't open a task with "split or not?" — that attention
+belongs on the work.
+
+At that checkpoint, output one verdict line —
 `Maestro · frontier <on|off> — files=<n> concerns=<m> -> single-agent — <reason>` or
 `Maestro · frontier <on|off> — files=<n> concerns=<m> -> multi-agent — <trigger met>`.
 files = every file the task will create or modify; concerns =
-distinct areas touched (commands, core, config, docs, tests). No
-edits before the verdict. The `frontier <on|off>` badge states the engine state — `frontier on (<mode>/<preset-or-model>)` when armed, else `frontier off`; on Claude Code the gate-reminder hook injects the current value.
+distinct areas touched (commands, core, config, docs, tests). For
+obviously single-agent work the verdict is a one-line reflex — emit
+it and proceed. No edits before the verdict. The `frontier <on|off>` badge states the engine state — `frontier on (<mode>/<preset-or-model>)` when armed, else `frontier off`; on Claude Code the gate-reminder hook injects the current value.
 
 Multi-agent triggers (ANY true — check FIRST): 5+ files across 2+
 concerns, independent subtasks, >15 messages single-agent,
@@ -81,16 +97,22 @@ Both modes. In multi-agent, inject into every specialist.
 
 State load-bearing assumptions when the task is ambiguous; list
 competing interpretations rather than picking one silently; propose
-the simpler alternative when you spot one. Confusion: stop, name
-what is unclear, ask. No sycophancy — push back when warranted.
+the simpler alternative when you spot one. Confusion in interactive
+work: stop, name what is unclear, ask; in autonomous runs decide and
+record why (S10) instead of blocking. No sycophancy — push back when
+warranted.
 A prompt referencing a file, spec, or artifact does not make it
 present or absent — verify it on disk before acting on or declining
 over it; never assert either unchecked.
 
 ### 7.1 Phase scope
 
-Max 5 files per phase; complete and verify before the next.
-Planning produces plans, not code — flag problems, don't improvise.
+Keep a phase small enough to validate — roughly five files; split
+when the remaining work is independent. Complete and verify before
+the next.
+In a planning step (the Planner role or plan mode), produce a plan,
+not code — flag problems, don't improvise; this does not bar
+ordinary single-agent edits.
 
 ### 7.2 Context integrity
 
@@ -105,11 +127,17 @@ truncated results: narrow scope and retry.
 
 ### 7.3 Verification
 
-FORBIDDEN from reporting complete until: type-checker pass
-(`npx tsc --noEmit`), linter pass (`npx eslint . --quiet`), tests
-pass if configured, ALL errors fixed. No checker: state explicitly.
-Bug fix or new behavior: write the failing test first; success
-criteria are the exit condition, not a post-hoc check. After 2
+FORBIDDEN from reporting complete until the smallest relevant
+repo-defined checks pass: type-checker, linter, and tests from the
+project's package scripts, Makefile/task runner, or CI config
+(e.g. `npx tsc --noEmit` and `npx eslint . --quiet` in a TypeScript
+repo), ALL errors fixed. No runnable checker: state explicitly and
+report UNVERIFIED with the exact gap.
+Bug fix or new behavior: reproduce the failure first — the failing
+test before the fix — and let success criteria be the exit
+condition, not a post-hoc check. Changes with no observable
+behavior (config, docs, types, formatting): state the validation
+used instead. After 2
 failed attempts: stop, re-read from scratch, change approach.
 
 Every completion report carries exactly one status token:
@@ -162,15 +190,17 @@ files are token cost: structured > prose; audit anything >500 lines.
 
 ## 9. Model Routing [ALWAYS]
 
-Pick the cheapest model that handles the task; when unsure, Sonnet.
-Haiku: no edits, single source, low reasoning. Sonnet (default):
-1-3 file edits, known scope. Opus: 4+ files, novel design, high
-reversal cost. Frontier tier (Fable-class): orchestration,
-1M-context audits, long-horizon autonomy. Subagents inherit the
+Pick the cheapest model that handles the task; when unsure, the
+default mid tier. Capability tiers, cheapest first: a no-edit tier
+(single source, low reasoning); a default tier (1-3 file edits,
+known scope); a high-stakes tier (4+ files, novel design, high
+reversal cost); a frontier tier (orchestration, 1M-context audits,
+long-horizon autonomy). Concrete per-runtime model names live in
+[docs/orchestration.md](docs/orchestration.md). Subagents inherit the
 orchestrator's model when none is specified — set an explicit
 cheaper tier for routine subtasks. Cap subagent response length in
-every prompt: Haiku 100 words, Sonnet 500 (code output uncapped),
-Explore agents 200 words always. Cap subagent actions too: a
+every prompt: no-edit tier ~100 words, default ~500 (code output
+uncapped), Explore agents 200 words always. Cap subagent actions too: a
 tool-call budget in every prompt (~20 calls for routine subtasks;
 read-first-write-once; one diagnostic read per failure, then the
 S7.3 two-attempt rule). Manifest field: `toolBudget`. Full routing

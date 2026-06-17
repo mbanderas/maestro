@@ -7,14 +7,16 @@
 // deterministic deny.
 //
 // Modes via MAESTRO_DOCTRINE_GUARD:
-// - "always" (default): deny every doctrine Read while doctrine files
-//   exist at cwd. Safe on Claude Code, where subagents receive the
-//   project doctrine automatically; the deny reason tells the model
-//   to use the in-context copy.
-// - "once": allow the first doctrine Read per session (marker file in
-//   the OS temp dir keyed by session_id), deny repeats. For runtimes
-//   whose subagents genuinely lack the doctrine in context (S7.2:
-//   "a subagent without it in context reads AGENTS.md once").
+// - "once" (default): allow the first doctrine Read per session
+//   (marker file in the OS temp dir keyed by session_id), deny
+//   repeats. Lets a task that is ABOUT the doctrine (review, edit,
+//   debug) read the live file once, while still blocking re-read
+//   loops (S7.2: "a subagent without it in context reads AGENTS.md
+//   once").
+// - "always": deny every doctrine Read while doctrine files exist at
+//   cwd. Strict token-saving mode for runtimes whose subagents always
+//   receive the project doctrine automatically; the deny reason tells
+//   the model to use the in-context copy.
 // - "0": disabled.
 //
 // When no doctrine file exists at cwd nothing was autoloaded, so reads
@@ -34,7 +36,7 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 
-const mode = process.env.MAESTRO_DOCTRINE_GUARD || 'always';
+const mode = process.env.MAESTRO_DOCTRINE_GUARD || 'once';
 if (mode === '0') process.exit(0);
 
 let data = {};

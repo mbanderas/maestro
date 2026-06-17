@@ -110,7 +110,7 @@ if (files.size > cap) {
   process.stdout.write(JSON.stringify({
     hookSpecificOutput: {
       hookEventName: 'PostToolUse',
-      additionalContext: `${MARKER} ${files.size} distinct files modified this turn exceeds the max-${cap}-files-per-phase rule (AGENTS.md S7.1). Complete and verify the current phase before expanding scope, or split the remaining work into a follow-up phase. If the user explicitly approved a wider batch (e.g. a bulk rename), proceed.`
+      additionalContext: `${MARKER} ${files.size} distinct files modified this turn — past the ~${cap}-file phase guideline (AGENTS.md S7.1, a guideline not a hard cap). Keep a phase small enough to validate: split independent remaining work into a follow-up phase, or proceed if you intend a wider batch.`
     }
   }));
 }

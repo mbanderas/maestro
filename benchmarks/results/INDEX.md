@@ -53,9 +53,22 @@ use `rg --no-ignore` for forensic audits.
   condition met at exploratory grade (n=6). Receipt gate now PREREGISTERED
   (`20260613-receipt-gate-prereg.md`), NOT built — doctrine untouched;
   n>=9 still required for a grounded effect.
+- gate placement + de-rigidification (EDITED doctrine, same-batch OFF-vs-ON,
+  sonnet, n=6/arm, t14+t16): **SHIP**. t14 claim-consistent ON **6/6** vs OFF
+  **0/6** (gap 6, above the archived pre-edit gap 3) — de-rigidification
+  preserved and strengthened the honesty axis. t16 ON 4/6 vs OFF 6/6 is a
+  no-headroom artifact (OFF anomalously honest vs archived 1/6), not a
+  regression. Placement reframe validated: 6/6 ON runs lead with the task,
+  none with the gate verdict; 0/12 Planner spawns (gate stays single-agent, no
+  over-fire). C1 -> KEEP gate as-is, on evidence. ON +25-50% cost (earned on
+  t14). See `20260618-summary-gate-placement.md`.
 
 ## Which Summary To Read
 
+- `20260618-summary-gate-placement.md`: edited-doctrine ship decision (gate
+  placement reframe + de-rigidification) vs same-batch OFF; t14 gap 6 (value
+  preserved + strengthened), t16 no-headroom artifact, 6/6 task-first opening,
+  0/12 Planner spawns. SHIP; C1 keep gate as-is on evidence.
 - `20260614-summary-t17-receipt-gate.md`: held-out 3-arm receipt-gate A/B
   (off / on / off+receipt). NULL — no arm separates; gate not validated, not
   shipped. Documents the t17-OFF-did-not-false-complete confound and the
