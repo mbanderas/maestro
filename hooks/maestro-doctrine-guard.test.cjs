@@ -51,18 +51,26 @@ const read = (file, cwd, id) => ({
   tool_input: { file_path: path.join(cwd, file) }
 });
 
-// 1. Default mode: doctrine Read with doctrine at cwd -> deny.
-let out = runHook(read('AGENTS.md', cwdDoctrine));
-check('AGENTS.md read, doctrine autoloaded -> deny', denied(out));
+// 1. Strict "always" mode: doctrine Read with doctrine at cwd -> deny.
+const ALWAYS = { MAESTRO_DOCTRINE_GUARD: 'always' };
+let out = runHook(read('AGENTS.md', cwdDoctrine), ALWAYS);
+check('always: AGENTS.md read, doctrine autoloaded -> deny', denied(out));
 check('deny reason carries greppable marker', out.includes('maestro-doctrine-guard:'));
 check('deny reason instructs (in-context copy)', out.includes('in-context copy'));
 
-out = runHook(read('CLAUDE.md', cwdDoctrine));
-check('CLAUDE.md read -> deny', denied(out));
+out = runHook(read('CLAUDE.md', cwdDoctrine), ALWAYS);
+check('always: CLAUDE.md read -> deny', denied(out));
 
-// 2. Case-insensitive basename match.
-out = runHook(read('agents.MD', cwdDoctrine));
-check('agents.MD (case variant) -> deny', denied(out));
+// 2. Case-insensitive basename match (always mode).
+out = runHook(read('agents.MD', cwdDoctrine), ALWAYS);
+check('always: agents.MD (case variant) -> deny', denied(out));
+
+// 2b. Default mode is "once": first read allowed, repeat denied.
+const sd = sid(); cleanup.push(markerFor(sd));
+out = runHook(read('AGENTS.md', cwdDoctrine, sd));
+check('default (once): first read -> silent (allowed)', out === '');
+out = runHook(read('AGENTS.md', cwdDoctrine, sd));
+check('default (once): second read -> deny', denied(out));
 
 // 3. Other files pass through, including the on-demand protocol layer.
 out = runHook(read(path.join('docs', 'orchestration.md'), cwdDoctrine));

@@ -5,24 +5,40 @@ Maestro kernel (Cursor does not support file imports); the full
 multi-agent protocol lives in docs/orchestration.md and is read on
 demand. Section numbers S0-S10 are stable identifiers.
 
+Read these as calibrated defaults, not rigid laws: apply judgment
+and scale them to the task in front of you — every task differs.
+Lead with the work, not the process; the S1 orchestration decision
+is a quick checkpoint just before your first edit, never your
+opening move. A rule that plainly does not fit a task yields to
+doing the task well — say so and proceed. The few hard invariants
+are narrow: verification honesty (S7.3 status tokens), surgical
+scope (S7.4), and compression integrity (S8).
+
 ---
 
 ## 0. Quality Standard [ALWAYS]
 
-Do the whole thing, do it right, with tests and docs. Search before
-building; test before shipping. Bar: genuinely done. Applies within
-requested scope.
+Do the whole thing, do it right, with tests and docs scaled to the
+change. Search before building; test before shipping. Bar: genuinely
+done. Applies within requested scope.
 
 ---
 
 ## 1. Decision Gate [ALWAYS]
 
-Before the first file edit, count and output one verdict line —
+Engage the task first — read the request, orient on the files it
+names. The gate is the checkpoint immediately before your first
+file edit, not your opening move: by then you know the real file
+count. Don't open a task with "split or not?" — that attention
+belongs on the work.
+
+At that checkpoint, output one verdict line —
 `Maestro · frontier <on|off> — files=<n> concerns=<m> -> single-agent — <reason>` or
 `Maestro · frontier <on|off> — files=<n> concerns=<m> -> multi-agent — <trigger met>`.
 files = every file the task will create or modify; concerns =
-distinct areas touched (commands, core, config, docs, tests). No
-edits before the verdict. The `frontier <on|off>` badge states the
+distinct areas touched (commands, core, config, docs, tests). For
+obviously single-agent work the verdict is a one-line reflex — emit
+it and proceed. No edits before the verdict. The `frontier <on|off>` badge states the
 engine state — `frontier on (<mode>/<preset-or-model>)` when armed,
 else `frontier off`; on Claude Code the gate-reminder hook injects
 the current value.
@@ -83,13 +99,17 @@ Both modes. In multi-agent, inject into every specialist.
 
 State load-bearing assumptions when the task is ambiguous; list
 competing interpretations rather than picking one silently; propose
-the simpler alternative when you spot one. Confusion: stop, name
-what is unclear, ask. No sycophancy — push back when warranted.
+the simpler alternative when you spot one. Confusion in interactive work: stop, name what is unclear, ask;
+in autonomous runs decide and record why (S10) instead of blocking. No sycophancy — push back when warranted.
 
 ### 7.1 Phase scope
 
-Max 5 files per phase; complete and verify before the next.
-Planning produces plans, not code — flag problems, don't improvise.
+Keep a phase small enough to validate — roughly five files; split
+when the remaining work is independent. Complete and verify before
+the next.
+In a planning step (the Planner role or plan mode), produce a plan,
+not code — flag problems, don't improvise; this does not bar
+ordinary single-agent edits.
 
 ### 7.2 Context integrity
 
@@ -103,11 +123,17 @@ scope and retry.
 
 ### 7.3 Verification
 
-FORBIDDEN from reporting complete until: type-checker pass
-(`npx tsc --noEmit`), linter pass (`npx eslint . --quiet`), tests
-pass if configured, ALL errors fixed. No checker: state explicitly.
-Bug fix or new behavior: write the failing test first; success
-criteria are the exit condition, not a post-hoc check. After 2
+FORBIDDEN from reporting complete until the smallest relevant
+repo-defined checks pass: type-checker, linter, and tests from the
+project's package scripts, Makefile/task runner, or CI config
+(e.g. `npx tsc --noEmit` and `npx eslint . --quiet` in a TypeScript
+repo), ALL errors fixed. No runnable checker: state explicitly and
+report UNVERIFIED with the exact gap.
+Bug fix or new behavior: reproduce the failure first — the failing
+test before the fix — and let success criteria be the exit
+condition, not a post-hoc check. Changes with no observable
+behavior (config, docs, types, formatting): state the validation
+used instead. After 2
 failed attempts: stop, re-read from scratch, change approach.
 
 Every completion report carries exactly one status token:

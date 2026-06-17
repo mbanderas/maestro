@@ -56,7 +56,7 @@ check('2 files in turn -> silent', out === '');
 
 // 2. Six distinct files this turn: warns with valid PostToolUse JSON.
 out = runHook({ transcript_path: bigTurnTx, tool_name: 'Edit', tool_input: { file_path: 'src/f5.ts' } });
-check('6 files in turn -> warns', out.includes('max-5-files-per-phase'));
+check('6 files in turn -> warns', out.includes('~5-file phase guideline'));
 check('warning is valid PostToolUse JSON', (() => {
   try { return JSON.parse(out).hookSpecificOutput.hookEventName === 'PostToolUse'; }
   catch { return false; }
@@ -76,7 +76,7 @@ check('already-warned turn -> silent', out === '');
 
 // 6. Cap override via env.
 out = runHook({ transcript_path: smallTurnTx, tool_name: 'Edit', tool_input: { file_path: 'c.ts' } }, { MAESTRO_PHASE_FILE_CAP: '2' });
-check('cap=2 with 3 files -> warns', out.includes('max-2-files-per-phase'));
+check('cap=2 with 3 files -> warns', out.includes('~2-file phase guideline'));
 
 // 6b. Bash mutations count toward the file cap (6 distinct files).
 const bashBigTx = transcript('bash-big.jsonl', [

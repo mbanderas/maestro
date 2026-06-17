@@ -39,13 +39,16 @@ if (fs.existsSync(marker)) process.exit(0);
 try { fs.writeFileSync(marker, '1'); } catch { /* still remind */ }
 
 const checklistLines = [
-  'Maestro Decision Gate (S1): before the first file edit, output the',
-  'counted verdict line `Maestro · frontier <on|off> — files=<n>',
-  'concerns=<m> -> single-agent | multi-agent — <reason>`. files>=5',
-  'across 2+ concerns = multi-agent: spawn the Planner via the',
+  'Maestro Decision Gate (S1): engage the task first — this is a',
+  'reminder, not your opening move. Just BEFORE your first file edit',
+  '(once you know the real file count) output the counted verdict line',
+  '`Maestro · frontier <on|off> — files=<n> concerns=<m> -> single-agent | multi-agent — <reason>`.',
+  'files>=5 across 2+ concerns = multi-agent: spawn the Planner via the',
   'Agent/Task tool BEFORE any edit. A met trigger downgrades ONLY on',
   '>60% file overlap between subtasks or <=3 files total in one',
-  'dependency chain. Sub-trigger tasks stay single-agent.'
+  'dependency chain. Sub-trigger tasks stay single-agent. For obviously',
+  'single-agent work the verdict is a one-line reflex — do not lead',
+  'your response with it.'
 ];
 
 // Inject the live frontier engine state so the badge in the verdict
