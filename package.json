@@ -28,7 +28,7 @@
     "scripts/install.cjs",
     ".codex-plugin/",
     ".agents/plugins/marketplace.json",
-    "skills/",
+    "codex-skills/",
     "AGENTS.md",
     "CLAUDE.md",
     "GEMINI.md",

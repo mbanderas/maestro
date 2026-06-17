@@ -96,7 +96,7 @@ changes your output style.
     exists, terse mode stays off, two machines with identical hook
     installs can behave differently if only one has the file.
 - The `maestro-terse-mode` hook injects the level-filtered ruleset
-  (single source: `skills/terse/SKILL.md`) at SessionStart and a
+  (single source: `codex-skills/terse/SKILL.md`) at SessionStart and a
   one-line reminder each turn, per-turn reinforcement survives
   context compaction, where one-shot instructions drift.
 - Quality guardrails ship with it: code, commits, and PRs are always

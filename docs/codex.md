@@ -65,7 +65,7 @@ codex plugin add maestro@maestro
 The repo is a Codex marketplace because it ships
 `.agents/plugins/marketplace.json`; the plugin itself is described by
 `.codex-plugin/plugin.json`. That manifest points at the plugin-bundled Codex
-skills (`./skills/`); the hook bundle lives at Codex's default plugin hook path
+skills (`./codex-skills/`); the hook bundle lives at Codex's default plugin hook path
 `./hooks/hooks.json`, so Codex can install the plugin without `npx`. Restart
 Codex or start a new thread after changing plugin installation/trust state,
 then review and trust the bundled hooks before expecting autorun.
@@ -156,7 +156,7 @@ context-usage indicator (`/statusline` picker, or `context` in
 Codex skills can live in personal `$HOME/.agents/skills`, repo
 `.agents/skills`, or installed plugins. The normal Codex path is the Maestro
 plugin, which bundles `maestro-frontier`, `maestro-settings`, `maestro-terse`,
-and `maestro-update` from `./skills/`. The portable
+and `maestro-update` from `./codex-skills/`. The portable
 `maestro install --target codex` fallback still installs those same skills to
 `.agents/skills/<name>/SKILL.md` for project installs or
 `~/.agents/skills/<name>/SKILL.md` for global/user installs.

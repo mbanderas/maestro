@@ -10,7 +10,7 @@
   "repository": "https://github.com/mbanderas/maestro",
   "license": "MIT",
   "keywords": ["frontier", "multi-agent", "codex", "hooks", "skills"],
-  "skills": "./skills/",
+  "skills": "./codex-skills/",
   "interface": {
     "displayName": "Maestro",
     "shortDescription": "Frontier orchestration, Codex skills, and lifecycle hooks",

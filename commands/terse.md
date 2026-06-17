@@ -11,7 +11,7 @@ default, or `full`). Do not edit the flag yourself.
 
 Steps:
 
-1. Read `${CLAUDE_PLUGIN_ROOT}/skills/terse/SKILL.md` and apply the
+1. Read `${CLAUDE_PLUGIN_ROOT}/codex-skills/terse/SKILL.md` and apply the
    ruleset for the requested level from this response onward
    (`off`: drop terse style entirely).
 2. Confirm in one line: new level, how to switch off

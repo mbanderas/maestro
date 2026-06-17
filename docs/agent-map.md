@@ -24,7 +24,9 @@ fixtures, and benchmark summaries remain the source of truth.
 - `scripts/` contains helper scripts for compression, hook-test
   orchestration, benchmark verification, and downstream sync.
 - `commands/` contains Claude slash-command markdown.
-- `skills/` contains Claude/plugin-facing skills.
+- `codex-skills/` contains the Codex plugin's bundled skills
+  (referenced by `.codex-plugin/plugin.json`). Claude Code does not index
+  them — it uses `commands/`, so each toggle appears once per runtime.
 - `.agents/skills/` contains Codex-discoverable repo skills.
 - `schemas/` contains optional JSON Schemas for specialist manifests
   and handoff packets.
