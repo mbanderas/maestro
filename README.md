@@ -257,7 +257,7 @@ Claude Code's armed Frontier indicator; ask the skill to show status, or run
 `maestro frontier status --scope codex-project` from a shell when using the
 CLI directly.
 
-GitHub Copilot, Cline, and Windsurf read `AGENTS.md` directly, so the portable core works there with no adapter. Maestro's always-on kernel (`AGENTS.md`) is ~11 KB, under Windsurf's 12,000-character limit and roughly a third of Codex's 32 KiB budget; the full multi-agent protocol loads on demand from `docs/orchestration.md`.
+GitHub Copilot, Cline, and Windsurf read `AGENTS.md` directly, so the portable core works there with no adapter. Maestro's always-on kernel (`AGENTS.md`) is ~10 KB, under Windsurf's 12,000-character limit and roughly a third of Codex's 32 KiB budget; the full multi-agent protocol loads on demand from `docs/orchestration.md`.
 
 **Subagents vs Agent Teams (Claude Code):** Maestro's `CLAUDE.md` adapter
 routes automatically. **Subagents** run within one session and report
