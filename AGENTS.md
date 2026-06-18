@@ -61,24 +61,15 @@ multi-agent.
 
 ## 2-6. Multi-Agent Protocol [MULTI-AGENT]
 
-Enough to act on a multi-agent verdict on any runtime. Full version:
-[docs/orchestration.md](docs/orchestration.md).
-
-- Planner first, a real subagent, never simulated inline: subtasks with
-  boundaries, file scopes, dependency map, parallel groups (max 4),
-  acceptance criteria. Planner says single-agent: switch.
-- Specialist manifests: ROLE (procedural workflow, not a bare title),
-  TASK, FILES, OUTPUT, ACCEPT, scoped TOOLS. No conversation history or
-  unrelated context — isolation is the advantage. Out of scope: report
-  and stop.
-- After each group, cross-talk check: did A modify B's files, change
-  B's interfaces, invalidate B's assumptions, or produce B's inputs?
-  Route the minimum context.
-- Staff Engineer last: reviews integrated diffs vs requirements, returns
-  PASS or FAIL (issues + owner + fix). Max 2 cycles, then deliver with
-  issues listed.
-- The orchestrator spawns, sequences, routes, delivers — never plans,
-  codes, or reviews specialist work itself.
+Compact protocol — enough to act on a multi-agent verdict; full
+version in docs/orchestration.md, read on demand when the gate (S1)
+returns multi-agent. Irreducible chain to preserve when that file is
+not loaded: Planner first as a real subagent (Task/Agent tool), never
+simulated inline -> scoped specialist manifests (ROLE, TASK, FILES,
+OUTPUT, ACCEPT, scoped TOOLS; no extra context) -> cross-talk check
+after each group -> Staff Engineer last returns PASS/FAIL (max 2
+cycles). The orchestrator spawns, sequences, routes, and delivers —
+never plans, codes, or reviews specialist work itself.
 
 ---
 

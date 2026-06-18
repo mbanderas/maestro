@@ -6,6 +6,16 @@ All notable changes to Maestro are documented here. The format follows
 
 ## [Unreleased]
 
+### Changed
+
+- **Always-on kernel S2-6 thinned to a pointer.** The Multi-Agent Protocol
+  body in `AGENTS.md` and `.cursorrules` is replaced by a compact stub — the
+  irreducible chain (Planner first as a real subagent -> scoped manifests ->
+  cross-talk check -> Staff Engineer PASS/FAIL, max 2 cycles) plus a pointer to
+  `docs/orchestration.md`, where the full protocol already lives unchanged.
+  Saves ~0.8 KB always-on across both kernel copies; the README kernel-size
+  claim is updated to ~10 KB. S0/S1 and S7-S10 are untouched.
+
 ## [1.8.0] - 2026-06-18
 
 ### Added
