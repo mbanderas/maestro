@@ -22,7 +22,7 @@
 </p>
 
 <p align="center">
-  <sub>13 fixture tasks &middot; 123 valid A/B runs &middot; 11 voids excluded &amp; re-run &middot; 6 hooks, all tested &middot; ~11 KB always-on kernel &middot; plugin + portable installs</sub>
+  <sub>17 fixture tasks &middot; 147 valid A/B runs &middot; 11 voids excluded &amp; re-run &middot; 6 hooks, all tested &middot; ~10 KB always-on kernel &middot; plugin + portable installs</sub>
 </p>
 
 > **Install — run the command block for your tool, inside that tool.**
