@@ -393,6 +393,122 @@ function mkTmpTracked() {
     captured2.join('').includes('preserved user-edited legacy Codex skill'));
 }
 
+// ---- test 14: block-replace refreshes a stale maestro block, preserves outside ----
+{
+  const TMP = mkTmpTracked();
+  const agents = path.join(TMP, 'AGENTS.md');
+  const stale =
+    'MY NOTES\n\n<!-- maestro:begin -->\nOLD STALE DOCTRINE\n<!-- maestro:end -->\n\nMORE NOTES\n';
+  fs.writeFileSync(agents, stale, 'utf8');
+
+  run(['--target', 'codex', '--project', TMP]);
+
+  const r = fs.readFileSync(agents, 'utf8');
+  check('14a: stale block content is gone', !r.includes('OLD STALE DOCTRINE'));
+  check('14b: real doctrine now inside the block', r.includes('Decision Gate'));
+  check('14c: user content above the block preserved',
+    r.includes('MY NOTES') && r.indexOf('MY NOTES') < r.indexOf('<!-- maestro:begin -->'));
+  check('14d: user content below the block preserved',
+    r.includes('MORE NOTES') && r.indexOf('MORE NOTES') > r.indexOf('<!-- maestro:end -->'));
+  check('14e: still exactly one begin and one end',
+    (r.match(/<!-- maestro:begin -->/g) || []).length === 1 &&
+    (r.match(/<!-- maestro:end -->/g) || []).length === 1);
+}
+
+// ---- test 15: replace path is idempotent (second run = no change, logs up to date) ----
+{
+  const TMP = mkTmpTracked();
+  const agents = path.join(TMP, 'AGENTS.md');
+  run(['--target', 'codex', '--project', TMP]);
+  const after1 = fs.readFileSync(agents, 'utf8');
+
+  const origWrite = process.stdout.write.bind(process.stdout);
+  const captured = [];
+  process.stdout.write = (s) => { captured.push(s); origWrite(s); return true; };
+  run(['--target', 'codex', '--project', TMP]);
+  process.stdout.write = origWrite;
+
+  const after2 = fs.readFileSync(agents, 'utf8');
+  check('15a: second run leaves AGENTS.md byte-identical', after2 === after1);
+  check('15b: second run logs the doctrine block is up to date',
+    captured.join('').includes('AGENTS.md already up to date'));
+}
+
+// ---- test 16: ambiguous (double-begin) markers -> abort, file unchanged ----
+{
+  const TMP = mkTmpTracked();
+  const agents = path.join(TMP, 'AGENTS.md');
+  const doubled =
+    '<!-- maestro:begin -->\nA\n<!-- maestro:end -->\nUSER\n<!-- maestro:begin -->\nB\n<!-- maestro:end -->\n';
+  fs.writeFileSync(agents, doubled, 'utf8');
+
+  const origWrite = process.stdout.write.bind(process.stdout);
+  const captured = [];
+  process.stdout.write = (s) => { captured.push(s); origWrite(s); return true; };
+  const code = run(['--target', 'codex', '--project', TMP]);
+  process.stdout.write = origWrite;
+
+  check('16a: run returns non-zero on ambiguous markers', code !== 0);
+  check('16b: AGENTS.md left unchanged', fs.readFileSync(agents, 'utf8') === doubled);
+  check('16c: logs a refusal mentioning markers', captured.join('').toLowerCase().includes('marker'));
+}
+
+// ---- test 17: begin-without-end -> abort, file unchanged ----
+{
+  const TMP = mkTmpTracked();
+  const agents = path.join(TMP, 'AGENTS.md');
+  const broken = 'USER\n<!-- maestro:begin -->\nNO END HERE\n';
+  fs.writeFileSync(agents, broken, 'utf8');
+
+  const origWrite = process.stdout.write.bind(process.stdout);
+  const captured = [];
+  process.stdout.write = (s) => { captured.push(s); origWrite(s); return true; };
+  const code = run(['--target', 'codex', '--project', TMP]);
+  process.stdout.write = origWrite;
+
+  check('17a: run returns non-zero on begin-without-end', code !== 0);
+  check('17b: AGENTS.md left unchanged', fs.readFileSync(agents, 'utf8') === broken);
+  check('17c: logs a refusal', captured.join('').toLowerCase().includes('refus'));
+}
+
+// ---- test 18: CRLF file -> CRLF block, idempotent (no perpetual diff) ----
+{
+  const TMP = mkTmpTracked();
+  const agents = path.join(TMP, 'AGENTS.md');
+  fs.writeFileSync(agents, 'USER\r\n', 'utf8');
+
+  run(['--target', 'codex', '--project', TMP]);
+  const after1 = fs.readFileSync(agents, 'utf8');
+  check('18a: block written with CRLF on a CRLF file', /<!-- maestro:begin -->\r\n/.test(after1));
+  check('18b: user CRLF content preserved', after1.includes('USER\r\n'));
+
+  run(['--target', 'codex', '--project', TMP]);
+  const after2 = fs.readFileSync(agents, 'utf8');
+  check('18c: re-run on a CRLF file is byte-idempotent', after2 === after1);
+}
+
+// ---- test 19: --doctrine-only splices AGENTS.md and writes nothing else ----
+{
+  const TMP = mkTmpTracked();
+  const agents = path.join(TMP, 'AGENTS.md');
+  fs.writeFileSync(agents, 'USER OWNS THIS\n', 'utf8');
+
+  const code = run(['--doctrine-only', '--project', TMP]);
+  const r = fs.readFileSync(agents, 'utf8');
+
+  check('19a: --doctrine-only succeeds', code === 0);
+  check('19b: doctrine block spliced below user content',
+    r.includes('USER OWNS THIS') && r.includes('<!-- maestro:begin -->') && r.includes('Decision Gate'));
+  check('19c: no engine installed (frontier/ absent)', !fs.existsSync(path.join(TMP, 'frontier')));
+  check('19d: no codex skills installed (.agents/skills absent)',
+    !fs.existsSync(path.join(TMP, '.agents', 'skills')));
+  check('19e: no docs/orchestration.md installed', !fs.existsSync(path.join(TMP, 'docs')));
+
+  const after1 = fs.readFileSync(agents, 'utf8');
+  run(['--doctrine-only', '--project', TMP]);
+  check('19f: --doctrine-only re-run is byte-idempotent', fs.readFileSync(agents, 'utf8') === after1);
+}
+
 // ---- cleanup ----
 
 for (const d of tmpDirs) {

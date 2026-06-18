@@ -413,7 +413,7 @@ function legacyGenericCodexTemplate(srcContent, legacyName, namespacedName) {
 
 /**
  * @param {string[]} argv
- * @returns {{ target: string, project: string, user: boolean, dryRun: boolean, noHooks: boolean }}
+ * @returns {{ target: string, project: string, user: boolean, dryRun: boolean, noHooks: boolean, doctrineOnly: boolean }}
  */
 function parseArgs(argv) {
   const opts = {
@@ -422,6 +422,7 @@ function parseArgs(argv) {
     user:    false,
     dryRun:  false,
     noHooks: false,
+    doctrineOnly: false,
   };
 
   let i = 0;
@@ -437,6 +438,8 @@ function parseArgs(argv) {
       opts.dryRun = true;
     } else if (a === '--no-hooks') {
       opts.noHooks = true;
+    } else if (a === '--doctrine-only') {
+      opts.doctrineOnly = true;
     }
     i++;
   }
@@ -483,8 +486,28 @@ function readPkgFile(rel, log) {
 }
 
 /**
- * Install a doctrine/adapter markdown file. Append-only, idempotent, never
- * clobbers user content above the maestro block; refuses symlinks.
+ * Build the canonical maestro doctrine block (markers + normalized body) using
+ * the given newline style. Deterministic: the body is normalized to `nl` and
+ * trailing blank lines are trimmed, so re-running produces byte-identical
+ * output (no perpetual diff). Returns the SENTINEL..SENTINEL_END span only;
+ * the caller owns the surrounding newlines.
+ * @param {string} srcContent doctrine source
+ * @param {string} nl newline style ('\n' or '\r\n')
+ * @returns {string}
+ */
+function buildDoctrineBlock(srcContent, nl) {
+  const body = srcContent.replace(/\r\n/g, '\n').replace(/\n+$/, '').replace(/\n/g, nl);
+  return `${SENTINEL}${nl}${body}${nl}${SENTINEL_END}`;
+}
+
+/**
+ * Install a doctrine/adapter markdown file, merge-safe. Never clobbers user
+ * content outside the maestro block: if the block is absent it is appended
+ * below existing content; if present it is REPLACED in place (refreshes stale
+ * doctrine) while preserving everything outside the markers. Idempotent —
+ * re-running with identical doctrine is a no-op. Refuses symlinks and aborts
+ * (without writing) on an ambiguous/corrupt marker state. Newline style is
+ * taken from the destination file.
  * @param {string} dest absolute destination path
  * @param {string} srcContent content to install
  * @param {string} label short name for logs (e.g. "AGENTS.md")
@@ -493,8 +516,6 @@ function readPkgFile(rel, log) {
  * @returns {boolean} true = success (or no-op), false = error
  */
 function appendOnlyDoctrine(dest, srcContent, label, dryRun, log) {
-  const block = `\n${SENTINEL}\n${srcContent}\n${SENTINEL_END}\n`;
-
   let existsStat;
   try { existsStat = fs.lstatSync(dest); } catch { existsStat = null; }
 
@@ -510,17 +531,49 @@ function appendOnlyDoctrine(dest, srcContent, label, dryRun, log) {
       return false;
     }
 
-    if (existing.includes(SENTINEL)) {
-      log(`[doctrine] ${label} already contains sentinel — skipping`);
+    const nl = existing.includes('\r\n') ? '\r\n' : '\n';
+    const beginCount = existing.split(SENTINEL).length - 1;
+    const endCount   = existing.split(SENTINEL_END).length - 1;
+
+    if (beginCount > 0) {
+      // Block present — replace it in place, preserving content outside.
+      if (beginCount > 1 || endCount > 1) {
+        log(`ERROR: ${label} has ${beginCount} begin / ${endCount} end maestro markers — refusing to splice an ambiguous block: ${dest}`);
+        return false;
+      }
+      const bi = existing.indexOf(SENTINEL);
+      const ei = existing.indexOf(SENTINEL_END);
+      if (ei === -1 || ei < bi) {
+        log(`ERROR: ${label} has a maestro begin marker without a following end marker — refusing to splice a corrupt block: ${dest}`);
+        return false;
+      }
+      const prefix = existing.slice(0, bi);
+      const suffix = existing.slice(ei + SENTINEL_END.length);
+      const updated = prefix + buildDoctrineBlock(srcContent, nl) + suffix;
+
+      if (updated === existing) {
+        log(`[doctrine] ${label} already up to date — skipping`);
+        return true;
+      }
+      if (dryRun) {
+        log(`[dry-run] would refresh maestro block in ${dest}`);
+        return true;
+      }
+      const res = safeWrite(dest, updated);
+      if (!res.ok) {
+        log(`ERROR: failed to refresh ${label}: ${res.reason}`);
+        return false;
+      }
+      log(`[doctrine] refreshed maestro block in ${label}`);
       return true;
     }
 
+    // Block absent — append below existing user content.
     if (dryRun) {
       log(`[dry-run] would append maestro doctrine to existing ${dest}`);
       return true;
     }
-
-    const res = safeWrite(dest, existing + block);
+    const res = safeWrite(dest, existing + nl + buildDoctrineBlock(srcContent, nl) + nl);
     if (!res.ok) {
       log(`ERROR: failed to append to ${label}: ${res.reason}`);
       return false;
@@ -540,8 +593,7 @@ function appendOnlyDoctrine(dest, srcContent, label, dryRun, log) {
     return false;
   }
 
-  const freshContent = SENTINEL + '\n' + srcContent + '\n' + SENTINEL_END + '\n';
-  const res = safeWrite(dest, freshContent);
+  const res = safeWrite(dest, buildDoctrineBlock(srcContent, '\n') + '\n');
   if (!res.ok) {
     log(`ERROR: failed to write ${label}: ${res.reason}`);
     return false;
@@ -946,12 +998,23 @@ function installCodexSkills(projectRoot, userGlobal, dryRun, log) {
  */
 function run(argv) {
   const opts = parseArgs(argv || []);
-  const { target: rawTarget, project, user: userGlobal, dryRun } = opts;
+  const { target: rawTarget, project, user: userGlobal, dryRun, doctrineOnly } = opts;
 
   const lines = [];
   const log = (msg) => { lines.push(msg); process.stdout.write(msg + '\n'); };
 
   if (dryRun) log('[dry-run] planning only — no files will be written');
+
+  // Doctrine-only — splice just the AGENTS.md kernel (used by sync-maestro.ps1
+  // so the marker-splice is the single merge path; no engine/adapter/wrapper).
+  if (doctrineOnly) {
+    if (!installDoctrine(project, dryRun, log)) {
+      log('doctrine sync completed with errors (see above)');
+      return 1;
+    }
+    log('doctrine sync complete');
+    return 0;
+  }
 
   // Resolve target
   let target = rawTarget;
