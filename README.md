@@ -238,7 +238,7 @@ Maestro separates **portable orchestration doctrine** from **runtime-specific ad
 
 | File | Role | What it adds |
 |---|---|---|
-| `AGENTS.md` | Portable core | Full orchestration doctrine, runtime-agnostic |
+| `AGENTS.md` | Portable core | Always-on kernel (S0/S1, S7-S10), runtime-agnostic; full S2-6 protocol in `docs/orchestration.md` |
 | `CLAUDE.md` | Claude Code adapter | Subagent/team routing, hooks, context limits, tool scoping, long-horizon mapping (/loop, schedules) |
 | `GEMINI.md` | Gemini adapter | Execution mapping, instruction precedence, verification notes, long-horizon note |
 | `.cursorrules` | Cursor adapter | Kernel copy (Cursor does not support imports); full S2-S6 in docs/orchestration.md |
@@ -357,7 +357,8 @@ If you have benchmarks, case studies, or research that challenges or extends the
 
 ## Related Projects
 
-- **[Govyn](https://github.com/govynAI/govyn)**: Open-source AI agent governance proxy. Maestro orchestrates your agents; Govyn ensures they never hold real API keys, stay within budget, and follow policy. They are designed to work together.
+- **[Govyn](https://govynai.com)**: Open-source AI agent governance proxy. Maestro orchestrates your agents; Govyn ensures they never hold real API keys, stay within budget, and follow policy. They are designed to work together.
+- **[CostGuard](https://github.com/mbanderas/costguard)**: Audit your repos and cloud providers for CI and infrastructure cost leaks — a CLI + MCP server for AI coding agents (Claude Code, Codex, any MCP host). Maestro keeps your agents disciplined; CostGuard keeps the infrastructure they touch honest on spend.
 
 ## Community
 
