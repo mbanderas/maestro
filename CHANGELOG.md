@@ -6,6 +6,8 @@ All notable changes to Maestro are documented here. The format follows
 
 ## [Unreleased]
 
+## [1.8.1] - 2026-06-18
+
 ### Changed
 
 - **Always-on kernel S2-6 thinned to a pointer.** The Multi-Agent Protocol
