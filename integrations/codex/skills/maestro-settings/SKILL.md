@@ -34,7 +34,7 @@ If `settings/cli.cjs` is not present, use the plugin-root launcher above.
 List current settings:
 
 ```bash
-node settings/cli.cjs
+node settings/cli.cjs status
 ```
 
 Set a toggle (the CLI takes a `set` subcommand):
