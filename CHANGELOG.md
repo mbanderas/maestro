@@ -6,6 +6,32 @@ All notable changes to Maestro are documented here. The format follows
 
 ## [Unreleased]
 
+## [1.8.0] - 2026-06-18
+
+### Added
+
+- **`--doctrine-only` install mode.** `scripts/install.cjs --doctrine-only`
+  splices just the `AGENTS.md` kernel (no engine/adapter/wrapper/skills), the
+  mode the sync uses. `scripts/sync-maestro.ps1` gains a `-ListFile` parameter.
+
+### Changed
+
+- **Doctrine distribution is now merge-safe; users own their repo `AGENTS.md`.**
+  `scripts/install.cjs` is the single merge source of truth: `appendOnlyDoctrine`
+  now REPLACES the marker-fenced block in place (was skip-forever) — an absent
+  block is appended below user content; a present block is spliced between the
+  `<!-- maestro:begin -->` / `<!-- maestro:end -->` markers, preserving everything
+  outside. The body is CRLF-normalized to a canonical form (no perpetual diff),
+  the newline style is taken from the destination file, the operation is
+  idempotent, and it aborts without writing on an ambiguous (more than one marker)
+  or corrupt (begin-without-end) state. `scripts/sync-maestro.ps1` no longer uses
+  `Copy-Item -Force`; it invokes `node scripts/install.cjs --project <repo>
+  --doctrine-only`, routing every sync through the same splice. (#14)
+- **Always-on kernel compressed.** The `AGENTS.md` kernel was tightened (S2-S6
+  protocol condensed, prose trimmed) while preserving the hard invariants and
+  measured-effect rules. README banner refreshed. (#13)
+- **Publish workflow runs on Node 24** (`actions/setup-node`). (#13)
+
 ## [1.7.0] - 2026-06-18
 
 ### Changed
