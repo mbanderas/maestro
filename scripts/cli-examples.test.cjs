@@ -53,8 +53,10 @@ walk(path.join(root, 'integrations'), tomlFiles, ['.toml']);
 
 // ---- grammar matchers ----
 // settings/cli.cjs <sub> — token right after cli.cjs (closing quote optional for
-// the `"<plugin-root>/settings/cli.cjs"` launcher form).
-const SETTINGS_RE = /settings\/cli\.cjs"?\s+(\S+)/g;
+// the `"<plugin-root>/settings/cli.cjs"` launcher form). `\s*(\S*)` (not `\s+(\S+)`)
+// so a bare `node settings/cli.cjs` with NO subcommand still matches: that form
+// hits the parser's else branch and exits 2, so it must be flagged too.
+const SETTINGS_RE = /settings\/cli\.cjs"?\s*(\S*)/g;
 // <maestro|maestro.cjs> frontier <sub> — requires a maestro prefix so a bare
 // `frontier/cli.cjs` download URL (curl -O) is never mistaken for an invocation.
 const FRONTIER_RE = /maestro(?:\.cjs)?"?\s+frontier\s+(\S+)/g;
@@ -69,7 +71,9 @@ function scanLine(line, rel, lineNo, violations) {
   SETTINGS_RE.lastIndex = 0;
   while ((m = SETTINGS_RE.exec(line)) !== null) {
     const tok = firstToken(m[1]);
-    if (!PLACEHOLDER.has(tok) && !SETTINGS_SUB.has(tok)) {
+    if (tok === '') {
+      violations.push(`${rel}:${lineNo} bare settings/cli.cjs invocation (no subcommand exits 2; use status|list|help|set) — ${line.trim()}`);
+    } else if (!PLACEHOLDER.has(tok) && !SETTINGS_SUB.has(tok)) {
       violations.push(`${rel}:${lineNo} settings/cli.cjs subcommand "${tok}" (valid: status|list|help|set) — ${line.trim()}`);
     }
   }
