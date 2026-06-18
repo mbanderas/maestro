@@ -33,7 +33,7 @@ Consult the help output for the exact read subcommand, then run it. If
 ## Set terse level
 
 ```bash
-node settings/cli.cjs terse <level>
+node settings/cli.cjs set terse <level>
 ```
 
 Valid levels: `off` | `lite` | `full` | `ultra`
@@ -41,10 +41,10 @@ Valid levels: `off` | `lite` | `full` | `ultra`
 Examples:
 
 ```bash
-node settings/cli.cjs terse off
-node settings/cli.cjs terse lite
-node settings/cli.cjs terse full
-node settings/cli.cjs terse ultra
+node settings/cli.cjs set terse off
+node settings/cli.cjs set terse lite
+node settings/cli.cjs set terse full
+node settings/cli.cjs set terse ultra
 ```
 
 If the CLI rejects an argument or the subcommand name differs, run

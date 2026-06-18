@@ -39,12 +39,15 @@ function cmdStatus(argv) {
   }
   const t = all.terse;
   const cb = all.contextBar;
+  const d = all.discipline;
   const lines = ['Maestro settings'];
   lines.push('  terse        ' + t.level + '  (source: ' + t.source + ')' +
     (t.envOverride ? '  [MAESTRO_TERSE_LEVEL override active]' : ''));
   lines.push('  frontier     ' + fmtFrontier(all.frontier));
   lines.push('  context-bar  ' + (cb.enabled ? 'on' : 'off') +
     (cb.scriptConfirmed ? '' : '  [status-line script unconfirmed: ' + cb.dir + ']'));
+  lines.push('  discipline   ' + (d.enabled ? 'on' : 'off') + '  (source: ' + d.source + ')' +
+    (d.source === 'env' ? '  [MAESTRO_DISCIPLINE override active]' : ''));
   process.stdout.write(lines.join('\n') + '\n');
 }
 
@@ -59,6 +62,7 @@ function cmdList(argv) {
   const lines = ['Maestro settings — available values'];
   lines.push('  terse        ' + c.terse.values.join(' | '));
   lines.push('  context-bar  ' + c.contextBar.values.join(' | '));
+  lines.push('  discipline   ' + c.discipline.values.join(' | '));
   lines.push('  frontier     off | single:<model> | fusion:<preset>');
   lines.push('    models     ' + c.frontier.models.map(m => m.id + ' (' + m.label + ')').join(', '));
   lines.push('    presets');
@@ -77,7 +81,7 @@ function cmdSet(argv) {
   const key = argv[0];
   const value = argv[1];
   if (!key || value === undefined) {
-    process.stderr.write('Usage: settings set <terse|frontier|context-bar> <value>\n');
+    process.stderr.write('Usage: settings set <terse|frontier|context-bar|discipline> <value>\n');
     process.exit(2);
   }
   const opts = {
@@ -109,6 +113,7 @@ function usageText() {
     '    terse        <off|lite|full|ultra>\n' +
     '    frontier     <off | single:<model> | fusion:<preset>>\n' +
     '    context-bar  <on|off>\n' +
+    '    discipline   <on|off>   (on/off the enforcement-hook pack; doctrine text stays loaded)\n' +
     '  --scope targets a frontier state; use codex-project/codex-workspace for Codex repo scope, or an explicit name such as codex-global for shared state\n'
   );
 }

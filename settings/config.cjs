@@ -197,6 +197,57 @@ function setContextBar(enabled) {
   return { ok: true, warning };
 }
 
+// ---------- discipline ----------
+
+// The discipline enforcement-hook pack reads this at runtime; `off` makes
+// every hook no-op (see hooks/maestro-discipline-gate.cjs). Stored in
+// config.json `discipline` (default ON => key absent). MAESTRO_DISCIPLINE
+// overrides the file, mirroring the terse env-override pattern.
+function readDiscipline() {
+  const env = String(process.env.MAESTRO_DISCIPLINE || '').toLowerCase();
+  if (env === 'off' || env === 'false' || env === '0') return { enabled: false, source: 'env' };
+  if (env === 'on' || env === 'true' || env === '1') return { enabled: true, source: 'env' };
+  const raw = safeRead(configJsonPath(), MAX_CONFIG_BYTES);
+  if (raw) {
+    try {
+      const c = JSON.parse(raw);
+      if (c && c.discipline === false) return { enabled: false, source: 'config' };
+      if (c && c.discipline === true) return { enabled: true, source: 'config' };
+    } catch {}
+  }
+  return { enabled: true, source: 'default' };
+}
+
+function setDiscipline(value) {
+  const v = typeof value === 'boolean' ? value : String(value == null ? '' : value).toLowerCase();
+  let on;
+  if (v === true || v === 'on' || v === 'true' || v === '1') on = true;
+  else if (v === false || v === 'off' || v === 'false' || v === '0') on = false;
+  else return { ok: false, error: 'discipline value must be on or off' };
+
+  let cfg = {};
+  const raw = safeRead(configJsonPath(), MAX_CONFIG_BYTES);
+  if (raw) {
+    try {
+      const parsed = JSON.parse(raw);
+      if (parsed && typeof parsed === 'object') cfg = parsed;
+    } catch {
+      return { ok: false, error: 'config.json exists but is not valid JSON; refusing to overwrite it' };
+    }
+  }
+  // ON is the default => drop the key so config.json stays minimal; OFF is
+  // explicit.
+  if (on) delete cfg.discipline; else cfg.discipline = false;
+  if (!safeWrite(configJsonPath(), JSON.stringify(cfg, null, 2))) {
+    return { ok: false, error: 'failed to write config.json' };
+  }
+  const env = String(process.env.MAESTRO_DISCIPLINE || '').toLowerCase();
+  const warning = ['off', 'on', 'true', 'false', '0', '1'].includes(env)
+    ? 'MAESTRO_DISCIPLINE=' + env + ' is set in the environment and overrides this until unset'
+    : null;
+  return { ok: true, warning };
+}
+
 // ---------- frontier (delegated to frontier/config.cjs) ----------
 
 function readFrontier(scope) { return frontier.loadState(scope); }
@@ -253,7 +304,12 @@ function setFrontier(spec, opts) {
 // ---------- aggregate ----------
 
 function readAll(scope) {
-  return { terse: readTerse(), frontier: readFrontier(scope), contextBar: readContextBar() };
+  return {
+    terse: readTerse(),
+    frontier: readFrontier(scope),
+    contextBar: readContextBar(),
+    discipline: readDiscipline(),
+  };
 }
 
 // The available-values catalog: every toggle value a picker can offer. The
@@ -276,6 +332,7 @@ function catalog() {
       presetStages: cfg.presetStages || {},
     },
     contextBar: { key: 'context-bar', values: ['on', 'off'] },
+    discipline: { key: 'discipline', values: ['on', 'off'] },
   };
 }
 
@@ -288,7 +345,12 @@ function setKey(key, value, opts) {
     if (v !== 'on' && v !== 'off') return { ok: false, error: 'context-bar value must be on or off' };
     return setContextBar(v === 'on');
   }
-  return { ok: false, error: 'unknown key: ' + key + ' (use terse, frontier, or context-bar)' };
+  if (k === 'discipline') {
+    const v = String(value == null ? '' : value).toLowerCase();
+    if (v !== 'on' && v !== 'off') return { ok: false, error: 'discipline value must be on or off' };
+    return setDiscipline(v === 'on');
+  }
+  return { ok: false, error: 'unknown key: ' + key + ' (use terse, frontier, context-bar, or discipline)' };
 }
 
 module.exports = {
@@ -303,6 +365,8 @@ module.exports = {
   setFrontier,
   readContextBar,
   setContextBar,
+  readDiscipline,
+  setDiscipline,
   readAll,
   catalog,
   setKey,

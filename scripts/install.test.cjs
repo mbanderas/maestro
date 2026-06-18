@@ -509,6 +509,34 @@ function mkTmpTracked() {
   check('19f: --doctrine-only re-run is byte-idempotent', fs.readFileSync(agents, 'utf8') === after1);
 }
 
+// ---- test 20: --engine-only installs the Frontier engine, skips doctrine ----
+{
+  const TMP = mkTmpTracked();
+
+  const code = run(['--target', 'gemini', '--project', TMP, '--engine-only']);
+
+  check('20a: --engine-only succeeds', code === 0);
+  check('20b: engine installed (frontier/cli.cjs)', fs.existsSync(path.join(TMP, 'frontier', 'cli.cjs')));
+  check('20c: settings CLI installed', fs.existsSync(path.join(TMP, 'settings', 'cli.cjs')));
+  check('20d: bin/maestro.cjs installed', fs.existsSync(path.join(TMP, 'bin', 'maestro.cjs')));
+  check('20e: wrapper installed (.gemini/commands/frontier.toml)',
+    fs.existsSync(path.join(TMP, '.gemini', 'commands', 'frontier.toml')));
+  check('20f: no doctrine kernel (AGENTS.md absent)', !fs.existsSync(path.join(TMP, 'AGENTS.md')));
+  check('20g: no runtime adapter (GEMINI.md absent)', !fs.existsSync(path.join(TMP, 'GEMINI.md')));
+  check('20h: no docs/orchestration.md (discipline-side doc)', !fs.existsSync(path.join(TMP, 'docs')));
+}
+
+// ---- test 21: --doctrine-only + --engine-only is rejected ----
+{
+  const TMP = mkTmpTracked();
+  const before = listFiles(TMP).length;
+
+  const code = run(['--doctrine-only', '--engine-only', '--project', TMP]);
+
+  check('21a: mutually-exclusive profiles return non-zero', code === 1);
+  check('21b: nothing written on rejection', listFiles(TMP).length === before);
+}
+
 // ---- cleanup ----
 
 for (const d of tmpDirs) {

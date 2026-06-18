@@ -52,6 +52,8 @@ const EDIT_TOOLS = new Set(['Edit', 'Write', 'NotebookEdit', 'MultiEdit']);
 
 let data = {};
 try { data = JSON.parse(fs.readFileSync(0, 'utf8')); } catch { process.exit(0); }
+// Discipline runtime toggle (settings `discipline off`): silence the pack.
+if (!require('./maestro-discipline-gate.cjs').disciplineEnabled()) process.exit(0);
 
 // Only the first edit of a turn matters; ignore every non-edit tool.
 if (!EDIT_TOOLS.has(data.tool_name)) process.exit(0);

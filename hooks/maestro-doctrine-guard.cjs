@@ -41,6 +41,8 @@ if (mode === '0') process.exit(0);
 
 let data = {};
 try { data = JSON.parse(fs.readFileSync(0, 'utf8')); } catch { process.exit(0); }
+// Discipline runtime toggle (settings `discipline off`): silence the pack.
+if (!require('./maestro-discipline-gate.cjs').disciplineEnabled()) process.exit(0);
 if (data.tool_name !== 'Read' || !data.tool_input) process.exit(0);
 
 const fp = data.tool_input.file_path;
