@@ -26,6 +26,8 @@ const path = require('path');
 
 let data = {};
 try { data = JSON.parse(fs.readFileSync(0, 'utf8')); } catch { process.exit(0); }
+// Discipline runtime toggle (settings `discipline off`): silence the pack.
+if (!require('./maestro-discipline-gate.cjs').disciplineEnabled()) process.exit(0);
 
 // Defensive: never re-enter a stop-hook continuation loop.
 if (data.stop_hook_active === true) process.exit(0);

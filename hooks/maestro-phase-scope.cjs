@@ -53,6 +53,8 @@ function bashTargets(cmd) {
 
 let data = {};
 try { data = JSON.parse(fs.readFileSync(0, 'utf8')); } catch { process.exit(0); }
+// Discipline runtime toggle (settings `discipline off`): silence the pack.
+if (!require('./maestro-discipline-gate.cjs').disciplineEnabled()) process.exit(0);
 
 let lines = [];
 if (data.transcript_path && fs.existsSync(data.transcript_path)) {

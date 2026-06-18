@@ -66,7 +66,13 @@ native hook support.
 
 Portable installs lay down `AGENTS.md` plus that tool's adapter or
 integration file, `docs/orchestration.md`, the zero-dependency Frontier
-engine, and the relevant command/skill files. Codex does not need that copy
+engine, and the relevant command/skill files. Two profile flags split that
+in half: `--doctrine-only` splices just the `AGENTS.md` kernel (the discipline
+layer, no engine), and `--engine-only` installs the Frontier engine and its
+command/skill files without the discipline layer — `npx
+github:mbanderas/maestro install --engine-only --project .` for Frontier on
+its own. The two are mutually exclusive; omit both for the full install. Codex
+does not need that copy
 path for normal use: the repo is its marketplace
 (`.agents/plugins/marketplace.json`) and plugin
 (`.codex-plugin/plugin.json`), bundling the Codex skills, hooks, Frontier
@@ -293,15 +299,52 @@ actions also run through the portable scripts noted below.
 
 ### Settings toggles
 
-`/maestro:settings` and the portable `node settings/cli.cjs` cover three persisted toggles:
+`/maestro:settings` and the portable `node settings/cli.cjs` cover four persisted toggles:
 
 | Toggle | Values | What it controls |
 |---|---|---|
 | `terse` | `off`, `lite`, `full`, `ultra` | Output-token reduction. Shows an amber level badge (`ULTRA`) on the status bar. |
 | `frontier` | `off`; `single:` `opus` / `gpt-5.5` / `gemini`; `fusion:` `opus-duo` / `opus-gpt` / `chatgpt-duo` / `frontier-trio` / `custom`, each with optional `--judge` / `--synth` | The local fusion engine. When armed it auto-runs on every prompt. The blue `f` panel badge means auto-run is on: `fO+C`, `fO+C+G`, `f*3` (`O`=Opus, `C`=ChatGPT/GPT-5.5, `G`=Gemini). |
 | `context-bar` | `on`, `off` | The status-line context-window progress bar. |
+| `discipline` | `on`, `off` | The enforcement-hook pack (gate-reminder, doctrine-guard, phase-scope, subagent-guard, loop-guard, gate-telemetry, toolbudget). `off` silences every hook for users who want only the Frontier engine. See [Discipline layer toggle](#discipline-layer-toggle) for the one caveat. |
 
 Portable everywhere, Codex included: `node settings/cli.cjs status | list | help | set <key> <value>` (frontier also takes `--judge`, `--synth`, `--models a,b,c`, and `--scope <scope>`). Full references: [`docs/settings.md`](docs/settings.md) and [`docs/context-bar.md`](docs/context-bar.md).
+
+#### Discipline layer toggle
+
+Just as `frontier off` disables the engine, `discipline off` disables the
+discipline layer for users who want only Frontier:
+
+```bash
+node settings/cli.cjs set discipline off   # silence the enforcement hooks
+node settings/cli.cjs set discipline on    # default
+```
+
+`MAESTRO_DISCIPLINE=off` (env) overrides the saved setting for one session.
+
+The discipline layer has two runtime halves, and the toggle is honest about
+which it controls:
+
+- **Enforcement hooks** (gate-reminder, doctrine-guard, phase-scope,
+  subagent-guard, loop-guard, gate-telemetry, toolbudget) — `discipline off`
+  makes every one of them no-op. This is the clean, fully-toggleable half.
+- **Doctrine text** (the `AGENTS.md` kernel) — autoloaded into context at
+  session start and *cannot be unloaded mid-session*, so the toggle does not
+  touch it. To run without the doctrine, install engine-only (below) so the
+  kernel is never laid down in the first place.
+
+So `discipline off` = enforcement silent; the kernel text, if present, stays
+in context. Frontier toggles cleanly because it is an action; discipline is
+half action (hooks) and half loaded context (doctrine).
+
+**Install-time split.** The two halves are also separable at install via
+mutually-exclusive profile flags:
+
+| Profile | Command | Lays down |
+|---|---|---|
+| Both (default) | `… install --target <tool>` | doctrine + engine |
+| Engine only | `… install --engine-only` | Frontier engine + wrapper/skills, no discipline |
+| Doctrine only | `… install --doctrine-only` | `AGENTS.md` kernel splice only (the sync path) |
 
 ## Updating Maestro
 

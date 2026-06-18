@@ -6,6 +6,28 @@ All notable changes to Maestro are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- **Runtime `discipline` toggle.** `node settings/cli.cjs set discipline off`
+  (or `MAESTRO_DISCIPLINE=off`) makes the enforcement-hook pack (gate-reminder,
+  doctrine-guard, phase-scope, subagent-guard, loop-guard, gate-telemetry,
+  toolbudget) no-op, the symmetric counterpart to `frontier off` for users who
+  want only the engine. A shared `hooks/maestro-discipline-gate.cjs` reads the
+  setting (fail-safe: any error -> enabled, never silently drop enforcement);
+  each hook gates on it after parsing input. Default is on (key absent from
+  `config.json`). The doctrine TEXT autoloaded at session start cannot be
+  unloaded mid-session, so the toggle covers the hook half only; install
+  `--engine-only` to omit the kernel entirely. Surfaced in
+  `/maestro:settings` status/list/set.
+- **`--engine-only` install mode.** `scripts/install.cjs --engine-only`
+  installs the Frontier engine (`frontier/`, `settings/`, `bin/maestro.cjs`)
+  plus the target's command/skill wrapper without the discipline layer — the
+  symmetric twin of `--doctrine-only`, for users who want Frontier on its own.
+  `docs/orchestration.md` moves from the engine step to the doctrine half (it
+  is the discipline-side S2-S6 protocol the kernel references), so it is
+  skipped by `--engine-only` and unchanged for the default and `--doctrine-only`
+  installs. The two profile flags are mutually exclusive.
+
 ## [1.8.1] - 2026-06-18
 
 ### Changed

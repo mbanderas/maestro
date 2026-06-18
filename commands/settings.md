@@ -1,18 +1,18 @@
 ---
-description: View and change Maestro's toggles (terse, frontier, context-bar) — direct args or a keyboard picker
-argument-hint: "[status | list | help | set <key> <value> | terse|frontier|context-bar <value>]"
+description: View and change Maestro's toggles (terse, frontier, context-bar, discipline) — direct args or a keyboard picker
+argument-hint: "[status | list | help | set <key> <value> | terse|frontier|context-bar|discipline <value>]"
 allowed-tools: Bash, AskUserQuestion
 ---
 
 See and change Maestro's toggles: terse output, the frontier fusion engine,
-and the context-bar status line. `compress` is an action, not a toggle, so it
-is not shown here.
+the context-bar status line, and the discipline enforcement-hook pack.
+`compress` is an action, not a toggle, so it is not shown here.
 
 Two ways to use it. With **no arguments** it opens a keyboard picker. With
 **arguments** it runs the change directly and finishes — no questionnaire.
 
 One writer owns all state: `settings/cli.cjs`, which reads and writes the
-three existing stores. This command never edits those files directly; it
+four existing stores. This command never edits those files directly; it
 always goes through the CLI so the existing readers stay in sync. Throughout,
 `SCLI` = `node "${CLAUDE_PLUGIN_ROOT}/settings/cli.cjs"`.
 
@@ -32,7 +32,8 @@ non-empty skips the picker entirely.**
 - **`set <key> <value> [flags]`** → pass straight through:
   `SCLI set <key> <value> [--judge M] [--synth M] [--models a,b,c]`.
 - **shorthand** — first token is a key (`terse`, `frontier`, `context-bar`,
-  or `bar`): treat the rest as the value and run `SCLI set <key> <value>`.
+  `bar`, or `discipline`): treat the rest as the value and run
+  `SCLI set <key> <value>`.
 
 ### Normalizing the value (both `set` and shorthand)
 
@@ -46,7 +47,7 @@ The CLI takes one frontier value with a colon (`single:opus`,
   → `SCLI set frontier fusion:custom --models opus,gpt-5.5,gemini`
 - `frontier fusion opus-gpt --judge opus --synth gpt-5.5` → pass the flags through
 - already-coloned (`frontier fusion:opus-gpt`) → pass as-is
-- `terse ultra`, `context-bar off` → `SCLI set terse ultra`, `SCLI set context-bar off`
+- `terse ultra`, `context-bar off`, `discipline off` → `SCLI set terse ultra`, `SCLI set context-bar off`, `SCLI set discipline off`
 
 After any write, report any `WARNING:` line the CLI prints (for example an
 active `MAESTRO_TERSE_LEVEL` override or an unconfirmed status-line script),
@@ -60,10 +61,11 @@ show `SCLI help` so the user sees the valid values.
 1. Read state and the catalog: `SCLI status --json` and `SCLI list --json`.
    Build every option below from `list` — never hardcode a model or preset.
 
-2. First `AskUserQuestion` call, three questions, each pre-set to the current
+2. First `AskUserQuestion` call, four questions, each pre-set to the current
    value (only write a toggle whose answer differs from `status`):
    - terse: `list.terse.values` (`off`, `lite`, `full`, `ultra`).
    - context-bar: `list.contextBar.values` (`on`, `off`).
+   - discipline: `list.discipline.values` (`on`, `off`).
    - frontier mode: `off`, `single`, `fusion` (`list.frontier.modes`).
 
 3. Frontier follow-ups (only if mode is not `off`):

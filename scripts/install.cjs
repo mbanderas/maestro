@@ -413,7 +413,7 @@ function legacyGenericCodexTemplate(srcContent, legacyName, namespacedName) {
 
 /**
  * @param {string[]} argv
- * @returns {{ target: string, project: string, user: boolean, dryRun: boolean, noHooks: boolean, doctrineOnly: boolean }}
+ * @returns {{ target: string, project: string, user: boolean, dryRun: boolean, noHooks: boolean, doctrineOnly: boolean, engineOnly: boolean }}
  */
 function parseArgs(argv) {
   const opts = {
@@ -423,6 +423,7 @@ function parseArgs(argv) {
     dryRun:  false,
     noHooks: false,
     doctrineOnly: false,
+    engineOnly: false,
   };
 
   let i = 0;
@@ -440,6 +441,8 @@ function parseArgs(argv) {
       opts.noHooks = true;
     } else if (a === '--doctrine-only') {
       opts.doctrineOnly = true;
+    } else if (a === '--engine-only') {
+      opts.engineOnly = true;
     }
     i++;
   }
@@ -726,27 +729,40 @@ function installEngine(projectRoot, dryRun, log) {
     }
   }
 
-  // docs/orchestration.md — the on-demand S2-S6 multi-agent protocol the
-  // kernel references. Maestro-owned reference file; copy (refuse symlinks).
+  return ok;
+}
+
+/**
+ * Install docs/orchestration.md — the on-demand S2-S6 multi-agent protocol the
+ * AGENTS.md kernel references. Discipline-side reference (loaded on a
+ * multi-agent verdict), not part of the Frontier engine, so it ships with the
+ * doctrine half and is skipped by --engine-only. Maestro-owned; copy, refuse
+ * symlinks.
+ * @param {string} projectRoot
+ * @param {boolean} dryRun
+ * @param {(msg: string) => void} log
+ * @returns {boolean}
+ */
+function installOrchestrationDoc(projectRoot, dryRun, log) {
   const srcDocs  = path.join(PKG_ROOT, 'docs', 'orchestration.md');
   const destDocs = path.join(projectRoot, 'docs', 'orchestration.md');
   if (dryRun) {
     log(`[dry-run] would write ${destDocs}`);
-  } else if (isSymlink(destDocs)) {
-    log(`ERROR: docs/orchestration.md is a symlink — refusing: ${destDocs}`);
-    ok = false;
-  } else {
-    try {
-      fs.mkdirSync(path.dirname(destDocs), { recursive: true });
-      fs.writeFileSync(destDocs, fs.readFileSync(srcDocs));
-      log(`[doctrine] copied ${destDocs}`);
-    } catch (err) {
-      log(`ERROR: failed to copy docs/orchestration.md: ${err.message}`);
-      ok = false;
-    }
+    return true;
   }
-
-  return ok;
+  if (isSymlink(destDocs)) {
+    log(`ERROR: docs/orchestration.md is a symlink — refusing: ${destDocs}`);
+    return false;
+  }
+  try {
+    fs.mkdirSync(path.dirname(destDocs), { recursive: true });
+    fs.writeFileSync(destDocs, fs.readFileSync(srcDocs));
+    log(`[doctrine] copied ${destDocs}`);
+    return true;
+  } catch (err) {
+    log(`ERROR: failed to copy docs/orchestration.md: ${err.message}`);
+    return false;
+  }
 }
 
 /**
@@ -998,12 +1014,17 @@ function installCodexSkills(projectRoot, userGlobal, dryRun, log) {
  */
 function run(argv) {
   const opts = parseArgs(argv || []);
-  const { target: rawTarget, project, user: userGlobal, dryRun, doctrineOnly } = opts;
+  const { target: rawTarget, project, user: userGlobal, dryRun, doctrineOnly, engineOnly } = opts;
 
   const lines = [];
   const log = (msg) => { lines.push(msg); process.stdout.write(msg + '\n'); };
 
   if (dryRun) log('[dry-run] planning only — no files will be written');
+
+  if (doctrineOnly && engineOnly) {
+    log('ERROR: --doctrine-only and --engine-only are mutually exclusive');
+    return 1;
+  }
 
   // Doctrine-only — splice just the AGENTS.md kernel (used by sync-maestro.ps1
   // so the marker-splice is the single merge path; no engine/adapter/wrapper).
@@ -1021,7 +1042,7 @@ function run(argv) {
   if (target === 'auto') {
     target = detectTarget(project);
     if (target === 'none') {
-      log('[auto] no tool marker dir found — installing doctrine + engine only');
+      log(`[auto] no tool marker dir found — installing ${engineOnly ? 'engine only' : 'doctrine + engine only'}`);
       log('[auto] pass --target <tool> to install a command wrapper');
     } else {
       log(`[auto] detected target: ${target}`);
@@ -1036,11 +1057,16 @@ function run(argv) {
 
   let anyError = false;
 
-  // 1. Doctrine — portable AGENTS.md kernel + this target's runtime adapter.
-  if (!installDoctrine(project, dryRun, log)) anyError = true;
-  if (!installAdapter(target, project, dryRun, log)) anyError = true;
+  // 1. Doctrine half — portable AGENTS.md kernel + this target's runtime
+  //    adapter + the on-demand multi-agent protocol doc. Skipped by
+  //    --engine-only (Frontier engine without the discipline layer).
+  if (!engineOnly) {
+    if (!installDoctrine(project, dryRun, log)) anyError = true;
+    if (!installAdapter(target, project, dryRun, log)) anyError = true;
+    if (!installOrchestrationDoc(project, dryRun, log)) anyError = true;
+  }
 
-  // 2. Engine — frontier/ + bin/maestro.cjs + docs/orchestration.md.
+  // 2. Engine half — frontier/ + settings/ + bin/maestro.cjs.
   if (!installEngine(project, dryRun, log)) anyError = true;
 
   // 3. Wrapper — this target's /frontier command (skip if no target detected).

@@ -11,8 +11,11 @@
 //       is propagated.
 //
 //   maestro install [--target <tool>] [--dry-run] [--project <path>]
-//                   [--user] [--no-hooks]
-//       Runs the cross-tool installer (scripts/install.cjs). Loaded
+//                   [--user] [--no-hooks] [--doctrine-only | --engine-only]
+//       Runs the cross-tool installer (scripts/install.cjs). Profiles:
+//       default = doctrine + engine; --doctrine-only = AGENTS.md kernel
+//       splice only; --engine-only = Frontier engine without the
+//       discipline layer. Loaded
 //       lazily so the bin works for `frontier` even where the installer
 //       is absent.
 //
@@ -37,13 +40,14 @@ function usage(code) {
     '\n' +
     'Usage:\n' +
     '  maestro frontier <mode|status|run|adopt> [...]   run the Frontier engine\n' +
-    '  maestro install [--target <tool>] [--dry-run] [--project <path>] [--user] [--no-hooks]\n' +
+    '  maestro install [--target <tool>] [--dry-run] [--project <path>] [--user] [--no-hooks] [--doctrine-only | --engine-only]\n' +
     '\n' +
     'Examples:\n' +
     '  maestro frontier status\n' +
     '  maestro frontier mode fusion --preset opus-gpt\n' +
     '  maestro frontier run "fix the failing test"\n' +
-    '  maestro install --target auto --project .\n'
+    '  maestro install --target auto --project .\n' +
+    '  maestro install --engine-only --project .   (Frontier engine, no discipline layer)\n'
   );
   process.exit(code);
 }

@@ -1,10 +1,11 @@
 ---
 name: maestro-settings
-description: View and change Maestro toggles (terse, frontier, context-bar) via the settings CLI
+description: View and change Maestro toggles (terse, frontier, context-bar, discipline) via the settings CLI
 ---
 
 View or change **Maestro settings** for this project. The settings CLI manages
-the three primary toggles: `terse`, `frontier`, and `context-bar`.
+four primary toggles: `terse`, `frontier`, `context-bar`, and `discipline`
+(the enforcement-hook pack; `off` silences it, the doctrine text stays loaded).
 
 When the user invokes this skill, run the settings CLI from the repo root.
 Do not edit settings files by hand.
@@ -36,12 +37,13 @@ List current settings:
 node settings/cli.cjs
 ```
 
-Set a toggle:
+Set a toggle (the CLI takes a `set` subcommand):
 
 ```bash
-node settings/cli.cjs terse <off|lite|full|ultra>
-node settings/cli.cjs frontier <off|single|fusion>
-node settings/cli.cjs context-bar <on|off>
+node settings/cli.cjs set terse <off|lite|full|ultra>
+node settings/cli.cjs set frontier <off|single:<model>|fusion:<preset>>
+node settings/cli.cjs set context-bar <on|off>
+node settings/cli.cjs set discipline <on|off>
 ```
 
 If a subcommand name or argument differs from the above, follow the usage

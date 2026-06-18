@@ -29,6 +29,8 @@ if (process.env.MAESTRO_GATE_REMINDER === '0') process.exit(0);
 
 let data = {};
 try { data = JSON.parse(fs.readFileSync(0, 'utf8')); } catch { process.exit(0); }
+// Discipline runtime toggle (settings `discipline off`): silence the pack.
+if (!require('./maestro-discipline-gate.cjs').disciplineEnabled()) process.exit(0);
 if (!data.session_id) process.exit(0);
 
 const marker = path.join(

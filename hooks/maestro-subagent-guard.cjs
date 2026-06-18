@@ -39,6 +39,8 @@ const crypto = require('crypto');
 
 let data = {};
 try { data = JSON.parse(fs.readFileSync(0, 'utf8')); } catch { process.exit(0); }
+// Discipline runtime toggle (settings `discipline off`): silence the pack.
+if (!require('./maestro-discipline-gate.cjs').disciplineEnabled()) process.exit(0);
 
 // Prefer the subagent's own transcript (agent_transcript_path, since
 // Claude Code 2.0.42) over the session transcript.

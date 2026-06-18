@@ -159,12 +159,52 @@ function main() {
     check('setKey unknown key', settings.setKey('nope', 'x').ok === false);
   }
 
-  // (o) readAll aggregates all three
+  // (o) readAll aggregates all toggles
   {
     const all = settings.readAll();
     check('readAll has terse', !!all.terse && typeof all.terse.level === 'string');
     check('readAll has frontier', !!all.frontier && typeof all.frontier.mode === 'string');
     check('readAll has contextBar', !!all.contextBar && typeof all.contextBar.enabled === 'boolean');
+    check('readAll has discipline', !!all.discipline && typeof all.discipline.enabled === 'boolean');
+  }
+
+  // ---- discipline ----
+  // (p) default ON; set off writes config.json discipline:false; on removes key
+  {
+    delete process.env.MAESTRO_DISCIPLINE;
+    const d0 = settings.readDiscipline();
+    check('discipline default on', d0.enabled === true && d0.source === 'default');
+
+    const off = settings.setDiscipline('off');
+    check('setDiscipline off ok', off.ok === true);
+    const d1 = settings.readDiscipline();
+    check('discipline reads off from config', d1.enabled === false && d1.source === 'config');
+    const cfg = JSON.parse(fs.readFileSync(settings.configJsonPath(), 'utf8'));
+    check('config.json discipline = false', cfg.discipline === false);
+
+    const on = settings.setDiscipline('on');
+    check('setDiscipline on ok', on.ok === true);
+    const cfg2 = JSON.parse(fs.readFileSync(settings.configJsonPath(), 'utf8'));
+    check('discipline on drops the key', !('discipline' in cfg2));
+    check('discipline reads on after re-enable', settings.readDiscipline().enabled === true);
+  }
+
+  // (q) env override beats config and is reported + warned
+  {
+    settings.setDiscipline('on'); // config says on
+    process.env.MAESTRO_DISCIPLINE = 'off';
+    const d = settings.readDiscipline();
+    check('discipline env override off', d.enabled === false && d.source === 'env');
+    const r = settings.setDiscipline('on');
+    check('setDiscipline warns under env override', r.ok === true && /MAESTRO_DISCIPLINE/.test(r.warning || ''));
+    delete process.env.MAESTRO_DISCIPLINE;
+  }
+
+  // (r) setKey dispatch + bad value
+  {
+    check('setKey discipline on', settings.setKey('discipline', 'on').ok === true);
+    check('setKey discipline bad value', settings.setKey('discipline', 'maybe').ok === false);
+    check('catalog lists discipline values', settings.catalog().discipline.values.join(',') === 'on,off');
   }
 
   // ---- cleanup ----
