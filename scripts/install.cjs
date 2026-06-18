@@ -413,7 +413,7 @@ function legacyGenericCodexTemplate(srcContent, legacyName, namespacedName) {
 
 /**
  * @param {string[]} argv
- * @returns {{ target: string, project: string, user: boolean, dryRun: boolean, noHooks: boolean }}
+ * @returns {{ target: string, project: string, user: boolean, dryRun: boolean, noHooks: boolean, doctrineOnly: boolean }}
  */
 function parseArgs(argv) {
   const opts = {
@@ -422,6 +422,7 @@ function parseArgs(argv) {
     user:    false,
     dryRun:  false,
     noHooks: false,
+    doctrineOnly: false,
   };
 
   let i = 0;
@@ -437,6 +438,8 @@ function parseArgs(argv) {
       opts.dryRun = true;
     } else if (a === '--no-hooks') {
       opts.noHooks = true;
+    } else if (a === '--doctrine-only') {
+      opts.doctrineOnly = true;
     }
     i++;
   }
@@ -995,12 +998,23 @@ function installCodexSkills(projectRoot, userGlobal, dryRun, log) {
  */
 function run(argv) {
   const opts = parseArgs(argv || []);
-  const { target: rawTarget, project, user: userGlobal, dryRun } = opts;
+  const { target: rawTarget, project, user: userGlobal, dryRun, doctrineOnly } = opts;
 
   const lines = [];
   const log = (msg) => { lines.push(msg); process.stdout.write(msg + '\n'); };
 
   if (dryRun) log('[dry-run] planning only — no files will be written');
+
+  // Doctrine-only — splice just the AGENTS.md kernel (used by sync-maestro.ps1
+  // so the marker-splice is the single merge path; no engine/adapter/wrapper).
+  if (doctrineOnly) {
+    if (!installDoctrine(project, dryRun, log)) {
+      log('doctrine sync completed with errors (see above)');
+      return 1;
+    }
+    log('doctrine sync complete');
+    return 0;
+  }
 
   // Resolve target
   let target = rawTarget;

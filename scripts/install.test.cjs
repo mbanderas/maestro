@@ -487,6 +487,28 @@ function mkTmpTracked() {
   check('18c: re-run on a CRLF file is byte-idempotent', after2 === after1);
 }
 
+// ---- test 19: --doctrine-only splices AGENTS.md and writes nothing else ----
+{
+  const TMP = mkTmpTracked();
+  const agents = path.join(TMP, 'AGENTS.md');
+  fs.writeFileSync(agents, 'USER OWNS THIS\n', 'utf8');
+
+  const code = run(['--doctrine-only', '--project', TMP]);
+  const r = fs.readFileSync(agents, 'utf8');
+
+  check('19a: --doctrine-only succeeds', code === 0);
+  check('19b: doctrine block spliced below user content',
+    r.includes('USER OWNS THIS') && r.includes('<!-- maestro:begin -->') && r.includes('Decision Gate'));
+  check('19c: no engine installed (frontier/ absent)', !fs.existsSync(path.join(TMP, 'frontier')));
+  check('19d: no codex skills installed (.agents/skills absent)',
+    !fs.existsSync(path.join(TMP, '.agents', 'skills')));
+  check('19e: no docs/orchestration.md installed', !fs.existsSync(path.join(TMP, 'docs')));
+
+  const after1 = fs.readFileSync(agents, 'utf8');
+  run(['--doctrine-only', '--project', TMP]);
+  check('19f: --doctrine-only re-run is byte-idempotent', fs.readFileSync(agents, 'utf8') === after1);
+}
+
 // ---- cleanup ----
 
 for (const d of tmpDirs) {

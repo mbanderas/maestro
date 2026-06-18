@@ -1,17 +1,28 @@
 <#
 .SYNOPSIS
-    Sync Maestro AGENTS.md to downstream repos listed in scripts/downstream.txt.
+    Sync Maestro doctrine (the AGENTS.md kernel) to downstream repos listed in
+    scripts/downstream.txt.
 
 .DESCRIPTION
-    Copies Maestro/AGENTS.md verbatim to each downstream workspace root.
-    Warns if downstream CLAUDE.md exists but lacks `@AGENTS.md` import.
+    For each downstream workspace, invokes
+    `node scripts/install.cjs --project <repo> --doctrine-only`, which splices
+    the Maestro doctrine block between its `<!-- maestro:begin -->` /
+    `<!-- maestro:end -->` markers: it refreshes stale doctrine in place while
+    preserving any user content outside the block. install.cjs is the single
+    merge source of truth; this script never overwrites a whole AGENTS.md
+    (no more Copy-Item -Force clobber).
+    Warns if a downstream CLAUDE.md exists but lacks the `@AGENTS.md` import.
     Does NOT git-add or commit — review and commit per repo manually.
 
 .PARAMETER WorkspaceRoot
     Parent dir containing all workspaces. Default: C:\Users\mail\Workspaces
 
+.PARAMETER ListFile
+    File of downstream workspace names (one per line; blank lines and lines
+    starting with # are ignored). Default: scripts/downstream.txt
+
 .PARAMETER DryRun
-    Show what would change. No writes.
+    Show what would change. No writes (passed through to install.cjs).
 
 .EXAMPLE
     pwsh ./scripts/sync-maestro.ps1
@@ -20,23 +31,22 @@
 [CmdletBinding()]
 param(
     [string]$WorkspaceRoot = 'C:\Users\mail\Workspaces',
+    [string]$ListFile,
     [switch]$DryRun
 )
 
 $ErrorActionPreference = 'Stop'
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
-$maestroRoot = Split-Path -Parent $scriptDir
-$source = Join-Path $maestroRoot 'AGENTS.md'
-$listFile = Join-Path $scriptDir 'downstream.txt'
+$installer = Join-Path $scriptDir 'install.cjs'
+if (-not $ListFile) { $ListFile = Join-Path $scriptDir 'downstream.txt' }
 
-if (-not (Test-Path $source)) { throw "Missing source: $source" }
-if (-not (Test-Path $listFile)) { throw "Missing list: $listFile" }
+if (-not (Test-Path $installer)) { throw "Missing installer: $installer" }
+if (-not (Test-Path $ListFile)) { throw "Missing list: $ListFile" }
 
-$sourceHash = (Get-FileHash $source).Hash
-$targets = Get-Content $listFile | ForEach-Object { $_.Trim() } |
+$targets = Get-Content $ListFile | ForEach-Object { $_.Trim() } |
     Where-Object { $_ -and -not $_.StartsWith('#') }
 
-$copied = 0; $skipped = 0; $missing = 0; $warnings = @()
+$synced = 0; $failed = 0; $missing = 0; $warnings = @()
 
 foreach ($name in $targets) {
     $repoDir = Join-Path $WorkspaceRoot $name
@@ -45,23 +55,15 @@ foreach ($name in $targets) {
         $missing++; continue
     }
 
-    $dest = Join-Path $repoDir 'AGENTS.md'
-    $needsCopy = $true
-    if (Test-Path $dest) {
-        if ((Get-FileHash $dest).Hash -eq $sourceHash) {
-            Write-Host "OK    $name" -ForegroundColor DarkGray
-            $skipped++; $needsCopy = $false
-        }
-    }
-
-    if ($needsCopy) {
-        if ($DryRun) {
-            Write-Host "DRY   $name (would copy)" -ForegroundColor Cyan
-        } else {
-            Copy-Item -Path $source -Destination $dest -Force
-            Write-Host "COPY  $name" -ForegroundColor Green
-        }
-        $copied++
+    $nodeArgs = @($installer, '--project', $repoDir, '--doctrine-only')
+    if ($DryRun) { $nodeArgs += '--dry-run' }
+    & node @nodeArgs
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "FAIL  $name (installer exit $LASTEXITCODE)" -ForegroundColor Red
+        $failed++
+    } else {
+        Write-Host "SYNC  $name" -ForegroundColor Green
+        $synced++
     }
 
     $claudeMd = Join-Path $repoDir 'CLAUDE.md'
@@ -72,11 +74,11 @@ foreach ($name in $targets) {
 }
 
 Write-Host ''
-Write-Host "Source hash: $sourceHash"
-Write-Host "Copied: $copied  Up-to-date: $skipped  Missing dirs: $missing"
+Write-Host "Synced: $synced  Failed: $failed  Missing dirs: $missing"
 if ($warnings.Count) {
     Write-Host ''
     Write-Host "Warnings:" -ForegroundColor Yellow
     $warnings | ForEach-Object { Write-Host $_ -ForegroundColor Yellow }
 }
 if ($DryRun) { Write-Host ''; Write-Host "(dry-run — no files written)" -ForegroundColor Cyan }
+if ($failed) { exit 1 }
