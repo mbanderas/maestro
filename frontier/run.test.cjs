@@ -493,6 +493,71 @@ async function runTests() {
       'got ' + (panelStartEv && panelStartEv.models));
   }
 
+  // (q) coordination marker: single/fusion set MAESTRO_FRONTIER_RUN_ID so
+  //     spawned children inherit it; off does not; the id is stable per run.
+  {
+    const savedRun = process.env.MAESTRO_FRONTIER_RUN_ID;
+    delete process.env.MAESTRO_FRONTIER_RUN_ID;
+
+    // off must NOT set the marker (it spawns nothing)
+    await runFrontier({
+      prompt: 'hi',
+      state: { mode: 'off' },
+      cfg: baseCfg,
+      deps: {
+        spawnOne: async () => makeOk('opus', 'x'),
+        fanOut: async () => [makeOk('opus', 'x')],
+        runJudge: async () => undefined,
+        runSynth: async () => '',
+      },
+    });
+    check('(q) off leaves marker unset', process.env.MAESTRO_FRONTIER_RUN_ID === undefined,
+      'got ' + process.env.MAESTRO_FRONTIER_RUN_ID);
+
+    // single sets the marker
+    await runFrontier({
+      prompt: 'hi',
+      state: { mode: 'single', model: 'opus' },
+      cfg: baseCfg,
+      deps: { spawnOne: async () => makeOk('opus', 'X') },
+    });
+    const idA = process.env.MAESTRO_FRONTIER_RUN_ID;
+    check('(q) single sets marker', typeof idA === 'string' && idA.indexOf('frontier-') === 0,
+      'got ' + idA);
+
+    // a later run in the same process inherits the same id (generate-if-absent)
+    await runFrontier({
+      prompt: 'hi',
+      state: { mode: 'fusion', preset: 'opus-gpt' },
+      cfg: baseCfg,
+      deps: {
+        fanOut: async () => [makeOk('opus', 'a')],
+        runJudge: async () => VALID_ANALYSIS,
+        runSynth: async () => 'F',
+      },
+    });
+    check('(q) marker stable across runs', process.env.MAESTRO_FRONTIER_RUN_ID === idA,
+      'got ' + process.env.MAESTRO_FRONTIER_RUN_ID + ' want ' + idA);
+
+    // recursion-capped depth>=1 must NOT mint a marker when none is inherited
+    delete process.env.MAESTRO_FRONTIER_RUN_ID;
+    const savedDepth = process.env.FUSION_DEPTH;
+    process.env.FUSION_DEPTH = '1';
+    await runFrontier({
+      prompt: 'hi',
+      state: { mode: 'fusion', preset: 'opus-gpt' },
+      cfg: baseCfg,
+      deps: { fanOut: async () => [makeOk('opus', 'a')], runJudge: async () => undefined, runSynth: async () => '' },
+    });
+    if (savedDepth === undefined) delete process.env.FUSION_DEPTH;
+    else process.env.FUSION_DEPTH = savedDepth;
+    check('(q) capped depth leaves marker unset', process.env.MAESTRO_FRONTIER_RUN_ID === undefined,
+      'got ' + process.env.MAESTRO_FRONTIER_RUN_ID);
+
+    if (savedRun === undefined) delete process.env.MAESTRO_FRONTIER_RUN_ID;
+    else process.env.MAESTRO_FRONTIER_RUN_ID = savedRun;
+  }
+
   // ---------- report ----------
   if (failures.length === 0) {
     process.stdout.write('\nAll cases passed.\n');
