@@ -15,7 +15,7 @@ const path = require('path');
 // trips the recursion guard, CLAUDE_PROJECT_DIR steers the workspace scope.
 const childEnv = { ...process.env };
 for (const k of [
-  'FUSION_DEPTH', 'MAESTRO_FRONTIER_RUN_ID', 'MAESTRO_SCOPE',
+  'FUSION_DEPTH', 'MAESTRO_FRONTIER_RUN_ID', 'MAESTRO_FRONTIER_RUNS_DIR', 'MAESTRO_SCOPE',
   'CLAUDE_PROJECT_DIR', 'CODEX_PROJECT_DIR',
   'CLAUDE_PLUGIN_ROOT', 'CLAUDECODE',
   'PLUGIN_ROOT', 'PLUGIN_DATA',

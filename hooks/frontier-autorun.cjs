@@ -79,13 +79,25 @@ async function run() {
   // otherwise-silent blocking run. Cleared below on completion or error.
   const progress = require('../frontier/progress.cjs');
   const onProgress = progress.makeProgressWriter(scope);
+  // Register this armed run so an out-of-process observer (the Stop
+  // loop-guard, or an agent re-grounding per S10) can see a coordinated,
+  // read-only Frontier run is in flight -- not a rogue write-loop. Released
+  // on both paths; releaseRun is idempotent and a missed release self-heals
+  // via runlock's dead-pid pruning (this hook process is short-lived).
+  const runlock = require('../frontier/runlock.cjs');
+  const runCwd = data.cwd || process.env.CLAUDE_PROJECT_DIR || process.env.CODEX_PROJECT_DIR || process.cwd();
   try {
-    const { runFrontier } = require('../frontier/run.cjs');
+    const { runFrontier, ensureRunId } = require('../frontier/run.cjs');
+    ensureRunId();
+    runlock.registerRun({ kind: 'frontier', cwd: runCwd });
     result = await runFrontier({ prompt, state, deps: { onProgress } });
   } catch (e) {
+    runlock.releaseRun();
     progress.clearProgress(scope);
     process.stderr.write('frontier-autorun: ' + ((e && e.message) || e) + '\n');
     noop();
+  } finally {
+    runlock.releaseRun();
   }
   const runMs = Date.now() - runStart;
   progress.clearProgress(scope);

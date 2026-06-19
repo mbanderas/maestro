@@ -9,6 +9,7 @@ const path = require('path');
 
 const HOOK = path.join(__dirname, 'maestro-loop-guard.cjs');
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'maestro-loop-test-'));
+const emptyRuns = fs.mkdtempSync(path.join(tmp, 'empty-runs-'));
 
 function transcript(name, lines) {
   const p = path.join(tmp, name);
@@ -17,10 +18,16 @@ function transcript(name, lines) {
 }
 
 function runHook(payload, env) {
+  // Hermetic: default to an empty registry dir and strip the
+  // coordinated-child suppress signals so host env never leaks into a case;
+  // cases opt in explicitly via the `env` arg.
+  const base = { ...process.env, MAESTRO_FRONTIER_RUNS_DIR: emptyRuns };
+  delete base.MAESTRO_FRONTIER_RUN_ID;
+  delete base.FUSION_DEPTH;
   return execFileSync(process.execPath, [HOOK], {
     input: JSON.stringify(payload),
     encoding: 'utf8',
-    env: { ...process.env, ...env }
+    env: { ...base, ...env }
   });
 }
 
@@ -86,6 +93,24 @@ check('missing transcript + cron -> still warns on checkpoint', out.includes('ch
 // 9. Garbage stdin: silent exit 0.
 out = execFileSync(process.execPath, [HOOK], { input: 'not json', encoding: 'utf8' });
 check('garbage stdin -> silent exit 0', out === '');
+
+// 10. Coordinated Frontier child (MAESTRO_FRONTIER_RUN_ID set): silent even
+//     when looping without a checkpoint -- a read-only panelist is not a loop.
+out = runHook({ transcript_path: loopTx, cwd: cwdBare }, { MAESTRO_FRONTIER_RUN_ID: 'frontier-abc' });
+check('frontier child (run-id) -> silent', out === '');
+
+// 11. Coordinated Frontier child (FUSION_DEPTH>=1): silent.
+out = runHook({ transcript_path: loopTx, cwd: cwdBare }, { FUSION_DEPTH: '1' });
+check('frontier child (fusion-depth) -> silent', out === '');
+
+// 12. Active Frontier run in the registry (same cwd): surfaced to a looping
+//     session so it does not mistake the panel subprocesses for a 2nd loop.
+const runsDir = fs.mkdtempSync(path.join(tmp, 'runs-'));
+fs.writeFileSync(path.join(runsDir, process.pid + '.json'),
+  JSON.stringify({ pid: process.pid, runId: 'frontier-xyz', kind: 'frontier', cwd: cwdCheckpointed }));
+out = runHook({ transcript_path: loopTx, cwd: cwdCheckpointed }, { MAESTRO_FRONTIER_RUNS_DIR: runsDir });
+check('active frontier run surfaced', out.includes('coordinated Frontier run'));
+check('surfaced run names the run-id', out.includes('frontier-xyz'));
 
 fs.rmSync(tmp, { recursive: true, force: true });
 

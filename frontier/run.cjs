@@ -49,6 +49,27 @@ function normalizeStateAliases(state) {
 }
 
 /**
+ * Ensure a stable per-run coordination id is present in the environment and
+ * return it. Generated once per top-level run; a nested invocation (or a
+ * child spawned with this env) inherits the parent's id unchanged. spawnOne
+ * spreads process.env into every child, so this one assignment propagates the
+ * id to panel/judge/synth over the same channel as FUSION_DEPTH -- no per-call
+ * threading. The id is set only inside the short-lived run process (autorun
+ * hook / `maestro frontier run`), so it never leaks into the long-lived host
+ * session. frontier/runlock.cjs records it so the id is observable from
+ * outside the process too.
+ * @returns {string}
+ */
+function ensureRunId() {
+  if (!process.env.MAESTRO_FRONTIER_RUN_ID) {
+    process.env.MAESTRO_FRONTIER_RUN_ID =
+      'frontier-' + Date.now().toString(36) + '-' +
+      Math.random().toString(36).slice(2, 10);
+  }
+  return process.env.MAESTRO_FRONTIER_RUN_ID;
+}
+
+/**
  * @param {{ prompt:string, state:object, cfg?:object, deps?:object }} opts
  * @returns {Promise<object>}
  */
@@ -93,20 +114,12 @@ async function runFrontier({ prompt, state, cfg, deps }) {
   }
 
   // ---- FRONTIER RUN ID (coordination marker) ----
-  // Tag this run and every child it spawns (panel, judge, synth) with a
-  // stable id so a concurrent observer can tell a coordinated, read-only
-  // Frontier subprocess apart from an independent autonomous write-loop.
-  // spawnOne builds each child's env as { ...process.env, ... }, so setting
-  // it here propagates to all descendants over the same channel as
-  // FUSION_DEPTH -- no per-call threading. Generated once per top-level run;
-  // a nested invocation inherits the parent's id unchanged. OFF mode and a
-  // recursion-capped depth>=1 invocation both return above without spawning,
-  // so neither reaches here. See commands/frontier.md "Concurrency".
-  if (!process.env.MAESTRO_FRONTIER_RUN_ID) {
-    process.env.MAESTRO_FRONTIER_RUN_ID =
-      'frontier-' + Date.now().toString(36) + '-' +
-      Math.random().toString(36).slice(2, 10);
-  }
+  // Stamp this run + every child it spawns (panel, judge, synth) so an
+  // out-of-process observer can tell a coordinated, read-only Frontier
+  // subprocess apart from an independent autonomous write-loop. OFF mode and
+  // a recursion-capped depth>=1 invocation both return above without
+  // spawning, so neither reaches here. See commands/frontier.md "Concurrency".
+  ensureRunId();
 
   // ---- SINGLE ----
   if (state.mode === 'single') {
@@ -214,4 +227,4 @@ async function runFrontier({ prompt, state, cfg, deps }) {
   return { status: 'error', mode: state.mode, error: 'unknown mode', failure_reason: 'unexpected_error' };
 }
 
-module.exports = { runFrontier, canonicalModelId, canonicalPresetId, normalizeStateAliases };
+module.exports = { runFrontier, ensureRunId, canonicalModelId, canonicalPresetId, normalizeStateAliases };
