@@ -125,7 +125,7 @@ specific build, point at it with an environment variable:
 
 ## Concurrency — fusion is safe to run in one workspace
 
-Frontier mirrors the OpenRouter Fusion / Mixture-of-Agents shape: one
+Frontier follows the Mixture-of-Agents (multi-model ensemble) shape: one
 prompt fans to a panel, a judge maps agreement and contradiction, a
 synthesizer writes the grounded answer. The panel/judge/synth members
 are **read-only, one-shot `-p` subprocesses** — they emit text to stdout
@@ -159,7 +159,7 @@ Frontier run is in flight.
 
 ### "Working together" is orchestration, not peer-joining
 
-Fusion is the OpenRouter-Fusion / Mixture-of-Agents shape: ONE
+Fusion is a Mixture-of-Agents (multi-model ensemble) shape: ONE
 orchestrator fans a prompt to a panel it spawns, then judges and
 synthesizes. That is the whole of "models working together" — there is
 no IPC or message bus, and one already-running interactive session

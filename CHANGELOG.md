@@ -6,6 +6,15 @@ All notable changes to Maestro are documented here. The format follows
 
 ## [Unreleased]
 
+## [1.9.1] - 2026-06-19
+
+### Changed
+
+- **Public docs describe the fusion architecture only by its generic pattern
+  name.** The Concurrency section in `commands/frontier.md` and this changelog
+  now use "Mixture-of-Agents" / "multi-model ensemble"; the sole third-party
+  attribution in the project is the README benchmark chart.
+
 ## [1.9.0] - 2026-06-19
 
 ### Added
@@ -25,8 +34,8 @@ All notable changes to Maestro are documented here. The format follows
   read-only panel subprocesses for a second write-loop. This is
   non-interference identification only — it does not (and must not) make two
   independent interactive write-loops on one branch safe. `commands/frontier.md`
-  "Concurrency" documents the model: fusion is OpenRouter-Fusion / Mixture-of-
-  Agents orchestration (one orchestrator + read-only panel), not peer-session
+  "Concurrency" documents the model: fusion is a Mixture-of-Agents
+  orchestration (one orchestrator + read-only panel), not peer-session
   collaboration, and there is no overlap with multi-agent (S2-S6) orchestration.
 - **Runtime `discipline` toggle.** `node settings/cli.cjs set discipline off`
   (or `MAESTRO_DISCIPLINE=off`) makes the enforcement-hook pack (gate-reminder,
