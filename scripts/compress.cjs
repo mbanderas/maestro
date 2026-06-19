@@ -10,9 +10,11 @@
 // Pipeline: refuse sensitive/oversized/non-prose files -> compress
 // via claude -> backup original as <name>.original.md (abort if the
 // backup already exists) -> deterministic validation (headings,
-// byte-exact code blocks, URLs as errors; paths, bullet count as
-// warnings) -> on error, cherry-pick fix via claude, max 2 attempts
-// -> still failing: restore original, remove backup, exit 1.
+// byte-exact code blocks, URLs, and needle preservation -- versions,
+// dates, S-ids, CLI flags, env vars, thresholds, file paths, inline
+// code -- as errors; bullet/heading-text drift as warnings) -> on
+// error, cherry-pick fix via claude, max 2 attempts -> still failing:
+// restore original, remove backup, exit 1.
 //
 // Usage: node scripts/compress.cjs <filepath>
 // MAESTRO_CLAUDE_BIN overrides the claude binary (tests stub it).
@@ -69,8 +71,34 @@ function shouldCompress(filepath) {
 const URL_RE = /https?:\/\/[^\s)]+/g;
 const HEADING_RE = /^(#{1,6})\s+(.*)$/gm;
 const BULLET_RE = /^\s*[-*+]\s+/gm;
-const PATH_RE = /(?:\.\/|\.\.\/|\/|[A-Za-z]:\\)[\w\-/\\.]+|[\w\-.]+[/\\][\w\-/\\.]+/g;
 const FENCE_OPEN_RE = /^(\s{0,3})(`{3,}|~{3,})(.*)$/;
+
+// Needle classes: high-signal "NEVER alter" tokens (AGENTS.md S8).
+// Tuned for PRECISION over recall -- a false error blocks legitimate
+// compression (infinite repair / forced restore), so each class only
+// matches forms that are unambiguous in prose. See validate().
+const VERSION_RE = /\bv?\d+\.\d+(?:\.\d+)+\b/g;            // 1.9.2, v1.8.2 (>=3 components)
+const ISO_DATE_RE = /\b\d{4}-\d{2}-\d{2}\b/g;              // 2026-06-19
+const SID_RE = /\bS\d+(?:\.\d+)?\b/g;                      // S8, S7.3, S10
+const FLAG_RE = /(?<![\w-])--[A-Za-z][\w-]*/g;             // --noEmit, --quiet, --target
+const ENV_CONST_RE = /\b[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)+\b/g; // MAESTRO_CLAUDE_BIN, MAX_RETRIES (underscore required: excludes prose ALL-CAPS like NEVER/ALWAYS/JSON)
+const THRESHOLD_RE = /[<>]=?\s?\d[\d,]*(?:\.\d+)?\s?%?|\b\d[\d,]*(?:\.\d+)?\s?(?:ms|s|KB|KiB|MB|GB|LOC)\b|\b\d[\d,]*(?:\.\d+)?\s?%/g; // >=5, 400ms, 35%, 500 LOC, >50,000 (whitespace/commas normalized)
+const INLINE_CODE_RE = /`([^`\n]+)`/g;                     // `npm test`, `npx tsc --noEmit`
+// File paths PROMOTED from warning to error. Extension-bearing only:
+// a bare word/word (e.g. Task/Agent, and/or) has no extension so it
+// cannot false-positive; real paths and doc filenames always carry one.
+const FILE_PATH_RE = /\b[\w.\-]+(?:[/\\][\w.\-]+)*\.(?:md|cjs|mjs|js|ts|tsx|json|jsonc|txt|ps1|sh|py|ya?ml|toml)\b/gi; // AGENTS.md, docs/orchestration.md, ./src/app.ts
+
+const NEEDLE_CLASSES = [
+  ['version', VERSION_RE],
+  ['ISO date', ISO_DATE_RE],
+  ['section id', SID_RE],
+  ['CLI flag', FLAG_RE],
+  ['env/const', ENV_CONST_RE],
+  ['threshold', THRESHOLD_RE],
+  ['file path', FILE_PATH_RE],
+  ['inline code', INLINE_CODE_RE],
+];
 
 function extractHeadings(text) {
   return [...text.matchAll(HEADING_RE)].map(m => m[1] + ' ' + m[2].trim());
@@ -111,6 +139,52 @@ function setDiff(a, b) {
   return [...a].filter(x => !b.has(x));
 }
 
+// Drop fenced code blocks (already checked byte-exact) and URLs
+// (already checked) before needle extraction so neither can produce a
+// phantom needle diff. Mirrors extractCodeBlocks: an unclosed fence is
+// kept as prose, never silently swallowed.
+function stripNonProse(text) {
+  const lines = text.split(/\r?\n/);
+  const kept = [];
+  let i = 0;
+  while (i < lines.length) {
+    const m = lines[i].match(FENCE_OPEN_RE);
+    if (!m) { kept.push(lines[i]); i++; continue; }
+    const ch = m[2][0];
+    const len = m[2].length;
+    const buf = [lines[i]];
+    i++;
+    let closed = false;
+    while (i < lines.length) {
+      const c = lines[i].match(FENCE_OPEN_RE);
+      buf.push(lines[i]);
+      i++;
+      if (c && c[2][0] === ch && c[2].length >= len && c[3].trim() === '') { closed = true; break; }
+    }
+    if (!closed) kept.push(...buf);
+  }
+  return kept.join('\n').replace(URL_RE, ' ');
+}
+
+// Map of needle-class -> Set of high-signal tokens found in prose.
+// Deterministic, zero model tokens. Threshold tokens are whitespace-
+// normalized so ">= 5" and ">=5" compare equal (operator reflow is not
+// a dropped needle).
+function extractNeedles(text) {
+  const prose = stripNonProse(text);
+  const out = new Map();
+  for (const [name, re] of NEEDLE_CLASSES) {
+    const set = new Set();
+    for (const match of prose.matchAll(re)) {
+      let tok = (match[1] !== undefined ? match[1] : match[0]).trim();
+      if (name === 'threshold') tok = tok.replace(/[\s,]/g, '');
+      if (tok) set.add(tok);
+    }
+    out.set(name, set);
+  }
+  return out;
+}
+
 function validate(orig, comp) {
   const result = { isValid: true, errors: [], warnings: [] };
   const err = m => { result.isValid = false; result.errors.push(m); };
@@ -133,11 +207,17 @@ function validate(orig, comp) {
   const added = setDiff(u2, u1);
   if (lost.length || added.length) err(`URL mismatch: lost=[${lost}] added=[${added}]`);
 
-  const p1 = new Set(orig.match(PATH_RE) || []);
-  const p2 = new Set(comp.match(PATH_RE) || []);
-  const plost = setDiff(p1, p2);
-  const padded = setDiff(p2, p1);
-  if (plost.length || padded.length) warn(`Path mismatch: lost=[${plost}] added=[${padded}]`);
+  // Needle preservation (S8 "NEVER alter"): a load-bearing token in the
+  // original that is absent from the compressed output is silent
+  // corruption -> ERROR (triggers repair). File paths are included here,
+  // promoted from the former warning. Added tokens are ignored (terse
+  // output may legitimately introduce one); only LOST needles fail.
+  const n1 = extractNeedles(orig);
+  const n2 = extractNeedles(comp);
+  for (const [name, set1] of n1) {
+    const lostN = setDiff(set1, n2.get(name));
+    if (lostN.length) err(`Dropped ${name} needle(s): [${lostN.join(', ')}]`);
+  }
 
   const b1 = (orig.match(BULLET_RE) || []).length;
   const b2 = (comp.match(BULLET_RE) || []).length;
@@ -206,6 +286,7 @@ HOW TO FIX:
 - Missing URL: find it in ORIGINAL, restore it exactly where it belongs in COMPRESSED
 - Code block mismatch: find the exact code block in ORIGINAL, restore it in COMPRESSED
 - Heading mismatch: restore the exact heading text from ORIGINAL into COMPRESSED
+- Dropped needle (version, ISO date, section id like S7.3, CLI flag, env var, numeric threshold, file path, inline-code token): find the exact token in ORIGINAL and restore it verbatim where it belongs in COMPRESSED — never paraphrase, summarize, or omit a load-bearing token
 - Do not touch any section not mentioned in the errors
 
 ORIGINAL (reference only):
@@ -290,6 +371,6 @@ function main() {
   }
 }
 
-module.exports = { validate, isSensitivePath, shouldCompress, stripLlmWrapper, extractCodeBlocks, extractHeadings };
+module.exports = { validate, isSensitivePath, shouldCompress, stripLlmWrapper, extractCodeBlocks, extractHeadings, extractNeedles, stripNonProse };
 
 if (require.main === module) main();
