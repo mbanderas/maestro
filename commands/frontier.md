@@ -122,3 +122,28 @@ specific build, point at it with an environment variable:
 - `MAESTRO_CLAUDE_BIN` sets the `claude` binary path.
 - `MAESTRO_CODEX_BIN` sets the `codex` binary path.
 - `MAESTRO_GEMINI_BIN` sets the `gemini` binary path.
+
+## Concurrency — fusion is safe to run in one workspace
+
+Frontier mirrors the OpenRouter Fusion / Mixture-of-Agents shape: one
+prompt fans to a panel, a judge maps agreement and contradiction, a
+synthesizer writes the grounded answer. The panel/judge/synth members
+are **read-only, one-shot `-p` subprocesses** — they emit text to stdout
+(or a unique tmp last-message file) and exit; they never commit, never
+edit the repo, and never run an autonomous loop. So arming `fusion`
+(e.g. `opus-duo`) and letting two or more model CLIs work the same
+workspace at once is **safe by construction** — there is no shared branch
+or checkpoint for them to race. This is categorically different from two
+independent autonomous *build* loops on one branch, which IS the
+S10-forbidden "loops never spawn loops" state.
+
+To make that distinction machine-checkable, every Frontier run stamps
+itself and all of its children with `MAESTRO_FRONTIER_RUN_ID`
+(`frontier-<base36 ts>-<rand>`), generated once per top-level run and
+inherited unchanged by nested calls — propagated to each child over the
+same `process.env` channel as `FUSION_DEPTH`. A coordinated, read-only
+Frontier subprocess therefore carries this variable; a rogue independent
+write-loop does not. When re-grounding (S7.0/S10) and you see a sibling
+`claude`/`codex`/`gemini` process in the workspace, a set
+`MAESTRO_FRONTIER_RUN_ID` means it is a coordinated panel/judge/synth
+member to leave alone — not a second loop to stop for.
