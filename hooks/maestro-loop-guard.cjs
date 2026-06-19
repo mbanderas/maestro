@@ -32,6 +32,16 @@ if (!require('./maestro-discipline-gate.cjs').disciplineEnabled()) process.exit(
 // Defensive: never re-enter a stop-hook continuation loop.
 if (data.stop_hook_active === true) process.exit(0);
 
+// A coordinated, read-only Frontier subprocess (fusion panel/judge/synth)
+// is not an autonomous loop -- never nag it about checkpoints or caps. The
+// engine stamps every such child with MAESTRO_FRONTIER_RUN_ID
+// (frontier/run.cjs) and FUSION_DEPTH (frontier/dispatch.cjs); either present
+// means this Stop fired inside one.
+if (process.env.MAESTRO_FRONTIER_RUN_ID
+    || parseInt(process.env.FUSION_DEPTH || '0', 10) >= 1) {
+  process.exit(0);
+}
+
 let txText = '';
 const txPath = data.transcript_path;
 if (txPath && fs.existsSync(txPath)) {
@@ -65,6 +75,23 @@ if (data.cwd) {
     warnings.push('Session is looping but no checkpoint artifact (_<task>.md) exists in the working directory. S10: externalize phase status, findings, and decisions to one durable gitignored file and read it first on every wakeup.');
   }
 }
+
+// Surface coordinated Frontier runs active in this workspace so the looping
+// agent does not mistake their read-only panel/judge/synth -p subprocesses
+// for a second write-loop during S10 re-grounding. Best-effort: a per-prompt
+// fusion run may have already finished by this Stop. Fail-open if runlock is
+// unavailable.
+try {
+  const active = require('../frontier/runlock.cjs')
+    .listActiveRuns({ cwd: data.cwd })
+    .filter(r => r && r.pid !== process.pid);
+  if (active.length) {
+    const ids = active.map(r => (r.runId || 'frontier') + ' (pid ' + r.pid + ')').join(', ');
+    warnings.push(active.length + ' coordinated Frontier run(s) active in this workspace: ' + ids +
+      '. These are read-only panel/judge/synth subprocesses (they carry MAESTRO_FRONTIER_RUN_ID), ' +
+      'NOT a second autonomous write-loop -- do not stop for them during re-grounding.');
+  }
+} catch { /* runlock unavailable -> skip */ }
 
 if (warnings.length) {
   process.stdout.write(JSON.stringify({

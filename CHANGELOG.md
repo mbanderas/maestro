@@ -6,8 +6,28 @@ All notable changes to Maestro are documented here. The format follows
 
 ## [Unreleased]
 
+## [1.9.0] - 2026-06-19
+
 ### Added
 
+- **Frontier fusion co-working safety: run marker + cross-process registry +
+  collision guard.** Every engine run now stamps itself and all of its
+  children (panel/judge/synth) with `MAESTRO_FRONTIER_RUN_ID`, propagated over
+  the same `process.env` channel as `FUSION_DEPTH` (no per-call threading; set
+  only inside the short-lived run process, so it never leaks into the host
+  session). A new `frontier/runlock.cjs` records each live run (pid + runId +
+  cwd) under the OS temp dir and prunes dead-pid entries on read, making the
+  marker observable from OUTSIDE a process — both entrypoints register
+  (`frontier/cli.cjs` and the autorun hook) and `node frontier/runlock.cjs`
+  prints the live coordinated runs as JSON. `hooks/maestro-loop-guard.cjs`
+  consumes it: it stays silent inside a coordinated child, and surfaces active
+  Frontier runs to a looping session so a re-grounding agent does not mistake
+  read-only panel subprocesses for a second write-loop. This is
+  non-interference identification only — it does not (and must not) make two
+  independent interactive write-loops on one branch safe. `commands/frontier.md`
+  "Concurrency" documents the model: fusion is OpenRouter-Fusion / Mixture-of-
+  Agents orchestration (one orchestrator + read-only panel), not peer-session
+  collaboration, and there is no overlap with multi-agent (S2-S6) orchestration.
 - **Runtime `discipline` toggle.** `node settings/cli.cjs set discipline off`
   (or `MAESTRO_DISCIPLINE=off`) makes the enforcement-hook pack (gate-reminder,
   doctrine-guard, phase-scope, subagent-guard, loop-guard, gate-telemetry,

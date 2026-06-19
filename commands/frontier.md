@@ -146,4 +146,46 @@ Frontier subprocess therefore carries this variable; a rogue independent
 write-loop does not. When re-grounding (S7.0/S10) and you see a sibling
 `claude`/`codex`/`gemini` process in the workspace, a set
 `MAESTRO_FRONTIER_RUN_ID` means it is a coordinated panel/judge/synth
-member to leave alone — not a second loop to stop for.
+member to leave alone — not a second loop to stop for. To check from
+outside a process, list the live coordinated runs in this workspace:
+
+```bash
+node "<plugin>/frontier/runlock.cjs"   # prints active Frontier runs as JSON
+```
+
+The engine records each run there (pid + runId + cwd) for exactly its
+duration and prunes dead entries on read, so an empty list means no
+Frontier run is in flight.
+
+### "Working together" is orchestration, not peer-joining
+
+Fusion is the OpenRouter-Fusion / Mixture-of-Agents shape: ONE
+orchestrator fans a prompt to a panel it spawns, then judges and
+synthesizes. That is the whole of "models working together" — there is
+no IPC or message bus, and one already-running interactive session
+cannot see, join, drive, or message another. The marker is for
+**non-interference** (don't misread a coordinated panelist as a rogue
+loop), not **cooperation**. Two independent *interactive write sessions*
+on one branch + one shared checkpoint is still the S10-forbidden race;
+the marker does not — and must not — make that safe. Serialize live
+writers with separate branches/worktrees + per-task `_<task>.md`
+checkpoints, or use the clean multi-instance pattern: one writer (the
+builder) plus read-only, fresh-context adversarial reviewers feeding
+findings back — which is itself what a fusion panel embodies.
+
+### No overlap with multi-agent orchestration
+
+The panel/judge/synth CLIs are one-shot, read-only subprocesses the
+engine spawns and reaps per run; they are never a pool that the
+Agent/Task tool draws from, and they cannot be repurposed into task
+workers. Multi-agent orchestration (S2-S6) uses the in-session
+Agent/Task tool — a separate mechanism. The two coordination env
+markers never leak between them: `FUSION_DEPTH` is set only as a
+per-child env in `dispatch.cjs` (never on the parent `process.env`), and
+`MAESTRO_FRONTIER_RUN_ID` is set only inside the short-lived run process
+(autorun hook / `maestro frontier run`), which exits afterward — so
+neither reaches the long-lived host session or an orchestration
+subagent. The one real interaction is cost: with the engine armed, the
+autorun hook fuses *every* prompt, so running heavy orchestration with
+fusion armed pays a per-prompt fusion tax. Turn the engine `off` while
+orchestrating if you do not want that.

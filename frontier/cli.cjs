@@ -5,7 +5,8 @@
 
 const fs = require('fs');
 const { DEFAULTS, loadState, saveState, resolveScope, validateMode, validatePreset, validateModel, adoptLegacyState } = require('./config.cjs');
-const { runFrontier, canonicalModelId, canonicalPresetId } = require('./run.cjs');
+const { runFrontier, ensureRunId, canonicalModelId, canonicalPresetId } = require('./run.cjs');
+const runlock = require('./runlock.cjs');
 
 // ---------- arg helpers ----------
 
@@ -176,7 +177,18 @@ async function cmdRun(argv, scope) {
     }
   }
 
-  const result = await runFrontier({ prompt, state, deps: { onProgress } });
+  // Register this run so an out-of-process observer (the Stop loop-guard, or
+  // an agent re-grounding per S10) can see it is a coordinated, read-only
+  // Frontier run -- not a rogue write-loop. Released in finally; a missed
+  // release self-heals via runlock's dead-pid pruning.
+  ensureRunId();
+  runlock.registerRun({ kind: 'frontier', cwd: process.cwd() });
+  let result;
+  try {
+    result = await runFrontier({ prompt, state, deps: { onProgress } });
+  } finally {
+    runlock.releaseRun();
+  }
 
   if (result.status === 'error') {
     process.stderr.write('ERROR [' + result.failure_reason + ']: ' + result.error + '\n');
