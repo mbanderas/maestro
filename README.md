@@ -32,21 +32,35 @@
 > default. Global/user installs are optional when you intentionally want
 > cross-project behavior.
 
-**Claude Code / Desktop** — native plugin (enforcement hooks, `/maestro:*` commands, skills, status line, Frontier auto-run):
+**Claude Code (terminal)** — native plugin (enforcement hooks, `/maestro:*`
+commands, skills, status line, Frontier auto-run). Run these inside the `claude`
+CLI:
 
 ```text
 /plugin marketplace add mbanderas/maestro
 /plugin install maestro@maestro
 ```
 
-**Codex CLI / Desktop** — native Codex plugin via the Maestro repo
-marketplace (skills, trusted hooks, and Frontier auto-run after you review
-and trust the hooks):
+**Claude desktop app** — the desktop app has no `/plugin` slash command, and its
+**+ → Plugins** browser only lists Anthropic's official marketplace, so it cannot
+add this repo from the GUI. Install Maestro by running the two commands above in a
+terminal (`claude` on the same machine), or register the marketplace in
+`.claude/settings.json` under `extraKnownMarketplaces`. See the official
+[Claude Code plugins docs](https://code.claude.com/docs/en/discover-plugins).
+
+**Codex CLI (terminal)** — native Codex plugin via the Maestro repo marketplace
+(skills, trusted hooks, and Frontier auto-run after you review and trust the
+hooks):
 
 ```text
 codex plugin marketplace add mbanderas/maestro
 codex plugin add maestro@maestro
 ```
+
+**Codex desktop / IDE app** — the in-app **Plugins** directory installs plugins
+from marketplaces Codex already knows; adding a new repo marketplace is a CLI
+action, so run the two commands above in a terminal (`codex`). See the official
+[Codex plugins docs](https://developers.openai.com/codex/plugins).
 
 Start a new Codex thread after installing or changing plugin trust so the
 bundled skills and hooks reload.
