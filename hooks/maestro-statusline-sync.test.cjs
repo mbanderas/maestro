@@ -119,5 +119,20 @@ console.log('maestro-statusline-sync tests');
   fs.rmSync(t.root, { recursive: true, force: true });
 }
 
+// 7. Shipped statusline renders the human-readable Frontier STAGE labels.
+// Locks the descriptive sequence (fanning N/M -> judging -> synthesizing,
+// single -> running) against a regression back to a compact form, and pins
+// the synth label to "synthesizing" (not the bare "synth"). The labels live
+// only in the .ps1; the node engine just emits panel/judge/synth/single.
+{
+  const ps1 = fs.readFileSync(path.join(__dirname, '..', 'statusline', 'context-bar.ps1'), 'utf8');
+  check('panel phase -> "fanning"', /'panel'[^\n]*fanning/.test(ps1));
+  check('judge phase -> "judging"', /'judge'[^\n]*judging/.test(ps1));
+  check('synth phase -> "synthesizing"', /'synth'[^\n]*synthesizing/.test(ps1));
+  check('single phase -> "running"', /'single'[^\n]*running/.test(ps1));
+  // Regression guard: the synth label must not be the bare compact "synth".
+  check('synth label is not the bare compact form', !/synth"/.test(ps1));
+}
+
 if (failures) { console.error(`${failures} failure(s)`); process.exit(1); }
 console.log('all tests passed');

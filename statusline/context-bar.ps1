@@ -95,7 +95,7 @@ function Get-FrontierProgress($cfgDir, $ws) {
     switch ($phase) {
         'panel'  { $label = if ($total -gt 0) { "$([char]0x283F) fanning $done/$total" } else { "$([char]0x283F) fanning" } }
         'judge'  { $label = "$([char]0x2696) judging" }
-        'synth'  { $label = "$([char]0x2726) synth" }
+        'synth'  { $label = "$([char]0x2726) synthesizing" }
         'single' { $label = "$([char]0x283F) running" }
         default  { return '' }
     }

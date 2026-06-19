@@ -6,6 +6,20 @@ All notable changes to Maestro are documented here. The format follows
 
 ## [Unreleased]
 
+## [1.9.2] - 2026-06-19
+
+### Changed
+
+- **The live status-line Frontier indicator always shows the human-readable
+  run stage.** The progress renderer in `statusline/context-bar.ps1` now labels
+  the synthesis stage `synthesizing` (was `synth`), completing the descriptive
+  sequence `fanning N/M -> judging -> synthesizing` that replaces the compact
+  static badge while an armed run is in flight. A new check in
+  `hooks/maestro-statusline-sync.test.cjs` pins the four stage strings so the
+  sequence cannot silently regress to a compact form. Panes pinned to an older
+  build converge after `/reload-plugins` (the session-start sync hook refreshes
+  the wired copy).
+
 ## [1.9.1] - 2026-06-19
 
 ### Changed
