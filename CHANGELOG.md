@@ -6,6 +6,52 @@ All notable changes to Maestro are documented here. The format follows
 
 ## [Unreleased]
 
+## [1.11.0] - 2026-06-22
+
+### Added
+
+- **Needle-preservation check in the terse-compression validator.** `validate()`
+  in `scripts/compress.cjs` now set-diffs eight classes of load-bearing token
+  between the original and compressed text — version, ISO date, S-id, CLI flag,
+  env/const, numeric threshold, file path, and inline code — and treats a lost
+  needle as an error that triggers the existing cherry-pick repair, so prose
+  compression can never silently drop a version, threshold, or identifier. The
+  check is pure deterministic JS (regex + set-diff), adds zero model tokens, and
+  reads prose only (fenced code and URLs are stripped, already validated
+  elsewhere). Classes are tuned for precision: env/const requires an underscore
+  (excluding prose ALL-CAPS), thresholds are whitespace/comma normalized, and
+  file paths must be extension-bearing — confirmed zero false positives across
+  `AGENTS.md`, `CLAUDE.md`, and `docs/orchestration.md`. New cases in
+  `scripts/compress.test.cjs` cover every class, added-needle tolerance,
+  threshold reflow, and the corpus false-positive guard.
+- **Version-consistency guard.** `scripts/plugin-marketplace.test.cjs` now
+  asserts the Codex plugin manifest (`.codex-plugin/plugin.json`) version equals
+  the canonical `package.json` version. The manifest is not auto-synced and had
+  drifted (stuck at `1.8.0` through several releases); a mismatch now fails
+  `npm test` — and therefore PR CI and the tag-triggered `publish.yml` — so a
+  release bump that forgets the manifest can no longer ship a stale version.
+
+### Changed
+
+- **The compression validator's file-path check is now an error, not a warning.**
+  A dropped file path fails validation (and triggers repair) instead of only
+  warning; the regex was tightened to extension-bearing paths so bare `word/word`
+  prose (`Task/Agent`, `and/or`) cannot false-positive.
+
+### Fixed
+
+- **Install docs no longer tell desktop-app users to run `/plugin` commands.**
+  `README.md` splits the lumped "Claude Code / Desktop" and "Codex CLI / Desktop"
+  blocks into separate terminal-CLI and desktop-app paths. The Claude desktop app
+  has no `/plugin` slash command and its plugin browser only lists Anthropic's
+  official marketplace, so the desktop block routes users to the `claude` terminal
+  CLI or `.claude/settings.json` `extraKnownMarketplaces`; the Codex desktop block
+  routes repo-marketplace installs to the `codex` CLI. Both link the official
+  plugins docs. Terminal commands are unchanged.
+- **Codex plugin manifest version synced to `1.11.0`.** `.codex-plugin/plugin.json`
+  was stuck at `1.8.0`, never bumped through the 1.9.x or 1.10.0 releases; it now
+  matches `package.json`, enforced going forward by the version-consistency guard.
+
 ## [1.10.0] - 2026-06-22
 
 ### Added

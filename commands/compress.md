@@ -31,6 +31,8 @@ not work around a refusal by editing or renaming files:
 - Only .md/.txt/extensionless prose files; max 500 KB.
 - Original saved as `<name>.original.md`; aborts if that backup
   already exists.
-- Deterministic validation (headings, byte-exact code blocks, URLs;
-  paths and bullet counts as warnings) with up to 2 cherry-pick fix
-  rounds; on persistent failure the original is restored untouched.
+- Deterministic validation (headings, byte-exact code blocks, URLs,
+  file paths, and needle preservation — versions, dates, S-ids, CLI
+  flags, env vars, thresholds, inline code — as errors; bullet and
+  heading-text drift as warnings) with up to 2 cherry-pick fix rounds;
+  on persistent failure the original is restored untouched.

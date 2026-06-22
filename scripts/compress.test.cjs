@@ -20,7 +20,7 @@ function check(name, cond) {
 
 console.log('compress tests');
 
-const { validate, isSensitivePath, stripLlmWrapper, shouldCompress } = require(SCRIPT);
+const { validate, isSensitivePath, stripLlmWrapper, shouldCompress, extractNeedles } = require(SCRIPT);
 
 // ---- validator unit tests ----
 
@@ -58,6 +58,71 @@ check('lost URL -> error', !res.isValid && res.errors.some(e => e.includes('URL'
 // 5. Bullet shrink >15%: warning only, still valid.
 res = validate(ORIGINAL, ORIGINAL.replace('- install deps\n', '').replace('- check config\n', ''));
 check('big bullet drop -> warning, valid', res.isValid && res.warnings.some(w => w.includes('Bullet')));
+
+// ---- needle preservation (deterministic, zero model tokens) ----
+
+// One dropped token per class -> ERROR (triggers repair). Each prose
+// pair differs only by the needle, so only the needle check can fire.
+const NEEDLE_CASES = [
+  ['version', 'Ship 1.9.2 now.', 'Ship now.'],
+  ['ISO date', 'Due 2026-06-19 sharp.', 'Due sharp.'],
+  ['section id', 'See S7.3 rule.', 'See rule.'],
+  ['CLI flag', 'Run with --noEmit set.', 'Run set.'],
+  ['env var', 'Read MAESTRO_CLAUDE_BIN first.', 'Read first.'],
+  ['unit threshold', 'Cap at 400ms max.', 'Cap max.'],
+  ['percent threshold', 'Over 60% overlap fails.', 'Over overlap fails.'],
+  ['operator threshold', 'Trigger at >=5 files.', 'Trigger at files.'],
+  ['file path', 'Edit docs/orchestration.md here.', 'Edit here.'],
+  ['bare filename', 'Patch AGENTS.md only.', 'Patch only.'],
+  ['inline code', 'Run `npx tsc --noEmit` to check.', 'Run to check.'],
+];
+for (const [label, orig, comp] of NEEDLE_CASES) {
+  const r = validate(orig, comp);
+  check(`dropped ${label} -> needle error`, !r.isValid && r.errors.some(e => e.includes('needle')));
+}
+
+// Preserved needles, even with prose reworded around them: no error.
+check('preserved needles -> no error',
+  validate('Run --noEmit at S7.3, cap 400ms, edit AGENTS.md.',
+           'Run --noEmit S7.3, cap 400ms, edit AGENTS.md.').errors.length === 0);
+
+// File path is now an ERROR, not a warning (promoted).
+check('dropped path -> error not warning',
+  validate('Edit scripts/compress.cjs.', 'Edit.').isValid === false);
+
+// Added needles are ignored -- terse output may introduce a token.
+check('added needle ignored -> valid',
+  validate('Plain text.', 'Plain text with --flag and S7.3.').isValid);
+
+// Operator/comma/space reflow of a threshold is not a dropped needle.
+check('threshold comma+space normalized -> no false drop',
+  validate('Truncate >50,000 chars; wait <=270s; need >=5; 35% cap.',
+           'Truncate >50000 chars; wait <= 270 s; need >= 5; 35 % cap.')
+    .errors.every(e => !e.includes('threshold')));
+
+// extractNeedles ignores fenced code + URLs (checked byte-exact / URL
+// elsewhere), so a number only inside a fence is not a prose needle.
+check('fenced + url content excluded from needles',
+  extractNeedles('See https://x.io/v1.2.3 and\n```\nver = 9.9.9\n```\n').get('version').size === 0);
+
+// Corpus FP guard: a realistic terse compression (drop filler words in
+// prose, leave code/needles untouched) of the REAL doctrine files must
+// raise ZERO needle errors. This is the precision target (~0 FP).
+function terseify(text) {
+  // Split out inline/fenced code so filler removal never touches it.
+  return text.split(/(`[^`\n]+`|```[\s\S]*?```)/)
+    .map((seg, i) => i % 2 ? seg
+      : seg.replace(/\b(?:the|a|an|just|really|basically|actually|simply|very)\b ?/gi, ''))
+    .join('');
+}
+const REPO_ROOT = path.join(__dirname, '..');
+for (const docFile of ['AGENTS.md', 'CLAUDE.md', path.join('docs', 'orchestration.md')]) {
+  const p = path.join(REPO_ROOT, docFile);
+  if (!fs.existsSync(p)) { check(`doctrine present: ${docFile}`, false); continue; }
+  const orig = fs.readFileSync(p, 'utf8');
+  const needleErrs = validate(orig, terseify(orig)).errors.filter(e => e.includes('needle'));
+  check(`no needle FP on terse ${docFile}`, needleErrs.length === 0);
+}
 
 // ---- sensitive-path denylist ----
 
