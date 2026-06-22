@@ -18,8 +18,17 @@ function readJson(rel) {
 
 const manifest = readJson('.codex-plugin/plugin.json');
 const marketplace = readJson('.agents/plugins/marketplace.json');
+const pkg = readJson('package.json');
 
 console.log('plugin marketplace tests');
+
+// package.json is the single source of truth for the version; the Codex
+// plugin manifest carries its own copy and is not auto-synced, so it drifted
+// (stuck at 1.8.0 through several releases). Assert they match so a release
+// bump that forgets the manifest fails CI (and publish.yml) instead of
+// silently shipping a stale version. Fix on drift: copy pkg.version into
+// .codex-plugin/plugin.json "version".
+check('codex manifest version matches package.json (' + pkg.version + ')', manifest.version === pkg.version);
 
 check('manifest names maestro', manifest.name === 'maestro');
 check('manifest exposes bundled Codex skills', manifest.skills === './codex-skills/');

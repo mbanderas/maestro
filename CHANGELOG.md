@@ -24,6 +24,12 @@ All notable changes to Maestro are documented here. The format follows
   `AGENTS.md`, `CLAUDE.md`, and `docs/orchestration.md`. New cases in
   `scripts/compress.test.cjs` cover every class, added-needle tolerance,
   threshold reflow, and the corpus false-positive guard.
+- **Version-consistency guard.** `scripts/plugin-marketplace.test.cjs` now
+  asserts the Codex plugin manifest (`.codex-plugin/plugin.json`) version equals
+  the canonical `package.json` version. The manifest is not auto-synced and had
+  drifted (stuck at `1.8.0` through several releases); a mismatch now fails
+  `npm test` — and therefore PR CI and the tag-triggered `publish.yml` — so a
+  release bump that forgets the manifest can no longer ship a stale version.
 
 ### Changed
 
@@ -42,6 +48,9 @@ All notable changes to Maestro are documented here. The format follows
   CLI or `.claude/settings.json` `extraKnownMarketplaces`; the Codex desktop block
   routes repo-marketplace installs to the `codex` CLI. Both link the official
   plugins docs. Terminal commands are unchanged.
+- **Codex plugin manifest version synced to `1.11.0`.** `.codex-plugin/plugin.json`
+  was stuck at `1.8.0`, never bumped through the 1.9.x or 1.10.0 releases; it now
+  matches `package.json`, enforced going forward by the version-consistency guard.
 
 ## [1.10.0] - 2026-06-22
 
