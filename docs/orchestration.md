@@ -74,6 +74,26 @@ fanning out exists to create. No conversation history, other tasks, or
 unrelated context. Isolation is the advantage. Out of scope: report and
 stop.
 
+Platform mechanic — anti-anchoring depends on a clean child context, so
+how you spawn matters. Claude Code's fork mode
+(`CLAUDE_CODE_FORK_SUBAGENT=1`) makes a child inherit the parent's
+*entire live trajectory* — the exact collapse this section forbids.
+Fork fires ONLY when `subagent_type` is omitted from the Agent call;
+an explicit type (Planner, Explore, any specialist role) skips the fork
+path and starts the child blank. Therefore: always pass an explicit
+`subagent_type` on specialist spawns. A bare/catch-all spawn forks the
+orchestrator's context and silently breaks isolation. Fork is a
+deliberate isolation-OFF lever — valid only for cheap fan-out of
+independent, context-heavy read tasks (e.g. sharding a 1M-context
+audit), never for adversarial review, debate, or synthesis where
+diversity is the point. A fork cannot spawn further forks.
+
+Nesting: a spawned specialist can itself spawn, but only if `Agent` is
+in its scoped TOOLS, and the platform caps chains at 5 levels deep
+(depth 5 loses the Agent tool). The cap is a structural backstop, not a
+license — S10's "loops never spawn loops" still holds: one orchestrator
+loop, bounded specialist groups inside.
+
 ---
 
 ## 4. Cross-Talk [MULTI-AGENT]
