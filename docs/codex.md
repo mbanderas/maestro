@@ -55,6 +55,16 @@ review and trust the plugin before enabling them. Codex sets
 `PLUGIN_ROOT` and `PLUGIN_DATA` for plugin hooks, and also sets
 `CLAUDE_PLUGIN_ROOT` and `CLAUDE_PLUGIN_DATA` for compatibility.
 
+Maestro's verify gate runs on Codex too. The `verify` setting
+(`off`/`warn`/`block`, default `warn`) persists portably through the Maestro
+CLI and the `maestro-settings` skill, and the `maestro-verify-gate.cjs` `Stop`
+hook now parses Codex rollout transcripts with the same three signals it derives
+from Claude's (a file edit, a checker run, an honest status token). So once the
+plugin hooks are installed and trusted, `verify block` enforces S7.3 on the
+Codex `Stop` event — which honors `decision:"block"` — exactly as on Claude
+Code. (Codex omits the `stop_hook_active` re-entry flag; the gate's block-once
+marker is the re-entry guard there.)
+
 For Codex CLI/Desktop, install Maestro as a native Codex plugin:
 
 ```text
@@ -73,6 +83,44 @@ then review and trust the bundled hooks before expecting autorun.
 `maestro install --target codex` remains as a portable/manual fallback when
 you specifically want to copy files into a project instead of installing the
 Codex plugin.
+
+## Token telemetry
+
+The Claude Code `maestro-gate-telemetry` SessionEnd hook records per-session
+token usage to `~/.claude/maestro-telemetry.jsonl`. `scripts/codex-telemetry.cjs`
+extends the same measurement to Codex so overhead is comparable across both
+CLIs (S9).
+
+Codex writes one rollout transcript per session at
+`~/.codex/sessions/YYYY/MM/DD/rollout-<ts>-<uuid>.jsonl` (verified on macOS
+2026-06-22). Token usage rides on `event_msg` lines with
+`payload.type == "token_count"`; the **last** `total_token_usage` is the
+session cumulative. The script appends a row with `source:"codex"` and the
+same token field names the Claude hook writes, mapped to the same semantics:
+`input_tokens` is **uncached** new input (Codex's `input_tokens` minus
+`cached_input_tokens`), `cache_read_tokens` is the cached input, and
+`cache_creation_tokens` is `null` (Codex reports no cache-write metric).
+`reasoning_output_tokens` and `total_tokens` are kept as Codex extras.
+
+Codex supports a full plugin lifecycle hook set — `SessionStart`,
+`SubagentStart`, `PreToolUse`, `PermissionRequest`, `PostToolUse`,
+`PreCompact`, `PostCompact`, `UserPromptSubmit`, `SubagentStop`, and `Stop`
+(which honors `decision:"block"`) — installed via `hooks/hooks.json`. There is,
+however, **no `SessionEnd` event**, and this telemetry mirrors the Claude
+`SessionEnd` hook, so on Codex it stays **manual** (the closest per-turn callout
+is `notify`, fired as `turn-ended`, but it is typically already bound to another
+integration). Run the script directly or from your own wrapper:
+
+```text
+node scripts/codex-telemetry.cjs <rollout.jsonl>   # append a telemetry row
+node scripts/codex-telemetry.cjs --latest          # newest rollout under ~/.codex/sessions
+node scripts/codex-telemetry.cjs <file> --print     # print the row, write nothing
+```
+
+It reads only local files and never makes network calls. Override the output
+path with `MAESTRO_TELEMETRY_FILE` and the sessions directory with
+`CODEX_SESSIONS_DIR`. Rollouts can be hundreds of MB; the parser streams them
+line-by-line with bounded memory.
 
 ## Multi-agent routing (S2-S6 mapping)
 

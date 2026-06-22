@@ -4,8 +4,9 @@ One place to see and change Maestro's toggles. In Claude Code, run it with
 arguments to change a toggle in one line, or with no arguments for a keyboard
 picker; everywhere else a portable CLI does the same. The feature is a
 front-end over Maestro's existing state; it stores nothing of its own, so the
-terse hook, the frontier engine, the context-bar scripts, and the discipline
-enforcement hooks keep reading exactly what they read today.
+terse hook, the frontier engine, the context-bar scripts, the discipline
+enforcement hooks, and the verify-gate Stop hook keep reading exactly what
+they read today.
 
 The design and the staff-engineer review are recorded in
 [`settings-design.md`](settings-design.md).
@@ -17,7 +18,8 @@ The design and the staff-engineer review are recorded in
 | `terse` | `off`, `lite`, `full`, `ultra` | Output-token reduction (`/maestro:terse`). |
 | `frontier` | `off`; `single:` `opus` / `gpt-5.5` / `gemini`; `fusion:` `opus-duo` / `opus-gpt` / `chatgpt-duo` / `frontier-trio` / `custom`, each with optional `--judge` / `--synth` | The local multi-CLI fusion engine (`/maestro:frontier`). Any non-`off` value arms auto-run: every prompt is routed through the engine and the answer relayed; `off` disables it. |
 | `context-bar` | `on`, `off` | The status-line context progress bar (`/maestro:context-bar`). |
-| `discipline` | `on`, `off` | The discipline enforcement-hook pack (gate-reminder, doctrine-guard, phase-scope, subagent-guard, loop-guard, gate-telemetry, toolbudget). `off` makes every hook no-op — the runtime counterpart to `frontier off` for users who want only the engine. The doctrine TEXT (`AGENTS.md` kernel) is autoloaded at session start and cannot be unloaded mid-session, so the toggle covers the hook half only; install `--engine-only` to omit the kernel entirely. |
+| `discipline` | `on`, `off` | The discipline enforcement-hook pack (gate-reminder, doctrine-guard, phase-scope, subagent-guard, verify-gate, loop-guard, gate-telemetry, toolbudget). `off` makes every hook no-op — the runtime counterpart to `frontier off` for users who want only the engine. The doctrine TEXT (`AGENTS.md` kernel) is autoloaded at session start and cannot be unloaded mid-session, so the toggle covers the hook half only; install `--engine-only` to omit the kernel entirely. |
+| `verify` | `off`, `warn`, `block` | The S7.3 verify-gate Stop hook (`hooks/maestro-verify-gate.cjs`). `warn` (default) injects a non-blocking nudge when a session modified files but ran no checker and stated no honest status token; `block` blocks the Stop once to force a checker run or honest token (`VERIFIED` with no checker still fires); `off` disables. Arm `block` per-repo where a real test suite exists. |
 
 The frontier models and presets above are not a second list maintained here:
 `/maestro:settings` and the table are both driven by
@@ -65,6 +67,7 @@ questionnaire. The first argument selects the action:
 | `/maestro:settings frontier fusion opus-gpt --judge opus --synth gpt-5.5` | with stage overrides |
 | `/maestro:settings context-bar off` | hide the context bar |
 | `/maestro:settings discipline off` | silence the enforcement-hook pack |
+| `/maestro:settings verify block` | enforce the verify-gate (block on unverified Stop) |
 
 The friendly space form (`frontier fusion opus-gpt`) is normalized to the
 CLI's colon form (`fusion:opus-gpt`); the colon form works too. The
@@ -88,6 +91,7 @@ node settings/cli.cjs list --json       # machine-readable catalog
 node settings/cli.cjs set terse ultra
 node settings/cli.cjs set context-bar off
 node settings/cli.cjs set discipline off
+node settings/cli.cjs set verify block
 node settings/cli.cjs set frontier fusion:opus-gpt
 node settings/cli.cjs set frontier fusion:chatgpt-duo --scope codex-project
 node settings/cli.cjs set frontier fusion:frontier-trio --judge chatgpt --synth chatgpt --scope codex-project
@@ -132,6 +136,12 @@ store.
   it through `hooks/maestro-discipline-gate.cjs` (fail-safe: any read error =
   enabled). `MAESTRO_DISCIPLINE=off|on` in the environment overrides the file
   until unset, and `set discipline` says so.
+- **verify**: the `verifyGate` key in `<configDir>/config.json` (same file as
+  `terseLevel`). Default `warn` means the key is absent; `set verify block`/`off`
+  writes it explicitly. The verify-gate Stop hook reads it through
+  `settings/config.cjs` `readVerify` (fail-safe: any read error = `warn`).
+  `MAESTRO_VERIFY_GATE=off|warn|block` (and `0` = off) overrides the file until
+  unset, and `set verify` says so.
 
 `<configDir>` is `$XDG_CONFIG_HOME/maestro`, else `%APPDATA%\maestro` on
 Windows, else `~/.config/maestro`.

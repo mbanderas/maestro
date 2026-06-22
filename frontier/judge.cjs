@@ -89,4 +89,21 @@ async function runJudge(userPrompt, responses, cfg, deps) {
   }
 }
 
-module.exports = { buildJudgePrompt, runJudge };
+/**
+ * Score whether the panel reached a dead-end — a signal to escalate to a
+ * fresh perspective rather than retry the same agents (see run.cjs, opt-in
+ * cfg.deadEndEscalation). Dead-end = no usable judgment at all (analysis
+ * absent), or the panel produced only conflict: no consensus AND no unique
+ * insight AND at least one contradiction.
+ * @param {import('./schema.cjs').Analysis | undefined} analysis
+ * @returns {boolean}
+ */
+function isDeadEnd(analysis) {
+  if (!analysis) return true;
+  const noConsensus = !Array.isArray(analysis.consensus) || analysis.consensus.length === 0;
+  const noInsight   = !Array.isArray(analysis.unique_insights) || analysis.unique_insights.length === 0;
+  const hasConflict = Array.isArray(analysis.contradictions) && analysis.contradictions.length > 0;
+  return noConsensus && noInsight && hasConflict;
+}
+
+module.exports = { buildJudgePrompt, runJudge, isDeadEnd };

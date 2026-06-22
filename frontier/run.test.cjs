@@ -558,6 +558,91 @@ async function runTests() {
     else process.env.MAESTRO_FRONTIER_RUN_ID = savedRun;
   }
 
+  const DEAD_ANALYSIS = {
+    consensus: [], contradictions: [{ topic: 't', stances: [] }],
+    partial_coverage: [], unique_insights: [], blind_spots: [],
+  };
+
+  // (r) dead-end escalation (opt-in cfg.deadEndEscalation): on a scored
+  //     dead-end, escalate to a FRESH adapter with a clean-slate brief.
+  {
+    let freshPrompt = null, freshModel = null;
+    const result = await runFrontier({
+      prompt: 'hello',
+      state: { mode: 'fusion', preset: 'opus-gpt' }, // panel opus,gpt-5.5; synth opus
+      cfg: { ...baseCfg, deadEndEscalation: true },
+      deps: {
+        fanOut: async () => [makeOk('opus', 'a'), makeOk('gpt-5.5', 'b')],
+        runJudge: async () => DEAD_ANALYSIS,
+        runSynth: async () => '',
+        spawnOne: async (p, adapter) => { freshPrompt = p; freshModel = adapter.model; return makeOk(adapter.model, 'FRESH ANSWER'); },
+      },
+    });
+    check('(r) escalated flag', result.escalated === true, 'got ' + result.escalated);
+    check('(r) final is fresh answer', result.final === 'FRESH ANSWER', 'got ' + result.final);
+    check('(r) fresh model not synth', result.escalation_model && result.escalation_model !== 'opus',
+      'got ' + result.escalation_model);
+    check('(r) fresh model = gemini (outside panel)', freshModel === 'gemini', 'got ' + freshModel);
+    check('(r) brief carries question', freshPrompt && freshPrompt.includes('hello'), 'brief missing question');
+    check('(r) brief clean-slate (no panel format)', freshPrompt && !freshPrompt.includes('Response from'),
+      'brief leaked panel');
+  }
+
+  // (r2) escalation OFF (default) -> passive longest-response fallback, no spawnOne
+  {
+    const spySpawn = spy(async () => makeOk('gemini', 'y'));
+    const result = await runFrontier({
+      prompt: 'hello',
+      state: { mode: 'fusion', preset: 'opus-gpt' },
+      cfg: baseCfg, // deadEndEscalation default false
+      deps: {
+        fanOut: async () => [makeOk('opus', 'short'), makeOk('gpt-5.5', 'longercontent')],
+        runJudge: async () => DEAD_ANALYSIS,
+        runSynth: async () => '',
+        spawnOne: spySpawn,
+      },
+    });
+    check('(r2) OFF no escalation', !result.escalated, 'escalated: ' + result.escalated);
+    check('(r2) OFF passive fallback', result.final === 'longercontent', 'got ' + result.final);
+    check('(r2) OFF spawnOne not called', !spySpawn.wasCalled(), 'spawnOne called');
+  }
+
+  // (r3) escalation ON but NOT a dead-end (consensus present) -> no escalation
+  {
+    const spySpawn = spy(async () => makeOk('gemini', 'fresh'));
+    const result = await runFrontier({
+      prompt: 'hello',
+      state: { mode: 'fusion', preset: 'opus-gpt' },
+      cfg: { ...baseCfg, deadEndEscalation: true },
+      deps: {
+        fanOut: async () => [makeOk('opus', 'a'), makeOk('gpt-5.5', 'b')],
+        runJudge: async () => VALID_ANALYSIS, // has consensus -> not dead-end
+        runSynth: async () => 'FINAL',
+        spawnOne: spySpawn,
+      },
+    });
+    check('(r3) ON healthy no escalation', !result.escalated, 'escalated: ' + result.escalated);
+    check('(r3) ON healthy final synth', result.final === 'FINAL', 'got ' + result.final);
+    check('(r3) ON healthy spawnOne not called', !spySpawn.wasCalled(), 'spawnOne called');
+  }
+
+  // (r4) judge produced nothing (undefined) is a dead-end -> escalate when ON
+  {
+    const result = await runFrontier({
+      prompt: 'hello',
+      state: { mode: 'fusion', preset: 'opus-gpt' },
+      cfg: { ...baseCfg, deadEndEscalation: true },
+      deps: {
+        fanOut: async () => [makeOk('opus', 'a'), makeOk('gpt-5.5', 'b')],
+        runJudge: async () => undefined,
+        runSynth: async () => '',
+        spawnOne: async (p, adapter) => makeOk(adapter.model, 'RESCUED'),
+      },
+    });
+    check('(r4) undefined analysis escalates', result.escalated === true, 'got ' + result.escalated);
+    check('(r4) final rescued', result.final === 'RESCUED', 'got ' + result.final);
+  }
+
   // ---------- report ----------
   if (failures.length === 0) {
     process.stdout.write('\nAll cases passed.\n');

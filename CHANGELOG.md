@@ -6,6 +6,67 @@ All notable changes to Maestro are documented here. The format follows
 
 ## [Unreleased]
 
+## [1.10.0] - 2026-06-22
+
+### Added
+
+- **Verify gate — structural S7.3 enforcement (`hooks/maestro-verify-gate.cjs`).**
+  A `Stop` hook makes the verification floor structural instead of prose-only:
+  when a session modified files but ran **no** checker (test/lint/tsc) **and**
+  stated **no** honest status token (`UNVERIFIED`/`PENDING_REVIEW`/`FAIL`), it
+  fires once. A `VERIFIED` claim with no checker still fires (S7.3: no checker
+  → never VERIFIED). Mode resolves env (`MAESTRO_VERIFY_GATE`) > `config.json`
+  `verifyGate` > default `warn`: `warn` injects a non-blocking nudge, `block`
+  blocks the Stop once to force a checker run or honest token, `off` disables.
+  Block-once per session; respects `discipline off`; fails open on any error.
+  Registered on `Stop` in `hooks/hooks.json` alongside the loop guard.
+- **`verify` settings toggle (`off`/`warn`/`block`, default `warn`).**
+  Round-trips portably through `node settings/cli.cjs set verify <mode>` and the
+  `maestro-settings` skill; persisted as `verifyGate` in `config.json`. Exposed
+  in `/maestro:settings`, `docs/settings.md`, `docs/hooks.md`, and the README
+  toggle table.
+- **Codex verify-gate parity.** The same `Stop` hook auto-detects (by content,
+  not path) and streams Codex rollout transcripts — hundreds of MB, never
+  slurped — deriving the same three signals (a file edit, a checker run, an
+  honest token). With the plugin hooks installed and trusted, `block` enforces
+  S7.3 on the Codex `Stop` event (which honors `decision:"block"`); the
+  block-once marker is the Codex re-entry guard (Codex omits `stop_hook_active`).
+- **Codex token telemetry (`scripts/codex-telemetry.cjs`).** Records per-session
+  token usage from `~/.codex/sessions` rollouts with `source:"codex"` and the
+  same field names the Claude `SessionEnd` hook writes, so overhead is
+  comparable across both CLIs (S9). Codex has no session-end event, so it runs
+  manually (`--latest` / `--print`). See `docs/codex.md` § Token telemetry.
+
+### Changed
+
+- **Orchestration-transfer deltas F1–F6.** Encode six transferable multi-agent
+  orchestration patterns from a single-vendor frontier-lab technical report into
+  the discipline layer (doctrine, mirrored across copies) and the Frontier
+  engine; every engine change sits behind a config flag defaulting to current
+  behavior. F1 anti-anchoring (specialists receive only declared OUTPUT
+  artifacts via an explicit access list, never a peer's reasoning trajectory;
+  the cross-talk check verifies it). F2 gate-vs-synthesis (separate the fixed,
+  domain-agnostic Staff-Engineer verification gate from task-matched synthesis
+  by the crux-owning specialist; synthesizer selectable via `analysisSynthSelect`,
+  Opus default preserved). F3 per-step routing (`perStepRouting` flag + dated
+  stage-affinity table, default off). F4 S1 topology hint (knowledge-heavy/
+  ambiguous → tree; build-debug → sequential builder/skeptic). F5 isolate-within
+  / share-across (durable findings cross the checkpoint, live trajectories do
+  not). F6 dead-end escalation (`judge.isDeadEnd` + `deadEndEscalation` flag →
+  fresh adapter with a clean-slate reframing brief, default off). Findings
+  recorded in `docs/orchestration-transfer-findings.md`.
+- **Gate telemetry now captures aggregate token usage.** The `SessionEnd`
+  telemetry hook records `input`/`output`/`cache_read`/`cache_creation` tokens,
+  `cache_hit_pct`, and `assistant_turns` per session (still gated behind
+  `MAESTRO_TELEMETRY=1`, still local-only, no network).
+- **Gate reminder is now minimal.** The `UserPromptSubmit` reminder emits only
+  what cached doctrine cannot — the live Frontier badge and the parseable
+  verdict template, plus a pointer to `AGENTS.md S1` — instead of re-emitting the
+  full S1 spec on every fired prompt, cutting per-prompt overhead.
+- **Doctrine.** S7.3 references the verify-gate Stop hook; the S1 multi-agent
+  trigger language and S7.0 before-code guidance were tightened in the same
+  pass. Mirrored to global `~/.claude/AGENTS.md` and `docs/orchestration.md`.
+
 ## [1.9.2] - 2026-06-19
 
 ### Changed

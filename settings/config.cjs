@@ -19,6 +19,7 @@ const frontier = require('../frontier/config.cjs');
 
 const TERSE_LEVELS = ['off', 'lite', 'full', 'ultra'];
 const FLAG_LEVELS = ['lite', 'full', 'ultra']; // 'off' = remove the flag
+const VERIFY_MODES = ['off', 'warn', 'block']; // verify-gate Stop hook
 const MAX_CONFIG_BYTES = 1 << 16; // 64 KB cap for config.json / settings.json
 
 // Human labels for model ids. Presentation only — the model SET is always
@@ -248,6 +249,60 @@ function setDiscipline(value) {
   return { ok: true, warning };
 }
 
+// ---------- verify-gate ----------
+
+// The verify-gate Stop hook (hooks/maestro-verify-gate.cjs) reads this at
+// runtime: `warn` (default) nudges, `block` blocks the Stop once, `off`
+// disables. Stored in config.json `verifyGate` (default warn => key absent).
+// MAESTRO_VERIFY_GATE overrides the file, mirroring the terse/discipline
+// env-override pattern; the env value `0` is accepted as an alias for `off`.
+function normalizeVerify(v) {
+  const s = String(v == null ? '' : v).toLowerCase();
+  if (s === '0' || s === 'off' || s === 'false') return 'off';
+  if (s === 'warn' || s === 'block') return s;
+  return null;
+}
+
+function readVerify() {
+  const env = normalizeVerify(process.env.MAESTRO_VERIFY_GATE);
+  if (env) return { mode: env, source: 'env' };
+  const raw = safeRead(configJsonPath(), MAX_CONFIG_BYTES);
+  if (raw) {
+    try {
+      const c = JSON.parse(raw);
+      const v = normalizeVerify(c && c.verifyGate);
+      if (v) return { mode: v, source: 'config' };
+    } catch {}
+  }
+  return { mode: 'warn', source: 'default' };
+}
+
+function setVerify(mode) {
+  const m = normalizeVerify(mode);
+  if (!m) return { ok: false, error: 'verify value must be off, warn, or block' };
+
+  let cfg = {};
+  const raw = safeRead(configJsonPath(), MAX_CONFIG_BYTES);
+  if (raw) {
+    try {
+      const parsed = JSON.parse(raw);
+      if (parsed && typeof parsed === 'object') cfg = parsed;
+    } catch {
+      return { ok: false, error: 'config.json exists but is not valid JSON; refusing to overwrite it' };
+    }
+  }
+  // warn is the default => drop the key so config.json stays minimal;
+  // off/block are explicit.
+  if (m === 'warn') delete cfg.verifyGate; else cfg.verifyGate = m;
+  if (!safeWrite(configJsonPath(), JSON.stringify(cfg, null, 2))) {
+    return { ok: false, error: 'failed to write config.json' };
+  }
+  const warning = normalizeVerify(process.env.MAESTRO_VERIFY_GATE)
+    ? 'MAESTRO_VERIFY_GATE=' + process.env.MAESTRO_VERIFY_GATE + ' is set in the environment and overrides this until unset'
+    : null;
+  return { ok: true, warning };
+}
+
 // ---------- frontier (delegated to frontier/config.cjs) ----------
 
 function readFrontier(scope) { return frontier.loadState(scope); }
@@ -309,6 +364,7 @@ function readAll(scope) {
     frontier: readFrontier(scope),
     contextBar: readContextBar(),
     discipline: readDiscipline(),
+    verify: readVerify(),
   };
 }
 
@@ -333,6 +389,7 @@ function catalog() {
     },
     contextBar: { key: 'context-bar', values: ['on', 'off'] },
     discipline: { key: 'discipline', values: ['on', 'off'] },
+    verify: { key: 'verify', values: VERIFY_MODES.slice() },
   };
 }
 
@@ -350,11 +407,13 @@ function setKey(key, value, opts) {
     if (v !== 'on' && v !== 'off') return { ok: false, error: 'discipline value must be on or off' };
     return setDiscipline(v === 'on');
   }
-  return { ok: false, error: 'unknown key: ' + key + ' (use terse, frontier, context-bar, or discipline)' };
+  if (k === 'verify' || k === 'verify-gate' || k === 'verifygate') return setVerify(value);
+  return { ok: false, error: 'unknown key: ' + key + ' (use terse, frontier, context-bar, discipline, or verify)' };
 }
 
 module.exports = {
   TERSE_LEVELS,
+  VERIFY_MODES,
   claudeDir,
   terseFlagPath,
   configJsonPath,
@@ -367,6 +426,8 @@ module.exports = {
   setContextBar,
   readDiscipline,
   setDiscipline,
+  readVerify,
+  setVerify,
   readAll,
   catalog,
   setKey,

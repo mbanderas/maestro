@@ -37,25 +37,31 @@ one-line reflex. No edits before the verdict. The `frontier` badge =
 engine state: `frontier on (<mode>/<preset-or-model>)` when armed, else
 `frontier off`; on Claude Code the gate-reminder hook injects it.
 
-Multi-agent triggers (ANY — check FIRST): 5+ files across 2+ concerns,
-independent subtasks, >15 messages single-agent, adversarial review,
-multiple skill domains. files>=5 across 2+ concerns is multi-agent by
-count — independent subtasks ARE the parallel benefit. A met trigger
-downgrades ONLY on >60% file overlap between subtasks, or <=3 files in
-one dependency chain. Nothing else.
+Multi-agent triggers (ANY — check FIRST): 5+ files across 2+ concerns
+with structurally independent subtasks, >15 messages single-agent,
+adversarial review, multiple skill domains. File count alone is NOT a
+trigger — 5+ files in one coherent or sequential change stay
+single-agent. Multi-agent must be earned by real parallelism, context
+isolation, or adversarial review; absent one of those, single-agent. A
+met trigger still downgrades on >60% file overlap between subtasks, or
+<=3 files in one dependency chain.
 
 Multi-agent is executed, not noted: immediately spawn the Planner as a
 real subagent via the Task/Agent tool, before any specialist work or
 edit. Read [docs/orchestration.md](docs/orchestration.md) first when
 available; the protocol below suffices otherwise.
 
+On a multi-agent verdict, S1 also emits a coarse topology hint:
+knowledge-heavy or ambiguous work -> parallel independent attempts with
+a task-matched synthesis step (tree); build-debug coding -> sequential
+builder/skeptic alternation. A hint for the Planner (S2), not a binding
+shape.
+
 Single-agent fallback (<=3 tightly coupled files, sequential, no
 parallel benefit): execute via S7, skip S2-S6. Max 4 specialists per
 group; review and debate panels of 3 (odd, no ties); user override
 ("single agent" / "parallelize") wins; default single-agent when in
-doubt. Frontier-class orchestrators bias single-agent harder — only
-parallelism, context isolation, or adversarial review justify
-multi-agent.
+doubt. Frontier-class orchestrators bias single-agent harder still.
 
 ---
 
@@ -66,10 +72,15 @@ version in docs/orchestration.md, read on demand when the gate (S1)
 returns multi-agent. Irreducible chain to preserve when that file is
 not loaded: Planner first as a real subagent (Task/Agent tool), never
 simulated inline -> scoped specialist manifests (ROLE, TASK, FILES,
-OUTPUT, ACCEPT, scoped TOOLS; no extra context) -> cross-talk check
-after each group -> Staff Engineer last returns PASS/FAIL (max 2
-cycles). The orchestrator spawns, sequences, routes, and delivers —
-never plans, codes, or reviews specialist work itself.
+OUTPUT, ACCEPT, scoped TOOLS; only declared upstream OUTPUT artifacts
+via an explicit access list, never another specialist's reasoning
+trajectory — anti-anchoring, prevents orchestration collapse) ->
+cross-talk check after each group (verifies no peer trajectory leaked)
+-> task-matched synthesis merges parallel outputs (the crux-owning
+specialist, not a fixed seat) -> Staff Engineer last is the fixed
+verification gate, PASS/FAIL (max 2 cycles). The
+orchestrator spawns, sequences, routes, and delivers — never plans,
+codes, or reviews specialist work itself.
 
 ---
 
@@ -79,13 +90,12 @@ Both modes. In multi-agent, inject into every specialist.
 
 ### 7.0 Before code
 
-State load-bearing assumptions when ambiguous; list competing
-interpretations rather than silently picking one; propose the simpler
-alternative. Confusion: interactive — stop, name it, ask; autonomous —
-decide and record why (S10). No sycophancy — push back when warranted.
-A prompt referencing a file or artifact does not make it present or
-absent — verify on disk before acting or declining over it; never
-assert either unchecked.
+State assumptions only when genuinely ambiguous and load-bearing — name
+the competing reading, pick the simpler; skip the ceremony when intent
+is clear. Confusion: interactive — stop and ask; autonomous — decide,
+record why (S10). No sycophancy. A prompt referencing a file or artifact
+does not make it present or absent — verify on disk before acting or
+declining over it; never assert either unchecked.
 
 ### 7.1 Phase scope
 
@@ -103,20 +113,27 @@ once. Orient from the files the task names; expand only when a
 dependency forces it — no blanket repo audit. Re-read a file before
 editing if 10+ messages passed since last read; after 3 edits to one
 file, full re-read. Files >500 LOC: read in chunks; truncated results:
-narrow and retry.
+narrow and retry. What crosses a boundary is the split of S10: durable
+findings/artifacts move forward through the checkpoint, live reasoning
+trajectories do not.
 
 ### 7.3 Verification
 
 FORBIDDEN from reporting complete until the smallest relevant
 repo-defined checks pass — type-checker, linter, and tests from package
-scripts, Makefile/task runner, or CI (e.g. `npx tsc --noEmit` and
-`npx eslint . --quiet` in a TypeScript repo), ALL errors fixed. No
-runnable checker: state it and report UNVERIFIED with the exact gap.
+scripts, Makefile/task runner, or CI, ALL errors fixed; on Claude Code
+the verify-gate Stop hook surfaces this on Stop (warns by default; set
+MAESTRO_VERIFY_GATE=block to enforce) when files were modified but no
+checker ran and no honest token was stated. No runnable checker: state
+it and report UNVERIFIED with the exact gap.
 Bug fix or new behavior: reproduce first — failing test before the fix
 — success criteria as the exit condition, not a post-hoc check. Changes
 with no observable behavior (config, docs, types, formatting): state
 the validation used. After 2 failed attempts: stop, re-read from
-scratch, change approach.
+scratch, change approach — and change the perspective/agent, not just
+retry the same one: hand a fresh agent a clean-slate reframing brief
+(a different agent re-examining from scratch breaks a dead-end the
+original cannot).
 
 Every completion report carries exactly one status token: VERIFIED
 (relevant checks passed) | PENDING_REVIEW (protected surfaces touched —
@@ -172,7 +189,10 @@ reversal cost); frontier (orchestration, 1M-context audits,
 long-horizon autonomy). Model names:
 [docs/orchestration.md](docs/orchestration.md). Subagents inherit the
 orchestrator's model unless set — pick a cheaper tier for routine
-subtasks. Cap response length per prompt: no-edit ~100 words, default
+subtasks. Routing is per-step, not per-task: re-evaluate tier/model at
+phase boundaries and at critical junctures (failing check, merge
+conflict, build->debug switch, dead-end), not locked once at the S1
+gate. Cap response length per prompt: no-edit ~100 words, default
 ~500 (code uncapped), Explore 200 always. Cap actions: a tool-call
 budget per prompt (~20 for routine subtasks; read-first-write-once; one
 diagnostic read per failure, then the S7.3 two-attempt rule). Manifest
@@ -187,7 +207,12 @@ Work spanning sessions, iterations, or scheduled runs:
 - One durable checkpoint artifact (gitignored): phase status, findings
   with sources, decisions with rationale. Read it FIRST on every
   resume; never redo completed phases. Context is not durable —
-  checkpoint + VCS history are the memory.
+  checkpoint + VCS history are the memory. Isolate within, share across:
+  durable findings/artifacts cross phase and session boundaries through
+  this checkpoint; live reasoning trajectories never do (kept isolated
+  per S7.2, and between specialists per the manifest rule). Omitting the
+  share side forces a fresh phase to re-discover settled facts with
+  redundant work — the redundant-rediscovery failure mode.
 - Findings graduate: failure note -> investigated cause -> verified
   fact -> distilled rule; flag unverified entries. Consult distilled
   rules FIRST each iteration — never re-derive what a rule answers.

@@ -1,12 +1,12 @@
 #!/usr/bin/env node
-// Maestro Frontier — synthesis stage: build prompt + invoke Opus for final answer.
+// Maestro Frontier — synthesis stage: build prompt + invoke the configured synth model for the final answer.
 
 'use strict';
 
 const dispatch = require('./dispatch.cjs');
 
 /**
- * Build the synthesis prompt for Opus.
+ * Build the synthesis prompt for the synthesizer.
  * @param {string} userPrompt
  * @param {{ analysis?: import('./schema.cjs').Analysis, responses: import('./schema.cjs').PanelResponse[] }} bundle
  * @param {object} cfg

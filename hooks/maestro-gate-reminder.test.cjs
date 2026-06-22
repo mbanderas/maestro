@@ -31,17 +31,29 @@ function check(name, cond) {
 
 console.log('maestro-gate-reminder tests');
 
-// 1. First prompt of a session: emits gate checklist as additionalContext.
+// Must match maestro-gate-telemetry.cjs verdictRe exactly: the reminder
+// only earns its keep if a model copying its template emits a line the
+// telemetry oracle can parse. Keep these two in sync.
+const verdictRe = /(?:GATE|Maestro)[:\s·].*?files=\S+\s+concerns=\S+\s*->\s*(single|multi)-agent/;
+function additionalContext(o) { return JSON.parse(o).hookSpecificOutput.additionalContext; }
+
+// 1. First prompt of a session: emits a MINIMAL gate reminder as additionalContext.
 const s1 = sid(); cleanup.push(markerFor(s1));
 let out = runHook({ session_id: s1, prompt: 'add an export subsystem' });
-check('first prompt -> fires', out.includes('Maestro · frontier <on|off> — files=<n>'));
-check('teaches the new badge verdict format', out.includes('concerns=<m> -> single-agent | multi-agent'));
-check('injects a live frontier badge line', /Current frontier state for the badge: frontier (off|on \()/.test(out));
+check('first prompt -> fires', out.includes('files=<n> concerns=<m> -> single-agent|multi-agent'));
+check('points to the cached full spec, does not restate it', additionalContext(out).includes('AGENTS.md S1'));
+check('injects a live frontier badge', /frontier (off|on \()/.test(additionalContext(out)));
+check('parseable: template with numbers filled matches telemetry verdictRe', (() => {
+  const filled = additionalContext(out).replace('<n>', '5').replace('<m>', '2');
+  return verdictRe.test(filled);
+})());
+check('minimal: default (frontier off) injection <= 180 bytes', (() => {
+  return Buffer.byteLength(additionalContext(out), 'utf8') <= 180;
+})());
 check('valid UserPromptSubmit JSON', (() => {
   try { return JSON.parse(out).hookSpecificOutput.hookEventName === 'UserPromptSubmit'; }
   catch { return false; }
 })());
-check('default mode names the spawn imperative', out.includes('Agent/Task tool'));
 
 // 2. Second prompt, same session: silent (fire-once).
 out = runHook({ session_id: s1, prompt: 'continue' });
@@ -50,7 +62,7 @@ check('same session again -> silent', out === '');
 // 3. New session: fires again.
 const s2 = sid(); cleanup.push(markerFor(s2));
 out = runHook({ session_id: s2, prompt: 'fix a bug' });
-check('new session -> fires again', out.includes('Maestro · frontier <on|off> — files=<n>'));
+check('new session -> fires again', out.includes('files=<n> concerns=<m>'));
 
 // 4. Opt-out env: silent, writes no marker.
 const s3 = sid(); cleanup.push(markerFor(s3));

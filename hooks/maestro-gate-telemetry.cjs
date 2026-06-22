@@ -8,8 +8,11 @@
 //
 // Privacy: does nothing unless MAESTRO_TELEMETRY=1. Writes only to
 // ~/.claude/maestro-telemetry.jsonl on this machine. No network, ever.
-// Captures counts and the project folder NAME only -- no prompts, no
-// file contents, no paths beyond the basename.
+// Captures counts, aggregate token usage, and the project folder NAME
+// only -- no prompts, no file contents, no paths beyond the basename.
+// Token totals come from each assistant message's `usage` block, so we
+// can attribute real overhead (output is the costly, uncached direction;
+// cache_hit_pct shows how much input is cached and therefore cheap).
 //
 // Payload fields verified against code.claude.com/docs/en/hooks
 // (SessionEnd input: session_id, transcript_path, cwd, reason;
@@ -41,6 +44,7 @@ if (!require('./maestro-discipline-gate.cjs').disciplineEnabled()) process.exit(
 const verdictRe = /(?:GATE|Maestro)[:\s·].*?files=\S+\s+concerns=\S+\s*->\s*(single|multi)-agent/;
 let agentCount = 0;
 let verdict = null;
+let inTok = 0, outTok = 0, cacheRead = 0, cacheWrite = 0, asstTurns = 0;
 if (data.transcript_path && fs.existsSync(data.transcript_path)) {
   try {
     const buf = fs.readFileSync(data.transcript_path, 'utf8');
@@ -48,7 +52,16 @@ if (data.transcript_path && fs.existsSync(data.transcript_path)) {
     for (const line of text.split(/\r?\n/)) {
       let e;
       try { e = JSON.parse(line); } catch { continue; }
-      if (!e || e.type !== 'assistant' || !e.message || !Array.isArray(e.message.content)) continue;
+      if (!e || e.type !== 'assistant' || !e.message) continue;
+      const u = e.message.usage;
+      if (u) {
+        inTok += u.input_tokens || 0;
+        outTok += u.output_tokens || 0;
+        cacheRead += u.cache_read_input_tokens || 0;
+        cacheWrite += u.cache_creation_input_tokens || 0;
+        asstTurns++;
+      }
+      if (!Array.isArray(e.message.content)) continue;
       for (const item of e.message.content) {
         if (!item) continue;
         if (item.type === 'tool_use' && (item.name === 'Task' || item.name === 'Agent')) agentCount++;
@@ -69,7 +82,15 @@ const row = {
   agent_count: agentCount,
   mismatch: verdict !== null && ((verdict === 'multi') !== (agentCount > 0)),
   reason: data.reason || null,
-  project: data.cwd ? path.basename(data.cwd) : null
+  project: data.cwd ? path.basename(data.cwd) : null,
+  input_tokens: inTok,
+  output_tokens: outTok,
+  cache_read_tokens: cacheRead,
+  cache_creation_tokens: cacheWrite,
+  cache_hit_pct: (inTok + cacheRead + cacheWrite)
+    ? Math.round((cacheRead / (inTok + cacheRead + cacheWrite)) * 100)
+    : null,
+  assistant_turns: asstTurns
 };
 
 try {
