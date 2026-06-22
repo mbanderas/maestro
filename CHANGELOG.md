@@ -6,6 +6,36 @@ All notable changes to Maestro are documented here. The format follows
 
 ## [Unreleased]
 
+## [1.11.1] - 2026-06-23
+
+### Fixed
+
+- **Verify-gate and subagent-guard no longer misread `2>/dev/null` as a file
+  write.** The shared Bash mutation regex (`bashMutRe` in
+  `hooks/maestro-verify-gate.cjs` and `hooks/maestro-subagent-guard.cjs`) treated
+  any `>`/`>>` redirect as a mutation, so read-only diagnostics like
+  `git status 2>/dev/null` flipped the "modified files" signal on. That produced
+  false verification nudges on read-only turns (e.g. a `/maestro:update` run that
+  only inspected the plugin cache) and could misclassify a research subagent as a
+  writer. A `(?!\/dev\/null)` lookahead now excludes `2>/dev/null`, `>/dev/null`,
+  and `&>/dev/null`; a redirect to any real path still registers as a write. New
+  regression cases pin both hooks.
+- **The test suite is now hermetic with respect to the user's Frontier config.**
+  `scripts/run-hook-tests.cjs` redirects `XDG_CONFIG_HOME` to a throwaway dir so
+  no suite reads or writes the host's real `frontier-state*.json`. Previously,
+  with session signals stripped for determinism, `resolveScope()` collapsed to
+  `default`, and a host `default` scope armed to fusion made the gate-reminder
+  badge — and its `<= 180 bytes` assertion — fail under `npm test` while passing
+  in isolation. `hooks/maestro-gate-reminder.test.cjs` also isolates its own
+  config dir so the badge is deterministic standalone.
+
+### Changed
+
+- **`/maestro:update` no longer flails on a zip-install plugin cache.** The
+  command now tells the agent that a step-2 `git log` failure (no `.git`, exit
+  128) is expected for zip installs and to skip it rather than hunt the cache
+  with `ls`/`cat`/`grep`/`find` — step 1 succeeding is the update.
+
 ## [1.11.0] - 2026-06-22
 
 ### Added
