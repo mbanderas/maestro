@@ -21,6 +21,7 @@ fs.mkdirSync(claude, { recursive: true });
 process.env.XDG_CONFIG_HOME = xdg;
 process.env.CLAUDE_CONFIG_DIR = claude;
 delete process.env.MAESTRO_TERSE_LEVEL;
+delete process.env.MAESTRO_VERIFY_GATE;
 
 const env = Object.assign({}, process.env);
 const CLI = path.join(__dirname, 'cli.cjs');
@@ -129,6 +130,34 @@ function main() {
   check('bad command exits 2', e2 && e2.status === 2);
   const e3 = runFail(['set', 'frontier', 'single:nope']);
   check('bad model exits 2', e3 && e3.status === 2);
+
+  // verify round-trip + the REAL verify-gate hook reads what the CLI wrote
+  run(['set', 'verify', 'block']);
+  const sv = run(['status']);
+  check('status shows verify block', /verify\s+block/.test(sv));
+  const jv = JSON.parse(run(['status', '--json']));
+  check('json verify mode block', jv.verify && jv.verify.mode === 'block');
+  check('list offers verify off|warn|block',
+    ['off', 'warn', 'block'].every(v => JSON.parse(run(['list', '--json'])).verify.values.includes(v)));
+
+  const VGHOOK = path.join(__dirname, '..', 'hooks', 'maestro-verify-gate.cjs');
+  const vgState = fs.mkdtempSync(path.join(os.tmpdir(), 'cli-vg-state-'));
+  const txFile = path.join(tmpBase, 'vg-tx.jsonl');
+  fs.writeFileSync(txFile, [
+    JSON.stringify({ type: 'assistant', message: { content: [{ type: 'tool_use', name: 'Edit', input: { file_path: 'x' } }] } }),
+    JSON.stringify({ type: 'assistant', message: { content: [{ type: 'text', text: 'done' }] } }),
+  ].join('\n'));
+  let vgOut = '';
+  try {
+    vgOut = execFileSync(process.execPath, [VGHOOK], {
+      input: JSON.stringify({ session_id: 'cli-vg', transcript_path: txFile, cwd: tmpBase }),
+      encoding: 'utf8',
+      env: Object.assign({}, env, { MAESTRO_VERIFY_GATE_STATE_DIR: vgState }),
+    });
+  } catch {}
+  check('verify-gate hook blocks under CLI-written block',
+    (() => { try { return JSON.parse(vgOut).decision === 'block'; } catch { return false; } })());
+  run(['set', 'verify', 'warn']); // reset to default
 
   try { fs.rmSync(tmpBase, { recursive: true, force: true }); } catch {}
   if (failures > 0) { console.error('\n' + failures + ' test(s) failed.'); process.exit(1); }

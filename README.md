@@ -299,14 +299,15 @@ actions also run through the portable scripts noted below.
 
 ### Settings toggles
 
-`/maestro:settings` and the portable `node settings/cli.cjs` cover four persisted toggles:
+`/maestro:settings` and the portable `node settings/cli.cjs` cover five persisted toggles:
 
 | Toggle | Values | What it controls |
 |---|---|---|
 | `terse` | `off`, `lite`, `full`, `ultra` | Output-token reduction. Shows an amber level badge (`ULTRA`) on the status bar. |
 | `frontier` | `off`; `single:` `opus` / `gpt-5.5` / `gemini`; `fusion:` `opus-duo` / `opus-gpt` / `chatgpt-duo` / `frontier-trio` / `custom`, each with optional `--judge` / `--synth` | The local fusion engine. When armed it auto-runs on every prompt. The blue `f` panel badge means auto-run is on: `fO+C`, `fO+C+G`, `f*3` (`O`=Opus, `C`=ChatGPT/GPT-5.5, `G`=Gemini). |
 | `context-bar` | `on`, `off` | The status-line context-window progress bar. |
-| `discipline` | `on`, `off` | The enforcement-hook pack (gate-reminder, doctrine-guard, phase-scope, subagent-guard, loop-guard, gate-telemetry, toolbudget). `off` silences every hook for users who want only the Frontier engine. See [Discipline layer toggle](#discipline-layer-toggle) for the one caveat. |
+| `discipline` | `on`, `off` | The enforcement-hook pack (gate-reminder, doctrine-guard, phase-scope, subagent-guard, verify-gate, loop-guard, gate-telemetry, toolbudget). `off` silences every hook for users who want only the Frontier engine. See [Discipline layer toggle](#discipline-layer-toggle) for the one caveat. |
+| `verify` | `off`, `warn`, `block` | The S7.3 verify-gate Stop hook. `warn` (default) injects a non-blocking nudge when a session modified files but ran no checker and stated no honest status token; `block` blocks the Stop once to force a checker run or honest token; `off` disables. `MAESTRO_VERIFY_GATE` overrides per-session. Arm `block` in repos with a real test suite. |
 
 Portable everywhere, Codex included: `node settings/cli.cjs status | list | help | set <key> <value>` (frontier also takes `--judge`, `--synth`, `--models a,b,c`, and `--scope <scope>`). Full references: [`docs/settings.md`](docs/settings.md) and [`docs/context-bar.md`](docs/context-bar.md).
 
@@ -322,12 +323,31 @@ node settings/cli.cjs set discipline on    # default
 
 `MAESTRO_DISCIPLINE=off` (env) overrides the saved setting for one session.
 
+**Granular per-hook switches (env).** The other hooks have no persisted
+toggle of their own; tune or disable one without silencing the whole pack
+via these environment variables (there is no per-hook slash command for
+them — only `verify` and the four toggles above have one):
+
+| Env var | Effect |
+|---|---|
+| `MAESTRO_GATE_REMINDER=0` | silence the S1 verdict reminder on the first prompt |
+| `MAESTRO_DOCTRINE_GUARD` | `once` (default — allow first doctrine read/session), `0` (disable the read guard) |
+| `MAESTRO_TELEMETRY=1` | opt **in** to gate telemetry (off by default; writes only locally) |
+| `MAESTRO_PHASE_FILE_CAP`, `MAESTRO_LOOP_MAX_ITER` | tune the phase-scope / loop-guard thresholds |
+| `MAESTRO_DISCIPLINE`, `MAESTRO_VERIFY_GATE` | per-session overrides for the `discipline` / `verify` toggles above |
+
+`/maestro:settings` (and `node settings/cli.cjs`) cover the five persisted
+toggles above (terse, frontier, context-bar, discipline, verify); the
+remaining per-hook knobs live in the env vars here. Full hook reference:
+[`docs/hooks.md`](docs/hooks.md).
+
 The discipline layer has two runtime halves, and the toggle is honest about
 which it controls:
 
 - **Enforcement hooks** (gate-reminder, doctrine-guard, phase-scope,
-  subagent-guard, loop-guard, gate-telemetry, toolbudget) — `discipline off`
-  makes every one of them no-op. This is the clean, fully-toggleable half.
+  subagent-guard, verify-gate, loop-guard, gate-telemetry, toolbudget) —
+  `discipline off` makes every one of them no-op. This is the clean,
+  fully-toggleable half.
 - **Doctrine text** (the `AGENTS.md` kernel) — autoloaded into context at
   session start and *cannot be unloaded mid-session*, so the toggle does not
   touch it. To run without the doctrine, install engine-only (below) so the

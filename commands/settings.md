@@ -1,18 +1,19 @@
 ---
-description: View and change Maestro's toggles (terse, frontier, context-bar, discipline) — direct args or a keyboard picker
-argument-hint: "[status | list | help | set <key> <value> | terse|frontier|context-bar|discipline <value>]"
+description: View and change Maestro's toggles (terse, frontier, context-bar, discipline, verify) — direct args or a keyboard picker
+argument-hint: "[status | list | help | set <key> <value> | terse|frontier|context-bar|discipline|verify <value>]"
 allowed-tools: Bash, AskUserQuestion
 ---
 
 See and change Maestro's toggles: terse output, the frontier fusion engine,
-the context-bar status line, and the discipline enforcement-hook pack.
-`compress` is an action, not a toggle, so it is not shown here.
+the context-bar status line, the discipline enforcement-hook pack, and the
+verify-gate Stop hook (`warn`/`block`/`off`). `compress` is an action, not a
+toggle, so it is not shown here.
 
 Two ways to use it. With **no arguments** it opens a keyboard picker. With
 **arguments** it runs the change directly and finishes — no questionnaire.
 
 One writer owns all state: `settings/cli.cjs`, which reads and writes the
-four existing stores. This command never edits those files directly; it
+existing stores. This command never edits those files directly; it
 always goes through the CLI so the existing readers stay in sync. Throughout,
 `SCLI` = `node "${CLAUDE_PLUGIN_ROOT}/settings/cli.cjs"`.
 
@@ -32,7 +33,7 @@ non-empty skips the picker entirely.**
 - **`set <key> <value> [flags]`** → pass straight through:
   `SCLI set <key> <value> [--judge M] [--synth M] [--models a,b,c]`.
 - **shorthand** — first token is a key (`terse`, `frontier`, `context-bar`,
-  `bar`, or `discipline`): treat the rest as the value and run
+  `bar`, `discipline`, or `verify`): treat the rest as the value and run
   `SCLI set <key> <value>`.
 
 ### Normalizing the value (both `set` and shorthand)
@@ -47,7 +48,7 @@ The CLI takes one frontier value with a colon (`single:opus`,
   → `SCLI set frontier fusion:custom --models opus,gpt-5.5,gemini`
 - `frontier fusion opus-gpt --judge opus --synth gpt-5.5` → pass the flags through
 - already-coloned (`frontier fusion:opus-gpt`) → pass as-is
-- `terse ultra`, `context-bar off`, `discipline off` → `SCLI set terse ultra`, `SCLI set context-bar off`, `SCLI set discipline off`
+- `terse ultra`, `context-bar off`, `discipline off`, `verify block` → `SCLI set terse ultra`, `SCLI set context-bar off`, `SCLI set discipline off`, `SCLI set verify block`
 
 After any write, report any `WARNING:` line the CLI prints (for example an
 active `MAESTRO_TERSE_LEVEL` override or an unconfirmed status-line script),
@@ -67,6 +68,13 @@ show `SCLI help` so the user sees the valid values.
    - context-bar: `list.contextBar.values` (`on`, `off`).
    - discipline: `list.discipline.values` (`on`, `off`).
    - frontier mode: `off`, `single`, `fusion` (`list.frontier.modes`).
+
+   Then a second `AskUserQuestion` (the first is at the 4-question cap) for
+   the remaining persisted toggle, pre-set to current:
+   - verify: `list.verify.values` (`off`, `warn`, `block`) — the S7.3
+     verify-gate Stop hook: `warn` nudges (default), `block` enforces (blocks
+     a Stop that modified files but ran no checker and stated no honest
+     token), `off` disables.
 
 3. Frontier follow-ups (only if mode is not `off`):
    - **single** → one question, `model` = `list.frontier.models` (3, fits);

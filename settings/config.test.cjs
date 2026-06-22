@@ -207,6 +207,49 @@ function main() {
     check('catalog lists discipline values', settings.catalog().discipline.values.join(',') === 'on,off');
   }
 
+  // ---- verify-gate ----
+  // (s) default warn; set block/off writes config.json; warn drops the key
+  {
+    delete process.env.MAESTRO_VERIFY_GATE;
+    const v0 = settings.readVerify();
+    check('verify default warn', v0.mode === 'warn' && v0.source === 'default');
+
+    check('setVerify block ok', settings.setVerify('block').ok === true);
+    const v1 = settings.readVerify();
+    check('verify reads block from config', v1.mode === 'block' && v1.source === 'config');
+    const cfg = JSON.parse(fs.readFileSync(settings.configJsonPath(), 'utf8'));
+    check('config.json verifyGate = block', cfg.verifyGate === 'block');
+
+    check('setVerify off ok', settings.setVerify('off').ok === true);
+    check('verify reads off from config', settings.readVerify().mode === 'off');
+
+    check('setVerify warn drops the key', settings.setVerify('warn').ok === true);
+    const cfg2 = JSON.parse(fs.readFileSync(settings.configJsonPath(), 'utf8'));
+    check('verify warn drops the key', !('verifyGate' in cfg2));
+    check('verify reads warn (default) after reset', settings.readVerify().mode === 'warn');
+  }
+
+  // (t) env override (incl. 0=off alias) beats config + warns
+  {
+    settings.setVerify('block'); // config says block
+    process.env.MAESTRO_VERIFY_GATE = '0';
+    const v = settings.readVerify();
+    check('verify env 0 -> off override', v.mode === 'off' && v.source === 'env');
+    const r = settings.setVerify('warn');
+    check('setVerify warns under env override', r.ok === true && /MAESTRO_VERIFY_GATE/.test(r.warning || ''));
+    delete process.env.MAESTRO_VERIFY_GATE;
+  }
+
+  // (u) setKey dispatch + bad value + catalog + readAll
+  {
+    check('setKey verify block', settings.setKey('verify', 'block').ok === true);
+    check('setKey verify-gate alias', settings.setKey('verify-gate', 'warn').ok === true);
+    check('setKey verify bad value', settings.setKey('verify', 'maybe').ok === false);
+    check('catalog lists verify values', settings.catalog().verify.values.join(',') === 'off,warn,block');
+    const all = settings.readAll();
+    check('readAll has verify', !!all.verify && typeof all.verify.mode === 'string');
+  }
+
   // ---- cleanup ----
   try { fs.rmSync(tmpBase, { recursive: true, force: true }); } catch {}
 

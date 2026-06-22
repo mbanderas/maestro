@@ -65,6 +65,15 @@ const newFormatTx = transcript('new-format.jsonl', [
   spawn('Agent'),
   say('done')
 ]);
+// Token usage: summed across assistant messages; cache_hit_pct derived.
+const usageSay = (text, u) => ({ type: 'assistant', message: { usage: u, content: [{ type: 'text', text }] } });
+const tokenTx = transcript('tokens.jsonl', [
+  { type: 'user', message: { content: [{ type: 'text', text: 'do work' }] } },
+  usageSay('GATE: files=1 concerns=1 -> single-agent — x',
+    { input_tokens: 100, output_tokens: 50, cache_read_input_tokens: 900, cache_creation_input_tokens: 0 }),
+  usageSay('done',
+    { input_tokens: 0, output_tokens: 200, cache_read_input_tokens: 1100, cache_creation_input_tokens: 0 })
+]);
 
 let failures = 0;
 function check(name, cond) {
@@ -111,14 +120,23 @@ rows = readRows();
 check('new Maestro badge line -> verdict multi, 2 spawned, no mismatch',
   rows[4].verdict === 'multi' && rows[4].agent_count === 2 && rows[4].mismatch === false);
 
+// 3e. Token usage summed across assistant messages; cache_hit_pct derived.
+runHook({ transcript_path: tokenTx, cwd: tmp, session_id: 's2e', reason: 'clear' }, { MAESTRO_TELEMETRY: '1' });
+rows = readRows();
+check('token totals summed', rows[5].input_tokens === 100 && rows[5].output_tokens === 250
+  && rows[5].cache_read_tokens === 2000 && rows[5].cache_creation_tokens === 0);
+check('assistant_turns counted', rows[5].assistant_turns === 2);
+check('cache_hit_pct derived', rows[5].cache_hit_pct === 95); // 2000 / (100+2000) = 95.2 -> 95
+
 // 4. Missing transcript: still records (gate=single, count 0), no crash.
 runHook({ transcript_path: path.join(tmp, 'missing.jsonl'), cwd: tmp, session_id: 's3', reason: 'logout' }, { MAESTRO_TELEMETRY: '1' });
 rows = readRows();
-check('missing transcript -> row with 0 agents', rows.length === 6 && rows[5].agent_count === 0);
+check('missing transcript -> row with 0 agents', rows.length === 7 && rows[6].agent_count === 0);
+check('missing transcript -> zero tokens, null cache_hit_pct', rows[6].input_tokens === 0 && rows[6].cache_hit_pct === null);
 
 // 5. Garbage stdin with opt-in: exit 0, no new row.
 runHook('not json', { MAESTRO_TELEMETRY: '1' });
-check('garbage stdin -> no crash, no row', readRows().length === 6);
+check('garbage stdin -> no crash, no row', readRows().length === 7);
 
 fs.rmSync(tmp, { recursive: true, force: true });
 

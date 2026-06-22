@@ -37,12 +37,14 @@ one-line reflex. No edits before the verdict. The `frontier` badge =
 engine state: `frontier on (<mode>/<preset-or-model>)` when armed, else
 `frontier off`; on Claude Code the gate-reminder hook injects it.
 
-Multi-agent triggers (ANY — check FIRST): 5+ files across 2+ concerns,
-independent subtasks, >15 messages single-agent, adversarial review,
-multiple skill domains. files>=5 across 2+ concerns is multi-agent by
-count — independent subtasks ARE the parallel benefit. A met trigger
-downgrades ONLY on >60% file overlap between subtasks, or <=3 files in
-one dependency chain. Nothing else.
+Multi-agent triggers (ANY — check FIRST): 5+ files across 2+ concerns
+with structurally independent subtasks, >15 messages single-agent,
+adversarial review, multiple skill domains. File count alone is NOT a
+trigger — 5+ files in one coherent or sequential change stay
+single-agent. Multi-agent must be earned by real parallelism, context
+isolation, or adversarial review; absent one of those, single-agent. A
+met trigger still downgrades on >60% file overlap between subtasks, or
+<=3 files in one dependency chain.
 
 Multi-agent is executed, not noted: immediately spawn the Planner as a
 real subagent via the Task/Agent tool, before any specialist work or
@@ -59,9 +61,7 @@ Single-agent fallback (<=3 tightly coupled files, sequential, no
 parallel benefit): execute via S7, skip S2-S6. Max 4 specialists per
 group; review and debate panels of 3 (odd, no ties); user override
 ("single agent" / "parallelize") wins; default single-agent when in
-doubt. Frontier-class orchestrators bias single-agent harder — only
-parallelism, context isolation, or adversarial review justify
-multi-agent.
+doubt. Frontier-class orchestrators bias single-agent harder still.
 
 ---
 
@@ -90,13 +90,12 @@ Both modes. In multi-agent, inject into every specialist.
 
 ### 7.0 Before code
 
-State load-bearing assumptions when ambiguous; list competing
-interpretations rather than silently picking one; propose the simpler
-alternative. Confusion: interactive — stop, name it, ask; autonomous —
-decide and record why (S10). No sycophancy — push back when warranted.
-A prompt referencing a file or artifact does not make it present or
-absent — verify on disk before acting or declining over it; never
-assert either unchecked.
+State assumptions only when genuinely ambiguous and load-bearing — name
+the competing reading, pick the simpler; skip the ceremony when intent
+is clear. Confusion: interactive — stop and ask; autonomous — decide,
+record why (S10). No sycophancy. A prompt referencing a file or artifact
+does not make it present or absent — verify on disk before acting or
+declining over it; never assert either unchecked.
 
 ### 7.1 Phase scope
 
@@ -122,9 +121,11 @@ trajectories do not.
 
 FORBIDDEN from reporting complete until the smallest relevant
 repo-defined checks pass — type-checker, linter, and tests from package
-scripts, Makefile/task runner, or CI (e.g. `npx tsc --noEmit` and
-`npx eslint . --quiet` in a TypeScript repo), ALL errors fixed. No
-runnable checker: state it and report UNVERIFIED with the exact gap.
+scripts, Makefile/task runner, or CI, ALL errors fixed; on Claude Code
+the verify-gate Stop hook surfaces this on Stop (warns by default; set
+MAESTRO_VERIFY_GATE=block to enforce) when files were modified but no
+checker ran and no honest token was stated. No runnable checker: state
+it and report UNVERIFIED with the exact gap.
 Bug fix or new behavior: reproduce first — failing test before the fix
 — success criteria as the exit condition, not a post-hoc check. Changes
 with no observable behavior (config, docs, types, formatting): state

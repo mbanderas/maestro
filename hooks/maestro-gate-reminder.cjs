@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Maestro UserPromptSubmit gate reminder. Soft, additive, fire-once.
 //
-// Injects the Decision Gate checklist (AGENTS.md S1) as additional
+// Injects a MINIMAL Decision Gate reminder (AGENTS.md S1) as additional
 // context on the FIRST user prompt of a session, so the gate survives
 // attention decay in long interactive sessions. Hooks inject context;
 // they cannot force a verdict or a spawn — this is a reminder, not an
@@ -9,9 +9,16 @@
 //
 // Fire-once: a marker file keyed by session_id under the OS temp dir.
 // Opt-out: MAESTRO_GATE_REMINDER=0 disables entirely.
-// The measured default includes the spawn imperative. A shorter
-// verdict-only variant was tested and removed after increasing turns
-// and cost in a 2026-06-12 smoke run.
+//
+// Cost: the full S1 spec (triggers, downgrade rule, spawn imperative)
+// already lives in cached doctrine — AGENTS.md S1 is in context every
+// turn at ~zero marginal cost. Re-emitting it here is uncached spend on
+// every fired prompt. So this reminder carries only what cached doctrine
+// cannot: the live frontier badge and a one-line nudge to emit the
+// verdict, with the parseable template the telemetry oracle keys on.
+// (A 2026-06-12 smoke run favored the verbose variant; that predates the
+// doctrine being reliably cached and is superseded by the 2026-06-22
+// overhead work. Behavior change — PENDING_REVIEW.)
 //
 // Payload fields verified against code.claude.com/docs/en/hooks
 // (UserPromptSubmit input: session_id, transcript_path, cwd, prompt;
@@ -40,19 +47,6 @@ const marker = path.join(
 if (fs.existsSync(marker)) process.exit(0);
 try { fs.writeFileSync(marker, '1'); } catch { /* still remind */ }
 
-const checklistLines = [
-  'Maestro Decision Gate (S1): engage the task first — this is a',
-  'reminder, not your opening move. Just BEFORE your first file edit',
-  '(once you know the real file count) output the counted verdict line',
-  '`Maestro · frontier <on|off> — files=<n> concerns=<m> -> single-agent | multi-agent — <reason>`.',
-  'files>=5 across 2+ concerns = multi-agent: spawn the Planner via the',
-  'Agent/Task tool BEFORE any edit. A met trigger downgrades ONLY on',
-  '>60% file overlap between subtasks or <=3 files total in one',
-  'dependency chain. Sub-trigger tasks stay single-agent. For obviously',
-  'single-agent work the verdict is a one-line reflex — do not lead',
-  'your response with it.'
-];
-
 // Inject the live frontier engine state so the badge in the verdict
 // line is accurate. Degrades to 'off' on any failure — never throws.
 let badge = 'off';
@@ -66,13 +60,19 @@ try {
     : ('on (' + st.mode + '/' + (st.preset || st.model || '') + ')');
 } catch { badge = 'off'; }
 
-const checklist = checklistLines.join('\n') +
-  '\nCurrent frontier state for the badge: frontier ' + badge;
+// Minimal reminder: live badge embedded in the verdict template (so it
+// is both the format the telemetry oracle parses and the current engine
+// state), plus a pointer to the cached full spec. Full S1 rules —
+// triggers, downgrade, spawn imperative — live in AGENTS.md, not here.
+const reminder =
+  'Maestro S1 gate: before your first edit, output the verdict line\n' +
+  '`Maestro · frontier ' + badge + ' — files=<n> concerns=<m> -> single-agent|multi-agent`.\n' +
+  'Full spec: AGENTS.md S1.';
 
 process.stdout.write(JSON.stringify({
   hookSpecificOutput: {
     hookEventName: 'UserPromptSubmit',
-    additionalContext: checklist,
+    additionalContext: reminder,
   },
 }));
 process.exit(0);

@@ -48,6 +48,9 @@ function cmdStatus(argv) {
     (cb.scriptConfirmed ? '' : '  [status-line script unconfirmed: ' + cb.dir + ']'));
   lines.push('  discipline   ' + (d.enabled ? 'on' : 'off') + '  (source: ' + d.source + ')' +
     (d.source === 'env' ? '  [MAESTRO_DISCIPLINE override active]' : ''));
+  const v = all.verify;
+  lines.push('  verify       ' + v.mode + '  (source: ' + v.source + ')' +
+    (v.source === 'env' ? '  [MAESTRO_VERIFY_GATE override active]' : ''));
   process.stdout.write(lines.join('\n') + '\n');
 }
 
@@ -63,6 +66,7 @@ function cmdList(argv) {
   lines.push('  terse        ' + c.terse.values.join(' | '));
   lines.push('  context-bar  ' + c.contextBar.values.join(' | '));
   lines.push('  discipline   ' + c.discipline.values.join(' | '));
+  lines.push('  verify       ' + c.verify.values.join(' | '));
   lines.push('  frontier     off | single:<model> | fusion:<preset>');
   lines.push('    models     ' + c.frontier.models.map(m => m.id + ' (' + m.label + ')').join(', '));
   lines.push('    presets');
@@ -81,7 +85,7 @@ function cmdSet(argv) {
   const key = argv[0];
   const value = argv[1];
   if (!key || value === undefined) {
-    process.stderr.write('Usage: settings set <terse|frontier|context-bar|discipline> <value>\n');
+    process.stderr.write('Usage: settings set <terse|frontier|context-bar|discipline|verify> <value>\n');
     process.exit(2);
   }
   const opts = {
@@ -114,6 +118,7 @@ function usageText() {
     '    frontier     <off | single:<model> | fusion:<preset>>\n' +
     '    context-bar  <on|off>\n' +
     '    discipline   <on|off>   (on/off the enforcement-hook pack; doctrine text stays loaded)\n' +
+    '    verify       <off|warn|block>   (S7.3 verify-gate Stop hook: warn=nudge (default), block=enforce, off=disable)\n' +
     '  --scope targets a frontier state; use codex-project/codex-workspace for Codex repo scope, or an explicit name such as codex-global for shared state\n'
   );
 }

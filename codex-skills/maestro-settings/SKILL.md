@@ -1,11 +1,12 @@
 ---
 name: maestro-settings
-description: View and change Maestro toggles (terse, frontier, context-bar, discipline) via the settings CLI
+description: View and change Maestro toggles (terse, frontier, context-bar, discipline, verify) via the settings CLI
 ---
 
 View or change **Maestro settings** for this project. The settings CLI manages
-four primary toggles: `terse`, `frontier`, `context-bar`, and `discipline`
-(the enforcement-hook pack; `off` silences it, the doctrine text stays loaded).
+five primary toggles: `terse`, `frontier`, `context-bar`, `discipline`
+(the enforcement-hook pack; `off` silences it, the doctrine text stays loaded),
+and `verify` (the S7.3 verify-gate Stop hook: `warn`/`block`/`off`).
 
 When the user invokes this skill, run the settings CLI from the repo root.
 Do not edit settings files by hand.
@@ -44,6 +45,7 @@ node settings/cli.cjs set terse <off|lite|full|ultra>
 node settings/cli.cjs set frontier <off|single:<model>|fusion:<preset>>
 node settings/cli.cjs set context-bar <on|off>
 node settings/cli.cjs set discipline <on|off>
+node settings/cli.cjs set verify <off|warn|block>
 ```
 
 If a subcommand name or argument differs from the above, follow the usage
