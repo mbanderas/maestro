@@ -139,6 +139,11 @@ check('stop_hook_active -> allow', runHook(payloadFor(f, { stop_hook_active: tru
 f = tx([bash('echo data > out.txt'), say('wrote the file')]);
 check('bash mutation + no-check + no-token -> block', isBlock(runHook(payloadFor(f), BLOCK)));
 
+// 11b. read-only commands using 2>/dev/null are NOT mutations -> ALLOW even
+//      armed (the redirect target /dev/null writes nothing).
+f = tx([bash('git status 2>/dev/null'), bash('ls -la 2>/dev/null'), say('just looking')]);
+check('2>/dev/null read-only + no token -> allow (not a mutation)', runHook(payloadFor(f), BLOCK) === '');
+
 // 12. frontier subprocess -> ALLOW (read-only panel/judge/synth, not a loop).
 f = tx([edit, say('done')]);
 check('frontier subprocess exempt -> allow', runHook(payloadFor(f), { MAESTRO_FRONTIER_RUN_ID: 'run-x' }) === '');

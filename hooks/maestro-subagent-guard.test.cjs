@@ -90,6 +90,14 @@ const arrowProseTx = transcript('arrow-prose.jsonl', [
   { type: 'assistant', message: { content: [{ type: 'text', text: 'Flow: A -> B -> C. Mapping X => Y. Research done.' }] } }
 ]);
 
+// A read-only agent that silences stderr with 2>/dev/null must not be
+// misread as a writer: /dev/null is not a file mutation.
+const devNullReadTx = transcript('devnull-read.jsonl', [
+  { type: 'assistant', message: { content: [{ type: 'tool_use', name: 'Bash', input: { command: 'git status 2>/dev/null' } }] } },
+  { type: 'assistant', message: { content: [{ type: 'tool_use', name: 'Bash', input: { command: 'ls -la 2>/dev/null' } }] } },
+  { type: 'assistant', message: { content: [{ type: 'text', text: 'Inspected the tree. Research done.' }] } }
+]);
+
 const spawnerTx = transcript('spawner.jsonl', [
   { type: 'assistant', message: { content: [{ type: 'tool_use', name: 'Bash', input: { command: 'npm run watch', run_in_background: true } }] } },
   { type: 'assistant', message: { content: [{ type: 'text', text: 'Watcher started, report ready.' }] } }
@@ -167,6 +175,11 @@ check('bash npm-install writer without verify -> warns', out.includes('No type-c
 // 5e. Arrows in prose / read-only bash: still exempt (no false positive).
 out = runHook({ agent_transcript_path: arrowProseTx });
 check('arrow prose + read-only bash -> silent', out === '');
+
+// 5f. Read-only bash using 2>/dev/null: exempt (the redirect target writes
+//     nothing, so it is not a mutation).
+out = runHook({ agent_transcript_path: devNullReadTx });
+check('2>/dev/null read-only bash -> silent', out === '');
 
 // 6. Fire once: marker already in transcript -> silent, no loop.
 out = runHook({ agent_transcript_path: alreadyWarnedTx });

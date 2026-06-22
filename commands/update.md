@@ -56,4 +56,7 @@ Notes:
   always a safe fallback.
 - Do NOT tell the user to run `/plugin update maestro` — that command does not
   exist in Claude Code.
+- If step 2 errors (zip install with no `.git`, exit 128), do NOT go hunting
+  through the plugin cache with `ls`/`cat`/`grep`/`find` — just skip it and
+  report the marketplace-published version. Step 1 succeeding is the update.
 - Do not edit any files.

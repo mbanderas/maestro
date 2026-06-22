@@ -5,6 +5,7 @@
 
 const { execFileSync } = require('child_process');
 const fs = require('fs');
+const os = require('os');
 const path = require('path');
 
 // Hermetic child env: strip session-injected scope/recursion signals so the
@@ -20,6 +21,15 @@ for (const k of [
   'CLAUDE_PLUGIN_ROOT', 'CLAUDECODE',
   'PLUGIN_ROOT', 'PLUGIN_DATA',
 ]) delete childEnv[k];
+
+// Isolate the maestro config dir so no suite reads or writes the user's real
+// frontier state / settings. Without this, a host-armed scope leaks in: e.g.
+// with session signals stripped above, resolveScope() collapses to 'default',
+// and a host 'default' armed to fusion makes the gate-reminder badge (and its
+// byte-size assertion) nondeterministic. configDir() honors XDG_CONFIG_HOME
+// first on every platform (frontier/config.cjs), so this redirects all state
+// I/O into a throwaway dir. Suites that set their own XDG_CONFIG_HOME still win.
+childEnv.XDG_CONFIG_HOME = fs.mkdtempSync(path.join(os.tmpdir(), 'maestro-test-cfg-'));
 
 let failed = 0;
 

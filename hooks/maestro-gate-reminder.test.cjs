@@ -9,11 +9,17 @@ const path = require('path');
 
 const HOOK = path.join(__dirname, 'maestro-gate-reminder.cjs');
 
+// Isolate the maestro config dir so the live frontier badge is computed
+// against an empty state (badge 'off'), not the host's real armed scope --
+// otherwise the byte-size assertion below depends on host state. configDir()
+// honors XDG_CONFIG_HOME first on every platform (frontier/config.cjs).
+const CFG = fs.mkdtempSync(path.join(os.tmpdir(), 'gate-reminder-cfg-'));
+
 function runHook(payload, env) {
   return execFileSync(process.execPath, [HOOK], {
     input: typeof payload === 'string' ? payload : JSON.stringify(payload),
     encoding: 'utf8',
-    env: { ...process.env, ...env }
+    env: { ...process.env, XDG_CONFIG_HOME: CFG, ...env }
   });
 }
 

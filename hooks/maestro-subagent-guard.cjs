@@ -89,7 +89,11 @@ if (active.length && spawnRe.test(txText)) {
 const READ_ONLY_TYPES = new Set(['explore', 'plan']);
 const agentType = String(data.agent_type || '').toLowerCase();
 const toolMutRe = /"name"\s*:\s*"(Edit|Write|NotebookEdit)"/;
-const bashMutRe = /(?<![-=<>])>{1,2}\s*[^\s&|<>]|(^|[\s;&|(])(sed\s+(-\S+\s+)*-i|tee\s|mv\s|cp\s|rm\s|mkdir\s|touch\s|git\s+(commit|apply)\b|apply_migration|(npm|pnpm|yarn)\s+(i|install|add)\b)/;
+// A redirect to /dev/null writes nothing -- `2>/dev/null`, `>/dev/null`,
+// `&>/dev/null` are read-only idioms, so the lookahead excludes them (a
+// research agent running `git status 2>/dev/null` must not read as a
+// writer); a redirect to any real path still signals a file mutation.
+const bashMutRe = /(?<![-=<>])>{1,2}\s*(?!\/dev\/null)[^\s&|<>]|(^|[\s;&|(])(sed\s+(-\S+\s+)*-i|tee\s|mv\s|cp\s|rm\s|mkdir\s|touch\s|git\s+(commit|apply)\b|apply_migration|(npm|pnpm|yarn)\s+(i|install|add)\b)/;
 let bashMutation = false;
 for (const line of txText.split(/\r?\n/)) {
   let obj;
