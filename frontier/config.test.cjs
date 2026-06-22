@@ -138,6 +138,60 @@ async function main() {
     check('explicit synth override', resolveSynthModel(st, DEFAULTS) === 'gemini');
   }
 
+  // (l) analysis-driven (task-matched) synth selection — opt-in via
+  //     cfg.analysisSynthSelect; default OFF preserves the fixed default.
+  {
+    const hinted = { consensus: [], contradictions: [], partial_coverage: [],
+      unique_insights: [], blind_spots: [], synth_hint: 'gpt-5.5' };
+    const onCfg = { ...DEFAULTS, analysisSynthSelect: true };
+    check('analysis-select OFF -> default opus',
+      resolveSynthModel({ preset: 'opus-gpt' }, DEFAULTS, hinted) === 'opus');
+    check('analysis-select ON -> hint gpt-5.5',
+      resolveSynthModel({ preset: 'opus-gpt' }, onCfg, hinted) === 'gpt-5.5');
+    check('analysis-select ON unknown hint -> default opus',
+      resolveSynthModel({ preset: 'opus-gpt' }, onCfg,
+        { ...hinted, synth_hint: 'no-such-model' }) === 'opus');
+    check('explicit synth beats analysis hint',
+      resolveSynthModel({ preset: 'opus-gpt', synthModel: 'gemini' }, onCfg, hinted) === 'gemini');
+    check('preset stage override beats analysis hint',
+      resolveSynthModel({ preset: 'gpt-duo' }, onCfg,
+        { ...hinted, synth_hint: 'gemini' }) === 'gpt-5.5');
+    check('judge ignores analysis param',
+      resolveJudgeModel({ preset: 'opus-gpt' }, onCfg) === 'opus');
+  }
+
+  // (m) per-step adaptive routing — opt-in dated stage-affinity table
+  //     (cfg.perStepRouting). Each stage re-resolves from the table; default
+  //     OFF preserves behavior. Ranks below explicit/preset/analysis-hint.
+  {
+    const aff = { ...DEFAULTS, perStepRouting: true,
+      stageAffinity: { judge: 'gemini', synth: 'gpt-5.5' } };
+    const off = { ...DEFAULTS,
+      stageAffinity: { judge: 'gemini', synth: 'gpt-5.5' } };
+    check('per-step OFF -> judge default opus',
+      resolveJudgeModel({ preset: 'opus-gpt' }, off) === 'opus');
+    check('per-step OFF -> synth default opus',
+      resolveSynthModel({ preset: 'opus-gpt' }, off) === 'opus');
+    check('per-step ON -> judge gemini',
+      resolveJudgeModel({ preset: 'opus-gpt' }, aff) === 'gemini');
+    check('per-step ON -> synth gpt-5.5',
+      resolveSynthModel({ preset: 'opus-gpt' }, aff) === 'gpt-5.5');
+    check('explicit beats affinity',
+      resolveSynthModel({ preset: 'opus-gpt', synthModel: 'opus' }, aff) === 'opus');
+    check('preset override beats affinity',
+      resolveJudgeModel({ preset: 'gpt-duo' }, aff) === 'gpt-5.5');
+    {
+      const both = { ...aff, analysisSynthSelect: true };
+      const an = { consensus: [], contradictions: [], partial_coverage: [],
+        unique_insights: [], blind_spots: [], synth_hint: 'opus' };
+      check('analysis hint beats affinity for synth',
+        resolveSynthModel({ preset: 'opus-gpt' }, both, an) === 'opus');
+    }
+    check('unknown affinity -> default opus',
+      resolveJudgeModel({ preset: 'opus-gpt' },
+        { ...DEFAULTS, perStepRouting: true, stageAffinity: { judge: 'no-such' } }) === 'opus');
+  }
+
   // ----------------------------------------------------------------
   // NEW CASES: scope isolation, path, migration, resolveScope.
   // Each case controls MAESTRO_SCOPE, CLAUDE_PLUGIN_ROOT, CLAUDECODE

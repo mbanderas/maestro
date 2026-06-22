@@ -359,6 +359,22 @@ const DEFAULTS = {
   },
   judgeModel: 'opus',
   synthModel: 'opus',
+  // Opt-in (default OFF = fixed synthesizer). When true, the synth stage may be
+  // re-assigned to a task-matched model named by the analysis (Analysis.synth_hint),
+  // ranking just above the global default — see resolveStageModel.
+  analysisSynthSelect: false,
+  // Per-step adaptive routing (opt-in, default OFF = routing locked to preset/default).
+  // When true, each pipeline stage (judge, synth) re-resolves its model from the dated
+  // stage-affinity table below — a HINT, not a rule. Ranks below explicit flags, preset
+  // overrides, and the analysis synth-hint; above the global default.
+  perStepRouting: false,
+  // Dated capability-affinity hints (2026-06; EDIT FREELY — these rot at model releases).
+  // Stage -> preferred model; null = no hint (fall through). Hint only, never a rule.
+  stageAffinity: { judge: null, synth: null },
+  // Opt-in (default OFF). When true, a scored dead-end (judge.isDeadEnd) escalates to a
+  // FRESH adapter given a clean-slate reframing brief — a different perspective, not a
+  // same-agent retry — before the passive longest-response fallback. See run.cjs.
+  deadEndEscalation: false,
   concurrency: 4,
   timeoutMs: 180000,
   // tokenBudget=0 means budget abort DISABLED (opt-in).
@@ -399,17 +415,32 @@ function resolvePanel(state, cfg) {
 /**
  * Resolve the judge or synth model for a fusion state. Precedence:
  * explicit flag (state.judgeModel/synthModel) -> per-preset override
- * (cfg.presetStages) -> global default (cfg.judgeModel/synthModel).
+ * (cfg.presetStages) -> task-matched analysis hint (synth only, opt-in via
+ * cfg.analysisSynthSelect) -> per-step stage-affinity hint (opt-in via
+ * cfg.perStepRouting) -> global default (cfg.judgeModel/synthModel).
  * @param {'judge'|'synth'} stage
  * @param {object} state
  * @param {typeof DEFAULTS} cfg
+ * @param {import('./schema.cjs').Analysis} [analysis] synth-stage task crux
  * @returns {string}
  */
-function resolveStageModel(stage, state, cfg) {
+function resolveStageModel(stage, state, cfg, analysis) {
   const explicit = stage === 'judge' ? state.judgeModel : state.synthModel;
   if (explicit) return explicit;
   const ps = cfg.presetStages && cfg.presetStages[state.preset];
   if (ps && ps[stage]) return ps[stage];
+  if (stage === 'synth' && cfg.analysisSynthSelect && analysis &&
+      typeof analysis.synth_hint === 'string' &&
+      Object.prototype.hasOwnProperty.call(cfg.adapters, analysis.synth_hint)) {
+    return analysis.synth_hint;
+  }
+  if (cfg.perStepRouting && cfg.stageAffinity) {
+    const hint = cfg.stageAffinity[stage];
+    if (typeof hint === 'string' &&
+        Object.prototype.hasOwnProperty.call(cfg.adapters, hint)) {
+      return hint;
+    }
+  }
   return stage === 'judge' ? cfg.judgeModel : cfg.synthModel;
 }
 
@@ -418,9 +449,9 @@ function resolveJudgeModel(state, cfg) {
   return resolveStageModel('judge', state, cfg);
 }
 
-/** @param {object} state @param {typeof DEFAULTS} cfg @returns {string} */
-function resolveSynthModel(state, cfg) {
-  return resolveStageModel('synth', state, cfg);
+/** @param {object} state @param {typeof DEFAULTS} cfg @param {import('./schema.cjs').Analysis} [analysis] @returns {string} */
+function resolveSynthModel(state, cfg, analysis) {
+  return resolveStageModel('synth', state, cfg, analysis);
 }
 
 /** @param {string} m @returns {boolean} */

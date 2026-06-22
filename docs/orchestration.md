@@ -26,6 +26,11 @@ it.
   for parallel workstreams.
 - How to split (and whether a split is too homogeneous) is the
   Planner's call (S2), made after the spawn, never the gate's.
+- Topology hint (S1): knowledge-heavy / ambiguous -> parallel
+  independent attempts feeding a task-matched synthesis (tree shape,
+  best-of-N); build-debug coding -> sequential builder/skeptic
+  alternation. Coarse hint for the Planner's split, not binding;
+  complements the panels-of-3.
 
 ---
 
@@ -59,15 +64,24 @@ injected). ROLE = procedural workflow (step sequence + acceptance
 criteria), never a bare job title, identity labels alone don't
 change behavior.
 
-No conversation history, other tasks, full plan, or unrelated
-context. Isolation is the advantage. Out of scope: report and stop.
+A specialist receives only declared upstream OUTPUT artifacts — listed
+explicitly in UPSTREAM as an access list — never another specialist's
+reasoning trajectory, working transcript, or full plan. This is
+anti-anchoring, not only token economy: handed a prior agent's full
+trajectory, the next agent's solution space collapses onto that path
+(orchestration collapse) — redundant work that kills the diversity
+fanning out exists to create. No conversation history, other tasks, or
+unrelated context. Isolation is the advantage. Out of scope: report and
+stop.
 
 ---
 
 ## 4. Cross-Talk [MULTI-AGENT]
 
 After each group: check if A modified B's files, changed B's
-interfaces, invalidated B's assumptions, or produced B's inputs.
+interfaces, invalidated B's assumptions, or produced B's inputs; and
+verify no specialist was handed another's working trajectory — only
+declared OUTPUT artifacts may cross between peers (anti-collapse).
 
 Route minimum context from A to B. If B completed, spawn correction
 agent. Orchestrator: spawn, sequence, detect, route, deliver. Never
@@ -77,7 +91,16 @@ plan, code, review, or do specialist work.
 
 ## 5. Staff Engineer [MULTI-AGENT]
 
-Final sub-agent. Reviews integrated output.
+Final sub-agent, and the fixed **verification gate**: domain-agnostic
+PASS/FAIL on the integrated output (does it meet requirements + checks)
+— not the synthesizer. This seat stays fixed because verification is
+domain-agnostic.
+
+Synthesis/aggregation — merging parallel specialist outputs into the
+delivered answer — is a SEPARATE role, assigned to the specialist whose
+domain owns the task crux, never pinned to the gate's fixed seat: a
+fixed aggregator ceilings quality on tasks outside its expertise
+(fixed-aggregator bottleneck).
 
 Packet: changed files + diffs, objective, decisions, risks,
 questions. Expand for: core architecture, security, central
@@ -113,7 +136,9 @@ ties), each prompted to refute, not confirm.
 ## 9. Model Routing: full table
 
 Pick the cheapest model that handles the task. Orchestrator decides
-at spawn time; Planner (S2) assigns per subtask.
+at spawn time; Planner (S2) assigns per subtask. Routing is per-step,
+not locked per-task: re-evaluate at phase boundaries and named critical
+junctures (failing check, merge conflict, build->debug, dead-end -> S7.3).
 
 | Tier | When | Examples |
 |------|------|----------|

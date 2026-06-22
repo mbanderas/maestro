@@ -49,6 +49,34 @@ function normalizeStateAliases(state) {
 }
 
 /**
+ * Clean-slate reframing brief for dead-end escalation: carries ONLY the
+ * question and a fresh-perspective cue — never the panel's reasoning — so the
+ * fresh adapter is not anchored onto the stuck path (anti-anchoring).
+ * @param {string} userPrompt @returns {string}
+ */
+function buildReframeBrief(userPrompt) {
+  return `Prior attempts reached a dead-end. Approach this with a COMPLETELY FRESH
+perspective — do NOT assume their framing; reframe the problem if needed.
+
+QUESTION:
+${userPrompt}
+
+Give your best direct answer as clear prose.`;
+}
+
+/**
+ * Pick a fresh adapter for escalation: any known adapter other than the
+ * dead-ended synth model, preferring one outside the panel (a genuinely
+ * different perspective). Returns null if none available.
+ * @param {object} cfg @param {string[]} panelIds @param {string} synthModel
+ * @returns {string|null}
+ */
+function pickFreshAdapter(cfg, panelIds, synthModel) {
+  const ids = Object.keys((cfg && cfg.adapters) || {}).filter(m => m !== synthModel);
+  return ids.find(m => !panelIds.includes(m)) || ids[0] || null;
+}
+
+/**
  * Ensure a stable per-run coordination id is present in the environment and
  * return it. Generated once per top-level run; a nested invocation (or a
  * child spawned with this env) inherits the parent's id unchanged. spawnOne
@@ -205,8 +233,29 @@ async function runFrontier({ prompt, state, cfg, deps }) {
     };
     emit({ phase: 'judge-start', model: stageCfg.judgeModel });
     const analysis = await runJudge(prompt, ok, stageCfg);
-    emit({ phase: 'synth-start', model: stageCfg.synthModel });
-    let final = await runSynth(prompt, { analysis, responses: ok }, stageCfg);
+    // Task-matched synthesizer: re-resolve now the analysis crux is known
+    // (opt-in via cfg.analysisSynthSelect; default keeps stageCfg.synthModel).
+    const synthModel = resolveSynthModel(state, cfg, analysis);
+    emit({ phase: 'synth-start', model: synthModel });
+    let final = await runSynth(prompt, { analysis, responses: ok }, { ...stageCfg, synthModel });
+
+    // Dead-end escalation (opt-in): a scored dead-end gets a clean-slate
+    // re-examination by a FRESH perspective, not a same-agent retry.
+    let escalated = false;
+    let escalationModel = null;
+    if (cfg.deadEndEscalation && judge.isDeadEnd(analysis)) {
+      escalationModel = pickFreshAdapter(cfg, panelIds, synthModel);
+      if (escalationModel) {
+        emit({ phase: 'escalate-start', model: escalationModel });
+        let er;
+        try {
+          er = await spawnOne(buildReframeBrief(prompt), cfg.adapters[escalationModel],
+            { timeoutMs: cfg.timeoutMs, fusionDepth: depth + 1 });
+        } catch { er = null; }
+        if (er && er.ok && er.content) { final = er.content; escalated = true; }
+      }
+    }
+
     if (!final) {
       // synth-fail fallback: longest ok response
       final = ok.reduce((a, b) => b.content.length > a.content.length ? b : a).content;
@@ -219,6 +268,7 @@ async function runFrontier({ prompt, state, cfg, deps }) {
 
     const result = { status: 'ok', mode: 'fusion', preset: state.preset, final, responses: ok };
     if (analysis !== undefined) result.analysis = analysis;
+    if (escalated) { result.escalated = true; result.escalation_model = escalationModel; }
     if (failed.length) result.failed_models = failed.map(toFailedModel);
     return result;
   }

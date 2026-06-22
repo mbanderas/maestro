@@ -7,7 +7,7 @@
 /**
  * @typedef {{ model:string, content:string, ok:boolean, durationMs:number, tokensEst:number, toolCalls?:unknown[], error?:string }} PanelResponse
  * @typedef {{ model:string, reason:string }} FailedModel
- * @typedef {{ consensus:string[], contradictions:{topic:string,stances:{model:string,stance:string}[]}[], partial_coverage:{models:string[],point:string}[], unique_insights:{model:string,insight:string}[], blind_spots:string[] }} Analysis
+ * @typedef {{ consensus:string[], contradictions:{topic:string,stances:{model:string,stance:string}[]}[], partial_coverage:{models:string[],point:string}[], unique_insights:{model:string,insight:string}[], blind_spots:string[], synth_hint?:string }} Analysis
  */
 
 /** @type {string[]} */
@@ -52,6 +52,7 @@ function isAnalysis(x) {
   if (!o.partial_coverage.every(e => e !== null && typeof e === 'object')) return false;
   if (!Array.isArray(o.unique_insights)) return false;
   if (!o.unique_insights.every(e => e !== null && typeof e === 'object')) return false;
+  if (o.synth_hint !== undefined && typeof o.synth_hint !== 'string') return false;
   return true;
 }
 
