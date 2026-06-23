@@ -5,3 +5,7 @@ _*
 scripts/downstream.txt
 
 .npmrc
+
+# Self-hosted GitHub Actions runner (do not commit)
+/actions-runner/
+.github/workflows/*.bak

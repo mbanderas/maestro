@@ -9,7 +9,7 @@ on:
 
 jobs:
   publish:
-    runs-on: ubuntu-latest
+    runs-on: ${{ vars.HOME_CI == 'true' && fromJSON('["self-hosted", "windows", "x64", "home-ci"]') || 'ubuntu-latest' }}
     permissions:
       contents: read
       id-token: write   # npm provenance
