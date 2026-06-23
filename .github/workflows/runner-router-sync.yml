@@ -1,0 +1,64 @@
+name: Runner Router Sync
+
+# Auto-routes each repo's CI between the home Windows self-hosted runner and
+# GitHub-hosted runners with zero manual toggling.
+#
+# Every 10 min (and on demand) this queries each repo's self-hosted runners
+# API and sets that repo's Actions variable HOME_CI to:
+#   'true'  -> >=1 home runner online  -> jobs run on the home PC
+#   'false' -> no runner online        -> jobs fall back to GitHub-hosted
+# Workflows read HOME_CI in their runs-on conditional.
+#
+# Deployed to mbanderas/maestro (PUBLIC -> Actions minutes are free).
+# Canonical copy kept in C:\Users\mail\Workspaces\Github-Local-Runners\.
+
+on:
+  schedule:
+    - cron: '*/10 * * * *'   # GitHub cron granularity is ~10 min; allow up to that after boot
+  workflow_dispatch:          # "Run workflow" button forces an immediate sync
+
+permissions: {}               # default GITHUB_TOKEN unused; all calls use RUNNER_SYNC_PAT
+
+concurrency:
+  group: runner-router-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.RUNNER_SYNC_PAT }}
+      OWNER: mbanderas
+    steps:
+      - name: Sync HOME_CI to home-runner availability
+        run: |
+          set -euo pipefail
+          repos=(
+            speak-like-a-local
+            govyn-cloud
+            maestro
+            gameframe-v2
+            savepoint-v2
+            founderOS
+            costguard
+            Brainjuice-UnrealMCP
+          )
+          fail=0
+          for repo in "${repos[@]}"; do
+            online=$(gh api "repos/$OWNER/$repo/actions/runners" \
+              --jq '[.runners[] | select(.status=="online")] | length' 2>/dev/null || echo err)
+            if [ "$online" = err ]; then
+              echo "::warning::$repo: runners API failed (PAT missing Administration:Read here?)"
+              fail=1
+              continue
+            fi
+            if [ "$online" -ge 1 ]; then desired=true; else desired=false; fi
+            current=$(gh api "repos/$OWNER/$repo/actions/variables/HOME_CI" --jq '.value' 2>/dev/null || echo "")
+            if [ "$current" = "$desired" ]; then
+              echo "  $repo: HOME_CI=$desired (online=$online) unchanged"
+            else
+              gh variable set HOME_CI --repo "$OWNER/$repo" --body "$desired"
+              echo "  $repo: HOME_CI ${current:-unset} -> $desired (online=$online)"
+            fi
+          done
+          exit $fail
