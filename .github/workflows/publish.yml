@@ -22,15 +22,7 @@ jobs:
           registry-url: 'https://registry.npmjs.org'
 
       - name: Tag matches package.json version
-        shell: bash
-        run: |
-          tag="${GITHUB_REF_NAME#v}"
-          pkg="$(node -p "require('./package.json').version")"
-          if [ "$tag" != "$pkg" ]; then
-            echo "FAIL tag v$tag != package.json $pkg" >&2
-            exit 1
-          fi
-          echo "version $pkg matches tag"
+        run: node scripts/check-release-tag.cjs
 
       - name: Tests
         run: npm test
