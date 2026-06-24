@@ -1,0 +1,12 @@
+name: Home Runner Smoke
+on:
+  workflow_dispatch:
+permissions: {}
+jobs:
+  smoke:
+    runs-on: ${{ vars.HOME_CI == 'true' && fromJSON('["self-hosted","windows","x64","home-ci"]') || 'ubuntu-latest' }}
+    steps:
+      - shell: pwsh
+        run: |
+          "runner.name=$env:RUNNER_NAME"
+          "runner.os=$env:RUNNER_OS"
