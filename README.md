@@ -148,6 +148,14 @@ members — fusing the CLIs you already run buys frontier-tier results. It
 is the project's new default identity; the doctrine, hooks, skills, and
 benchmarks are unchanged; the discipline layer is its foundation.
 
+<p align="center">
+  <img src="assets/frontier-fusion-benchmark.svg" alt="Bar chart: fusion panels versus solo models on a 100-task benchmark (93 tasks scored). Every fusion panel outscores its individual member models; an Opus 4.8 self-fusion (double Opus) reaches ~65.5%, matching Claude Fable 5 solo, while the strongest fusion, Fable 5 + GPT-5.5, tops the field at ~69% and solo Gemini 3.1 Pro and Gemini 3 Flash trail near 43-45%." width="880">
+</p>
+
+<p align="center">
+  <sub>Fusion vs solo on a 100-task suite (93 scored). Every fusion panel beats its own member models, and the strongest fusion — Fable 5 + GPT-5.5 — leads the field. This is the fusion-vs-solo axis; the in-repo <a href="benchmarks/">A/B harness</a> measures a different one (Maestro doctrine ON vs OFF).</sub>
+</p>
+
 It ships with the native plugins. Claude Code drives it with
 `/maestro:frontier`, Codex drives it with the `maestro-frontier` skill, and
 other CLIs can use `maestro frontier ...` or the `node bin/maestro.cjs
@@ -156,6 +164,10 @@ so installing or upgrading changes nothing until you opt in. **Arming it —
 `single` or `fusion` — makes it auto-run on every prompt**: a
 `UserPromptSubmit` hook routes each prompt through the engine and the live
 session relays the synthesized answer. `off` is the disable path.
+
+<p align="center">
+  <img src="assets/frontier-pipeline.svg" alt="Maestro Frontier fusion pipeline: prompt fans out to a parallel panel of local CLIs, a chosen judge model produces structured analysis (consensus, contradictions, unique insights, blind spots), then a chosen synthesizer model writes a grounded response" width="900">
+</p>
 
 | Mode | Behavior |
 |---|---|
@@ -176,6 +188,10 @@ Claude Code examples:
 In Codex, ask the bundled `maestro-frontier` skill for the same status,
 single, fusion, run, or off operation; it resolves the plugin-bundled engine
 when the bare `maestro` command is not on `PATH`.
+
+<p align="center">
+  <img src="assets/frontier-presets.svg" width="820" alt="Maestro Frontier fusion presets reference card">
+</p>
 
 Presets define the panel; the judge and synthesizer default to Opus 4.8
 (`claude -p`), and you override either with `--judge` / `--synth`:
@@ -218,7 +234,15 @@ CommonJS under [`frontier/`](frontier/); each CLI is resolved from your
 operational reference are in
 [`commands/frontier.md`](commands/frontier.md#binary-overrides).
 
+<p align="center">
+  <img src="assets/frontier-stack.svg" alt="Maestro Frontier fusion engine sitting on the discipline layer foundation; an amber data-flow connects the two" width="820">
+</p>
+
 ## What You Get
+
+<p align="center">
+  <img src="assets/what-you-get.svg" width="860" alt="What Maestro gives you: five capabilities on a dark card">
+</p>
 
 Frontier is the headline; the discipline layer beneath it is what runs on
 every task. Drop two markdown files into your repo and your agent gains
@@ -230,14 +254,30 @@ five things:
 4. **Multi-agent only when it pays.** A counted Decision Gate routes work single-agent by default and demands an explicit verdict line before the first edit; orchestration stays behind it.
 5. **Receipts.** A reproducible A/B benchmark harness ships in-repo, with our own retractions and nulls. Rerun every number yourself.
 
-The price, measured rather than implied: ON spends about 10% more than a
-clean agent on a 10-module refactor and 38% more on a 16-file feature
-(n=9 medians, t08/t12); you are buying verification and auditability, not
-speed. The premium earns its keep on unattended work (overnight loops,
-scheduled runs, CI agents) where nobody reads the 3am transcript and the
-close-out claim is all you have.
+<p align="center">
+  <img src="assets/discipline-demo.svg" alt="Two terminal close-outs quoted verbatim from benchmark streams: a baseline agent declares all done although no check ran, while the Maestro run opens with a counted GATE verdict line and exits with the honest status UNVERIFIED, no type-checker or linter configured in this project" width="860">
+</p>
+
+The price, measured rather than implied, is token overhead — not a speed
+tax. The discipline layer reloads a ~10 KB kernel each turn and runs a few
+more turns, so it spends more tokens; output volume barely moves (~+5%
+out-tokens at n=9), the overhead sits in context and turns. What that
+means depends on how you run it: on a flat CLI subscription it draws a
+little more of your token allowance; metered through an API it is a few
+more cents per run. The typical overhead is small — about +10% on a
+10-file refactor (t08, n=9 medians); heavier multi-concern tasks cost
+more, with the full per-cell numbers, the chart below, and the retractions
+in [`docs/benchmarks.md`](docs/benchmarks.md). You are buying verification,
+auditability, and honest status, not speed — and it earns its keep on
+unattended work (overnight loops, scheduled runs, CI agents) where nobody
+reads the 3am transcript and a wrong "all done" costs far more than the
+tokens.
 
 ## Discipline, Benchmarks, and Research
+
+<p align="center">
+  <img src="assets/maestro-flow.svg" alt="Maestro orchestration flow: task through the S1 decision gate to either a single agent or the planner, specialist group, and staff engineer pipeline, converging on verified delivery" width="780">
+</p>
 
 The discipline layer (verification, scope, honest status) applies to
 every task, fusion or not. The full orchestration protocol lives in
@@ -251,6 +291,14 @@ grounded in 700+ sources; the key driver is that
 [79% of multi-agent failures come from coordination, not model
 capability](https://marklaursen.com/blog/why-your-multi-agent-ai-system-keeps-failing),
 and that three optimized agents outperform seven.
+
+<p align="center">
+  <img src="assets/bench-cells.svg" alt="Bar chart of median cost per task-run for t07 to t10 and t12 with doctrine off, on, and core variant; pass rates per cell shown beneath each group" width="860">
+</p>
+
+<p align="center">
+  <img src="assets/loop-lifecycle.svg" alt="Loop engineering lifecycle: read checkpoint, re-anchor goal, execute phase, verify with a fresh-context verifier grading the exit, write checkpoint distilling findings into rules, event or wakeup, exiting to a final report on success or hard cap" width="440">
+</p>
 
 ## Runtime Adapters
 

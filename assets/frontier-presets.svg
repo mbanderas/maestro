@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 820 240" role="img" aria-labelledby="t d">
   <title id="t">Maestro Frontier fusion presets</title>
-  <desc id="d">A dark reference card listing the five Maestro Frontier fusion presets: opus-duo, opus-gpt, gpt-duo (amber-highlighted as the Codex-only option), frontier-trio, and custom. Each row shows the preset name, panel composition, and judge plus synthesis model.</desc>
+  <desc id="d">A dark reference card listing the five Maestro Frontier fusion presets: opus-duo, opus-gpt, chatgpt-duo (amber-highlighted as the Codex-only option), frontier-trio, and custom. Each row shows the preset name, panel composition, and judge plus synthesis model.</desc>
   <style>
     .bg    { fill: #0a0a0c; }
     .lbl   { font: 600 13px ui-monospace, SFMono-Regular, Consolas, monospace; fill: #f0f0f4; }
@@ -55,9 +55,9 @@
   <text class="cell" x="552" y="98" dominant-baseline="middle">Opus 4.8</text>
   <line class="divider" x1="24" y1="118" x2="796" y2="118"/>
 
-  <!-- ── ROW 3: gpt-duo (amber highlight) ── y-band 118..158 -->
+  <!-- ── ROW 3: chatgpt-duo (amber highlight) ── y-band 118..158 -->
   <rect class="row-amb" x="1" y="119" width="818" height="38" rx="0"/>
-  <text class="amb-c" x="36" y="138" dominant-baseline="middle">gpt-duo</text>
+  <text class="amb-c" x="36" y="138" dominant-baseline="middle">chatgpt-duo</text>
   <text class="amb-c" x="222" y="138" dominant-baseline="middle">GPT-5.5 ×2</text>
   <text class="amb-c" x="552" y="138" dominant-baseline="middle">GPT-5.5</text>
   <line class="divider" x1="24" y1="158" x2="796" y2="158"/>
