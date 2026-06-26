@@ -303,11 +303,25 @@ function adoptLegacyState(scope, opts) {
 // ---------- DEFAULTS ----------
 
 const DEFAULTS = {
+  // READ-ONLY PANEL INVARIANT (load-bearing): a panel/judge/synth member's
+  // ONLY consumed output is its stdout text (run.cjs fuses text, never
+  // filesystem changes). So every adapter MUST spawn read-only — any file
+  // write or shell mutation a member makes is unconsumed side-effect that
+  // races the host session. This is the documented contract in
+  // commands/frontier.md "Concurrency" and runlock.cjs; these flags ENFORCE
+  // it. Do NOT restore a write/bypass flag (--dangerously-skip-permissions,
+  // --dangerously-bypass-approvals-and-sandbox, --approval-mode yolo): that
+  // turns each member into a rogue parallel write-loop on an agentic prompt
+  // (the S10-forbidden "loops never spawn loops" state). Each mode below is
+  // the per-CLI read-only-but-non-interactive setting:
+  //   claude  --permission-mode plan        (reads + read-only shell, no edits)
+  //   codex   --sandbox read-only + --ask-for-approval never (default sandbox)
+  //   gemini  --approval-mode plan          (read-only tool mode)
   adapters: {
     opus: {
       model: 'opus',
       bin: process.env.MAESTRO_CLAUDE_BIN || 'claude',
-      baseArgs: ['-p', '--output-format', 'json', '--dangerously-skip-permissions'],
+      baseArgs: ['-p', '--output-format', 'json', '--permission-mode', 'plan'],
       promptVia: 'stdin',
       webTools: false,
       output: 'stdout',
@@ -319,7 +333,8 @@ const DEFAULTS = {
       baseArgs: [
         'exec',
         '--skip-git-repo-check',
-        '--dangerously-bypass-approvals-and-sandbox',
+        '--sandbox', 'read-only',
+        '--ask-for-approval', 'never',
         '-m', 'gpt-5.5',
         '--color', 'never',
       ],
@@ -333,7 +348,7 @@ const DEFAULTS = {
       bin: process.env.MAESTRO_GEMINI_BIN || 'gemini',
       baseArgs: [
         '--output-format', 'json',
-        '--approval-mode', 'yolo',
+        '--approval-mode', 'plan',
         '--model', 'gemini-3.1-pro-preview',
       ],
       promptVia: 'arg',

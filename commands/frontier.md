@@ -130,12 +130,28 @@ prompt fans to a panel, a judge maps agreement and contradiction, a
 synthesizer writes the grounded answer. The panel/judge/synth members
 are **read-only, one-shot `-p` subprocesses** — they emit text to stdout
 (or a unique tmp last-message file) and exit; they never commit, never
-edit the repo, and never run an autonomous loop. So arming `fusion`
-(e.g. `opus-duo`) and letting two or more model CLIs work the same
-workspace at once is **safe by construction** — there is no shared branch
-or checkpoint for them to race. This is categorically different from two
-independent autonomous *build* loops on one branch, which IS the
+edit the repo, and never run an autonomous loop. Read-only is **enforced
+at spawn**, not assumed: each adapter's `baseArgs` carries its CLI's
+read-only mode (`claude --permission-mode plan`, `codex --sandbox
+read-only --ask-for-approval never`, `gemini --approval-mode plan`; see
+`frontier/config.cjs`), and the engine consumes only each member's
+stdout text — any filesystem change a member made would be unread
+side-effect. A write/bypass flag here would turn each panel member into a
+parallel write-loop on an agentic prompt, so those flags are forbidden in
+config and asserted against in `frontier/config.test.cjs`. So arming
+`fusion` (e.g. `opus-duo`) and letting two or more model CLIs work the
+same workspace at once is **safe by construction** — there is no shared
+branch or checkpoint for them to race. This is categorically different
+from two independent autonomous *build* loops on one branch, which IS the
 S10-forbidden "loops never spawn loops" state.
+
+The autorun hook adds a second guard: it **refuses to fan an
+autonomous-loop or scheduled-resume directive** (a `/loop` invocation, the
+`<<autonomous-loop>>` / `<<autonomous-loop-dynamic>>` sentinels, or an
+"AUTONOMOUS LOOP" resume prompt). Even with read-only members, fanning a
+loop prompt across N CLIs double-executes the loop's intent — the exact
+case where fusion looked like a second loop racing the host session.
+Override with `autorunFanLoops: true` in frontier state.
 
 To make that distinction machine-checkable, every Frontier run stamps
 itself and all of its children with `MAESTRO_FRONTIER_RUN_ID`

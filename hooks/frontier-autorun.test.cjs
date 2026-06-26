@@ -239,6 +239,25 @@ check('banner fusion: context includes opus-duo',
 check('banner fusion: context includes ⚡ Frontier',
   (ctx(out) || '').includes('⚡ Frontier'));
 
+// 18. Loop / agentic-resume guard: armed engine does NOT fan loop prompts.
+setState({ mode: 'fusion', preset: 'opus-duo' });
+out = runHook({ hook_event_name: 'UserPromptSubmit', prompt: '/loop 5m /babysit-prs' });
+check('loop guard: /loop prompt -> empty stdout', out === '');
+out = runHook({ hook_event_name: 'UserPromptSubmit', prompt: 'resume <<autonomous-loop>> now' });
+check('loop guard: autonomous-loop sentinel -> empty stdout', out === '');
+out = runHook({ hook_event_name: 'UserPromptSubmit', prompt: 'AUTONOMOUS LOOP RESUME — read the checkpoint' });
+check('loop guard: AUTONOMOUS LOOP resume -> empty stdout', out === '');
+
+// 19. Loop guard must NOT over-match an ordinary prompt that merely says "loop".
+setState({ mode: 'single', model: 'opus' });
+out = runHook({ hook_event_name: 'UserPromptSubmit', prompt: 'explain the event loop in node' });
+check('loop guard: ordinary "event loop" prompt still runs', (ctx(out) || '').includes('FAKE_ENGINE_ANSWER'));
+
+// 20. Loop guard opt-out: autorunFanLoops:true re-enables fanning loop prompts.
+setState({ mode: 'single', model: 'opus', autorunFanLoops: true });
+out = runHook({ hook_event_name: 'UserPromptSubmit', prompt: '/loop 5m /babysit-prs' });
+check('loop guard opt-out: autorunFanLoops -> runs', (ctx(out) || '').includes('FAKE_ENGINE_ANSWER'));
+
 fs.rmSync(tmp, { recursive: true, force: true });
 
 if (failures) { console.error(failures + ' failure(s)'); process.exit(1); }

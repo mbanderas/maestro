@@ -50,6 +50,34 @@ function expectedCodexWorkspaceScope(cwd) {
 
 async function main() {
 
+  // (a0) READ-ONLY PANEL INVARIANT: no adapter may carry a write/bypass flag,
+  // and each must carry its per-CLI read-only mode. Guards the racing-write-loop
+  // regression (panels are advisory; only their stdout text is consumed).
+  {
+    const WRITE_GRANT = [
+      '--dangerously-skip-permissions',
+      '--dangerously-bypass-approvals-and-sandbox',
+      'yolo',
+      'workspace-write',
+      'danger-full-access',
+      'acceptEdits',
+      'bypassPermissions',
+    ];
+    for (const [id, a] of Object.entries(DEFAULTS.adapters)) {
+      const args = (a.baseArgs || []).join(' ');
+      for (const bad of WRITE_GRANT) {
+        check('adapter ' + id + ' has no write-grant flag: ' + bad, !args.includes(bad));
+      }
+    }
+    const opus = DEFAULTS.adapters.opus.baseArgs.join(' ');
+    check('opus panel is read-only (--permission-mode plan)', /--permission-mode plan/.test(opus));
+    const codex = DEFAULTS.adapters['gpt-5.5'].baseArgs.join(' ');
+    check('codex panel is read-only (--sandbox read-only)', /--sandbox read-only/.test(codex));
+    check('codex panel never blocks (--ask-for-approval never)', /--ask-for-approval never/.test(codex));
+    const gemini = DEFAULTS.adapters.gemini.baseArgs.join(' ');
+    check('gemini panel is read-only (--approval-mode plan)', /--approval-mode plan/.test(gemini));
+  }
+
   // (a) loadState() with no file -> {mode:'off'}
   {
     const s = loadState();

@@ -64,6 +64,21 @@ const rawMin = Number(state.autorunMinChars);
 const minChars = Number.isFinite(rawMin) && rawMin > 0 ? rawMin : 0;
 if (prompt.trim().length < minChars) noop();
 
+// Loop / agentic-resume guard (load-bearing, default ON): never fan an
+// autonomous-loop or scheduled-resume directive through the panel. Even with
+// read-only members (config.cjs enforces that), re-running a build/loop prompt
+// across N CLIs double-executes the loop's intent and is the S10-forbidden
+// "loops never spawn loops" footgun -- the exact failure where fusion looked
+// like a second write-loop racing the host session. Conservative, marker-based
+// so it never suppresses an ordinary question: matches the `/loop` slash
+// command, the harness autonomous-loop sentinels (<<autonomous-loop>> /
+// <<autonomous-loop-dynamic>>), and "AUTONOMOUS LOOP" resume prompts. Opt out
+// with state.autorunFanLoops === true.
+if (state.autorunFanLoops !== true) {
+  const LOOP_PROMPT_RE = /(^|\s)\/loop\b|<<\s*autonomous-loop|autonomous[ _-]loop\b/i;
+  if (LOOP_PROMPT_RE.test(prompt)) noop();
+}
+
 // Any unexpected throw after the await boundary degrades to a normal turn,
 // never a non-zero exit / unhandled rejection.
 run().catch((e) => {
