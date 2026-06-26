@@ -6,6 +6,35 @@ All notable changes to Maestro are documented here. The format follows
 
 ## [Unreleased]
 
+## [1.11.3] - 2026-06-26
+
+### Fixed
+
+- **Frontier fusion panels now spawn strictly read-only — closing a
+  racing-write-loop footgun.** Every panel/judge/synth member was launched
+  with a full write/bypass flag (`--dangerously-skip-permissions` for claude,
+  `--dangerously-bypass-approvals-and-sandbox` for codex, `--approval-mode yolo`
+  for gemini), so when the engine was armed and an agentic/build prompt arrived
+  (e.g. an autonomous-loop resume), each member *executed the work* with full
+  filesystem access. Because the engine consumes only each member's stdout text
+  (`frontier/run.cjs` fuses text, never files), those writes were unconsumed
+  side-effects that raced the host session — making fusion look like a second
+  uncoordinated write-loop, the S10-forbidden "loops never spawn loops" state.
+  This contradicted the documented "read-only by construction" contract
+  (`commands/frontier.md`, `frontier/runlock.cjs`). The adapters in
+  `frontier/config.cjs` now carry each CLI's read-only mode instead —
+  claude `--permission-mode plan`, codex `--sandbox read-only --ask-for-approval
+  never`, gemini `--approval-mode plan` — and `frontier/config.test.cjs` asserts
+  no write/bypass flag can return. (claude verified live: a write attempt under
+  plan mode is blocked and no file is created.)
+- **The autorun hook no longer fans autonomous-loop or scheduled-resume
+  prompts.** Even with read-only members, running a `/loop` invocation, an
+  `<<autonomous-loop>>` / `<<autonomous-loop-dynamic>>` sentinel, or an
+  "AUTONOMOUS LOOP" resume prompt through the panel double-executes the loop's
+  intent. `hooks/frontier-autorun.cjs` now skips fanning such prompts (override
+  with `autorunFanLoops: true` in frontier state); the match is conservative so
+  an ordinary "event loop" question still runs.
+
 ## [1.11.1] - 2026-06-23
 
 ### Fixed
