@@ -29,8 +29,9 @@
 // link. The source is trusted shipped plugin content.
 //
 // Always silent, never throws, exit 0: a maintenance hook must never break or
-// clutter a session. It writes at most twice (.sh, .ps1) and only right after
-// an update changed the shipped script.
+// clutter a session. It writes at most three times (.sh, .ps1, .mjs) and only
+// right after an update changed the shipped script. A shipped script absent
+// from the plugin (e.g. an older plugin without the .mjs) is simply skipped.
 //
 // .cjs so Node treats it as CommonJS regardless of a parent package.json.
 
@@ -40,7 +41,7 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 
-const SCRIPTS = ['context-bar.sh', 'context-bar.ps1'];
+const SCRIPTS = ['context-bar.sh', 'context-bar.ps1', 'context-bar.mjs'];
 const MAX_SCRIPT_BYTES = 1 << 16; // 64 KB cap; the scripts are ~6 KB
 
 const claudeDir = process.env.CLAUDE_CONFIG_DIR || path.join(os.homedir(), '.claude');

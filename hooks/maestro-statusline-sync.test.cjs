@@ -20,6 +20,7 @@ function mkTmp() {
   // Fresh shipped source.
   fs.writeFileSync(path.join(plugin, 'statusline', 'context-bar.sh'), 'FRESH-SH\n');
   fs.writeFileSync(path.join(plugin, 'statusline', 'context-bar.ps1'), 'FRESH-PS1\n');
+  fs.writeFileSync(path.join(plugin, 'statusline', 'context-bar.mjs'), 'FRESH-MJS\n');
   return { root, plugin, claude };
 }
 
@@ -48,12 +49,15 @@ console.log('maestro-statusline-sync tests');
   const t = mkTmp();
   const sh = path.join(t.claude, 'statusline', 'context-bar.sh');
   const ps1 = path.join(t.claude, 'statusline', 'context-bar.ps1');
+  const mjs = path.join(t.claude, 'statusline', 'context-bar.mjs');
   fs.writeFileSync(sh, 'STALE-SH-1.00M\n');
   fs.writeFileSync(ps1, 'STALE-PS1\n');
+  fs.writeFileSync(mjs, 'STALE-MJS\n');
   const out = runHook(envFor(t));
   check('output is silent', out === '');
   check('stale .sh refreshed', fs.readFileSync(sh, 'utf8') === 'FRESH-SH\n');
   check('stale .ps1 refreshed', fs.readFileSync(ps1, 'utf8') === 'FRESH-PS1\n');
+  check('stale .mjs refreshed', fs.readFileSync(mjs, 'utf8') === 'FRESH-MJS\n');
   // Exec bit is POSIX-only; Windows (NTFS) has no 0o111 bits and fs.chmod only
   // toggles the read-only attribute, so this assertion is meaningless there.
   check('.sh is executable', process.platform === 'win32' || (fs.statSync(sh).mode & 0o111) !== 0);
@@ -132,6 +136,17 @@ console.log('maestro-statusline-sync tests');
   check('single phase -> "running"', /'single'[^\n]*running/.test(ps1));
   // Regression guard: the synth label must not be the bare compact "synth".
   check('synth label is not the bare compact form', !/synth"/.test(ps1));
+}
+
+// 8. The shipped Node renderer carries the same human-readable Frontier STAGE
+// labels as the .ps1 (it is the cross-platform replacement for the powershell
+// chain, so its label map must not drift from the powershell one).
+{
+  const mjs = fs.readFileSync(path.join(__dirname, '..', 'statusline', 'context-bar.mjs'), 'utf8');
+  check('mjs panel phase -> "fanning"', /'panel'[^\n]*fanning/.test(mjs));
+  check('mjs judge phase -> "judging"', /'judge'[^\n]*judging/.test(mjs));
+  check('mjs synth phase -> "synthesizing"', /'synth'[^\n]*synthesizing/.test(mjs));
+  check('mjs single phase -> "running"', /'single'[^\n]*running/.test(mjs));
 }
 
 if (failures) { console.error(`${failures} failure(s)`); process.exit(1); }
