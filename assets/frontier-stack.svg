@@ -34,7 +34,7 @@
 
   <rect class="node" x="92" y="74" width="180" height="52" rx="8"/>
   <text class="lbl" x="182" y="100" text-anchor="middle">parallel panel</text>
-  <text class="sub" x="182" y="116" text-anchor="middle">Opus 4.8 / GPT-5.5 / Gemini</text>
+  <text class="sub" x="182" y="116" text-anchor="middle">any 1–8 local model CLIs</text>
 
   <path class="edge" d="M272 100 H338" marker-end="url(#g)"/>
 

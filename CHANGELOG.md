@@ -6,6 +6,32 @@ All notable changes to Maestro are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- **Two more Claude models join the fusion panel: Fable 5 and Sonnet 5.**
+  `frontier/config.cjs` gains `fable` (`claude-fable-5`) and `sonnet-5`
+  (`claude-sonnet-5`) adapters, each pinning `--model` explicitly so the three
+  Claude-family panelists stay distinct instead of collapsing onto the bare
+  `claude` default. Eight new presets widen the Mixture-of-Agents lineup —
+  `fable-duo` / `fable-gpt` / `fable-trio`, `sonnet-duo` / `sonnet-gpt` /
+  `sonnet-trio`, plus `frontier-quad` (Fable + Opus + GPT-5.5 + Gemini) and
+  `frontier-quint` (adds Sonnet 5) — with the family presets self-judging and
+  self-synthesizing on their own model (mirroring `chatgpt-duo`), while the
+  quad/quint keep the cost-stable global Opus judge/synth. Settings labels,
+  the `/maestro:frontier` command, README, settings reference, every
+  integration mirror, and the preset reference card all reflect the wider
+  roster.
+- **A non-blocking Fable 5 cost advisory keeps subscription spend transparent.**
+  Fable 5 is subscription-covered (up to ~50% of the weekly usage limit) only
+  through **2026-07-07**; on or after that date it draws Usage Credits and
+  burns usage faster than Opus 4.8. A new pure, clock-injectable
+  `costAdvisory`/`runCostAdvisory` helper surfaces a one-line `[frontier] …`
+  notice on **stderr** at run time (autorun hook + `frontier run`) and echoes
+  it at arm time (`frontier mode`, settings `warning` field) — informational
+  only, never a gate, and it never touches the fused-answer channel on stdout.
+  `MAESTRO_FRONTIER_NOW` lets you preview the post-cutoff advisory. The global
+  judge/synth default is unchanged, so Fable spend stays fully opt-in.
+
 ## [1.11.3] - 2026-06-26
 
 ### Fixed
