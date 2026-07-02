@@ -204,12 +204,25 @@ Presets define the panel; the judge and synthesizer default to Opus 4.8
 - **`sonnet-duo` / `sonnet-gpt` / `sonnet-trio`**: Sonnet 5 panels that self-judge and self-synth on Sonnet 5 (trio adds GPT-5.5 + Gemini).
 - **`frontier-quad`**: Fable 5 + Opus + GPT-5.5 + Gemini, judged/synthesized on Opus.
 - **`frontier-quint`**: adds Sonnet 5 to the quad — the full five-model panel.
+- **`budget-trio`**: Kimi + DeepSeek + GLM, judged/synthesized on DeepSeek — an all-CN fusion that needs no Anthropic subscription.
+- **`east-west`**: DeepSeek + GPT-5.5 for maximum training-lineage diversity in a duo, judged/synthesized on Opus.
 - **`custom`**: 1-8 of the known models.
 
-Five model CLIs ship as adapters today: Opus 4.8, Fable 5, and Sonnet 5
-(all via `claude` with a distinct `--model`), GPT-5.5 (`codex`), and
-Gemini 3.1 Pro (`gemini`). Kimi, DeepSeek, GLM, and Qwen adapters follow
-in an update soon. Fable 5 is subscription-covered only through
+You can also save your own named presets, which then arm and run like
+built-ins (built-in names always win on a collision):
+`maestro frontier preset save my-duo --models kimi,gpt-5.5 --judge deepseek`,
+then `/maestro:frontier fusion my-duo`; `preset list` and
+`preset delete <name>` manage them per scope.
+
+Eight model CLIs ship as adapters today: Opus 4.8, Fable 5, and Sonnet 5
+(all via `claude` with a distinct `--model`), GPT-5.5 (`codex`),
+Gemini 3.1 Pro (`gemini`), and GLM 5.2, Kimi K2.7 Code, and DeepSeek V4
+(all via `claude` pointed at each vendor's Anthropic-compatible endpoint).
+The CN adapters read their keys from your environment at spawn time —
+`ZAI_API_KEY`, `MOONSHOT_API_KEY`, `DEEPSEEK_API_KEY` — and never store
+them; `maestro frontier roster` shows each adapter's binary and key
+availability at a glance. A Qwen adapter follows once its CLI's read-only
+mode can be verified. Fable 5 is subscription-covered only through
 2026-07-07; after that it draws Usage Credits, and the engine prints a
 non-blocking `[frontier] …` cost advisory when a Fable panel runs past
 the cutoff.
@@ -228,7 +241,11 @@ and verified end-to-end on real runs of `single` mode and the
 `fable-*`, `sonnet-*`, `frontier-quad`, and `frontier-quint` presets and
 `--judge`/`--synth` selection share that same code path and are
 unit-tested (Fable/Sonnet `--model` acceptance smoke-tested against the
-live CLI), but not yet live-run end-to-end. The quality *lift* of local fusion
+live CLI), but not yet live-run end-to-end. The GLM, Kimi, and DeepSeek
+adapters and the `budget-trio` / `east-west` presets are unit-tested at
+the spawn boundary (args, endpoint env, key passthrough, clean failure
+without a key) but have not been live-run against the vendor endpoints
+from this build. The quality *lift* of local fusion
 is **measured, not asserted**: on a 100-task suite (93 scored) every
 fusion panel outscored its own member models, with the strongest fusion
 leading the field. That fusion-vs-solo result is a separate axis from the
