@@ -275,10 +275,16 @@ setState({ mode: 'single', model: 'opus' });
 out = runHook({ hook_event_name: 'UserPromptSubmit', prompt: 'explain the event loop in node' });
 check('loop guard: ordinary "event loop" prompt still runs', (ctx(out) || '').includes('FAKE_ENGINE_ANSWER'));
 
-// 20. Loop guard opt-out: autorunFanLoops:true re-enables fanning loop prompts.
-setState({ mode: 'single', model: 'opus', autorunFanLoops: true });
+// 20. Loop guard opt-out: a raw `/loop ...` prompt is BOTH loop-shaped and
+// command-shaped, so fanning it takes both opt-outs (autorunFanLoops for the
+// loop guard, autorunOnCommands for the command guard). A non-slash loop
+// prompt needs only autorunFanLoops.
+setState({ mode: 'single', model: 'opus', autorunFanLoops: true, autorunOnCommands: true });
 out = runHook({ hook_event_name: 'UserPromptSubmit', prompt: '/loop 5m /babysit-prs' });
-check('loop guard opt-out: autorunFanLoops -> runs', (ctx(out) || '').includes('FAKE_ENGINE_ANSWER'));
+check('loop guard opt-out: autorunFanLoops + autorunOnCommands -> runs', (ctx(out) || '').includes('FAKE_ENGINE_ANSWER'));
+setState({ mode: 'single', model: 'opus', autorunFanLoops: true });
+out = runHook({ hook_event_name: 'UserPromptSubmit', prompt: 'AUTONOMOUS LOOP RESUME — read the checkpoint' });
+check('loop guard opt-out: autorunFanLoops alone fans non-slash loop prompt', (ctx(out) || '').includes('FAKE_ENGINE_ANSWER'));
 
 // 21. Cost advisory (run time): a Fable panel armed past the subscription
 // cutoff emits a one-line [frontier] notice on STDERR only — never into the
@@ -311,6 +317,50 @@ cap = runHookCapture(
   { MAESTRO_FRONTIER_NOW: '2026-08-01T00:00:00Z' });
 check('advisory: non-fable panel silent after cutoff',
   !cap.stderr.includes('[frontier]'));
+
+// 24. Command guard: armed engine never fans plugin/slash command prompts —
+// raw typed form and the transcript XML form (both tag orders).
+setState({ mode: 'fusion', preset: 'opus-duo' });
+out = runHook({ hook_event_name: 'UserPromptSubmit', prompt: '/maestro:frontier off' });
+check('command guard: raw slash command -> empty stdout', out === '');
+out = runHook({
+  hook_event_name: 'UserPromptSubmit',
+  prompt: '<command-name>/maestro:frontier</command-name>\n<command-message>frontier</command-message>\n<command-args>off</command-args>',
+});
+check('command guard: XML form (command-name first) -> empty stdout', out === '');
+out = runHook({
+  hook_event_name: 'UserPromptSubmit',
+  prompt: '<command-message>loop</command-message>\n<command-name>/loop</command-name>\n<command-args>check the deploy</command-args>',
+});
+check('command guard: XML form (command-message first) -> empty stdout', out === '');
+out = runHook({
+  hook_event_name: 'UserPromptSubmit',
+  prompt: '<command-name>/loop</command-name>',
+});
+check('command guard: /loop inside command-name -> empty stdout', out === '');
+
+// 25. Command guard must NOT over-match: a path-like first token (second
+// slash breaks the full-token match) or a mid-text command mention still fans.
+setState({ mode: 'single', model: 'opus' });
+out = runHook({ hook_event_name: 'UserPromptSubmit', prompt: '/etc/hosts is broken, why?' });
+check('command guard: /etc/hosts prompt still runs', (ctx(out) || '').includes('FAKE_ENGINE_ANSWER'));
+out = runHook({ hook_event_name: 'UserPromptSubmit', prompt: 'see /maestro:frontier for details' });
+check('command guard: mid-text command mention still runs', (ctx(out) || '').includes('FAKE_ENGINE_ANSWER'));
+
+// 26. Command guard opt-out: autorunOnCommands:true re-enables fanning commands.
+setState({ mode: 'single', model: 'opus', autorunOnCommands: true });
+out = runHook({ hook_event_name: 'UserPromptSubmit', prompt: '/maestro:frontier off' });
+check('command guard opt-out: autorunOnCommands -> runs', (ctx(out) || '').includes('FAKE_ENGINE_ANSWER'));
+
+// 27. Loop guard XML fix: even with commands allowed (autorunOnCommands:true),
+// the loop guard catches /loop wrapped in <command-name> tags (F3.4 — `>`
+// precedes /loop so (^|\s) alone never matched).
+setState({ mode: 'fusion', preset: 'opus-duo', autorunOnCommands: true });
+out = runHook({
+  hook_event_name: 'UserPromptSubmit',
+  prompt: '<command-name>/loop</command-name>\n<command-args>5m /babysit-prs</command-args>',
+});
+check('loop guard: XML-wrapped /loop skipped despite autorunOnCommands', out === '');
 
 fs.rmSync(tmp, { recursive: true, force: true });
 

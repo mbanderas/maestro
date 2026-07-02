@@ -58,6 +58,23 @@ if (!state || state.mode === 'off') noop();
 
 const prompt = String(data.prompt || '');
 
+// Command guard (default ON): plugin/slash commands (/maestro:frontier off,
+// /clear, /loop) are host directives, not questions -- fanning one through
+// the panel costs minutes of blocking latency plus tokens for zero value.
+// The hooks contract does not specify what `prompt` carries for a slash
+// command, so detection covers BOTH candidate shapes: the raw typed `/cmd`
+// form (whole-first-token match only, so `/etc/hosts is broken` still fans)
+// and the transcript XML form (<command-name>/<command-message>/
+// <command-args>, tag order varies between commands -- checked within the
+// first 64 chars so a prose prompt merely quoting a tag mid-text still
+// fans). Opt out with state.autorunOnCommands === true.
+if (state.autorunOnCommands !== true) {
+  const trimmed = prompt.trim();
+  if (/<command-(?:name|message|args)>/.test(trimmed.slice(0, 64))) noop();
+  const firstToken = trimmed.split(/\s+/, 1)[0] || '';
+  if (/^\/[A-Za-z][\w:-]*$/.test(firstToken)) noop();
+}
+
 // Optional length gate (default 0 = every prompt). Skips trivially short
 // prompts ("yes"/"ok") so they don't pay a full engine run.
 const rawMin = Number(state.autorunMinChars);
@@ -76,7 +93,11 @@ if (prompt.trim().length < minChars) noop();
 // with state.autorunFanLoops === true.
 if (state.autorunFanLoops !== true) {
   const LOOP_PROMPT_RE = /(^|\s)\/loop\b|<<\s*autonomous-loop|autonomous[ _-]loop\b/i;
-  if (LOOP_PROMPT_RE.test(prompt)) noop();
+  // Test the raw prompt AND a copy with <command-*> tags stripped to spaces:
+  // the XML command form (<command-name>/loop</command-name>) puts `>` before
+  // /loop, which (^|\s) never matches.
+  const detagged = prompt.replace(/<\/?command-[a-z]+>/g, ' ');
+  if (LOOP_PROMPT_RE.test(prompt) || LOOP_PROMPT_RE.test(detagged)) noop();
 }
 
 // Any unexpected throw after the await boundary degrades to a normal turn,

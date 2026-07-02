@@ -14,6 +14,9 @@ the live session relays the synthesized answer. `off` disables auto-run.
 Autorun blocks the turn until the engine returns; the hook carries a
 300s timeout (`hooks/hooks.json`), and a run that exceeds it is skipped
 so the turn proceeds normally. Any engine error degrades the same way.
+Plugin/slash command prompts (e.g. `/maestro:frontier off`, `/clear`)
+bypass autorun entirely — they are host directives, not questions
+(opt out with `autorunOnCommands: true` in frontier state).
 
 Requested action: `$ARGUMENTS`
 

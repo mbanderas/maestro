@@ -8,6 +8,17 @@ All notable changes to Maestro are documented here. The format follows
 
 ### Added
 
+- **Autorun now skips plugin/slash command prompts, saving minutes of latency
+  and a full fusion spend per command.** With the engine armed, a command like
+  `/maestro:frontier off` or `/clear` used to route through the whole
+  panel/judge/synth pipeline before the host even executed it.
+  `hooks/frontier-autorun.cjs` now recognizes command-shaped prompts — both
+  the raw typed `/cmd` form (whole-first-token match, so `/etc/hosts is
+  broken` still fans) and the transcript `<command-name>`-style XML form in
+  either tag order — and lets them pass straight through (opt out with
+  `autorunOnCommands: true`). The loop guard also gains XML-form coverage, so
+  `<command-name>/loop</command-name>` is caught even when commands are
+  allowed to fan.
 - **Two more Claude models join the fusion panel: Fable 5 and Sonnet 5.**
   `frontier/config.cjs` gains `fable` (`claude-fable-5`) and `sonnet-5`
   (`claude-sonnet-5`) adapters, each pinning `--model` explicitly so the three
