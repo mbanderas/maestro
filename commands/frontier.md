@@ -12,8 +12,12 @@ makes it **auto-run on every prompt** — a `UserPromptSubmit` hook
 (`hooks/frontier-autorun.cjs`) routes each prompt through the engine and
 the live session relays the synthesized answer. `off` disables auto-run.
 Autorun blocks the turn until the engine returns; the hook carries a
-300s timeout (`hooks/hooks.json`), and a run that exceeds it is skipped
-so the turn proceeds normally. Any engine error degrades the same way.
+600s timeout (`hooks/hooks.json`), and the engine keeps itself inside
+that window with an internal 540s run budget — a stage that would start
+over budget is skipped and the run degrades gracefully to the best
+answer already in hand (judge skipped -> synthesis on raw responses;
+synthesis skipped -> longest panel response). Any engine error degrades
+the same way.
 Plugin/slash command prompts (e.g. `/maestro:frontier off`, `/clear`)
 bypass autorun entirely — they are host directives, not questions
 (opt out with `autorunOnCommands: true` in frontier state).

@@ -135,7 +135,22 @@ async function run() {
       const advisory = cfg.runCostAdvisory(state, cfg.DEFAULTS);
       if (advisory) process.stderr.write(advisory + '\n');
     } catch { /* advisory is best-effort */ }
-    result = await runFrontier({ prompt, state, deps: { onProgress } });
+    // Operator tuning without code: finite positive state.runBudgetMs /
+    // state.timeoutMs override DEFAULTS, clamped to [30s, 570s] so a typo can
+    // neither hang the engine past the hook's 600s window nor starve a stage.
+    // Autorun has no other cfg path (runFrontier without cfg -> DEFAULTS).
+    let cfgOverride;
+    const clampMs = (v) => Math.min(570000, Math.max(30000, v));
+    const stateBudget = Number(state.runBudgetMs);
+    const stateTimeout = Number(state.timeoutMs);
+    if ((Number.isFinite(stateBudget) && stateBudget > 0) ||
+        (Number.isFinite(stateTimeout) && stateTimeout > 0)) {
+      const { DEFAULTS } = require('../frontier/config.cjs');
+      cfgOverride = { ...DEFAULTS };
+      if (Number.isFinite(stateBudget) && stateBudget > 0) cfgOverride.runBudgetMs = clampMs(stateBudget);
+      if (Number.isFinite(stateTimeout) && stateTimeout > 0) cfgOverride.timeoutMs = clampMs(stateTimeout);
+    }
+    result = await runFrontier({ prompt, state, cfg: cfgOverride, deps: { onProgress } });
   } catch (e) {
     runlock.releaseRun();
     progress.clearProgress(scope);

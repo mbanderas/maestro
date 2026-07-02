@@ -19,6 +19,18 @@ All notable changes to Maestro are documented here. The format follows
   `autorunOnCommands: true`). The loop guard also gains XML-form coverage, so
   `<command-name>/loop</command-name>` is caught even when commands are
   allowed to fan.
+- **Slow fusion runs now finish inside the hook window instead of being
+  killed.** The autorun hook timeout rises to 600s (`hooks/hooks.json`) and
+  the engine gains an internal 540s run budget (`DEFAULTS.runBudgetMs`):
+  before the judge, synthesis, and escalation stages it clamps the stage
+  timeout to the time remaining, and a stage that would start with under 15s
+  left is skipped in favor of its existing graceful fallback (judge skipped ->
+  synthesis on raw panel responses; synthesis skipped -> longest panel
+  response), emitting a `degraded` progress event with `reason: 'budget'`.
+  Worst-case pipelines (panel + judge + synth, each up to 180s) previously
+  exceeded the 300s hook timeout, so the host discarded the entire result
+  after burning the tokens. Operators can tune per workspace without code via
+  `runBudgetMs` / `timeoutMs` in frontier state (clamped to 30–570s).
 - **Two more Claude models join the fusion panel: Fable 5 and Sonnet 5.**
   `frontier/config.cjs` gains `fable` (`claude-fable-5`) and `sonnet-5`
   (`claude-sonnet-5`) adapters, each pinning `--model` explicitly so the three
