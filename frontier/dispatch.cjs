@@ -105,7 +105,31 @@ function spawnOne(prompt, adapter, opts) {
       spawnArgs = progArgs;
     }
 
-    const env = { ...process.env, FUSION_DEPTH: String(fusionDepth), ...(adapter.env || {}) };
+    // envFrom: auth passthrough read from the HOST env at spawn time — never
+    // stored in config or on disk. Shape { CHILD_VAR: 'HOST_VAR' }; any
+    // missing/empty HOST_VAR fails this member cleanly BEFORE spawn, so a
+    // keyless adapter degrades like any other failed panel member instead of
+    // dialing the endpoint half-authenticated. Spread after adapter.env so
+    // the live key always wins over a static placeholder.
+    const envFrom = {};
+    if (adapter.envFrom && typeof adapter.envFrom === 'object') {
+      const missing = [];
+      for (const [dst, src] of Object.entries(adapter.envFrom)) {
+        const val = process.env[src];
+        if (val === undefined || val === '') missing.push(src);
+        else envFrom[dst] = val;
+      }
+      if (missing.length > 0) {
+        return resolve({
+          model: adapter.model, content: '', ok: false,
+          durationMs: Date.now() - start, tokensEst: 0,
+          error: 'missing env: ' + [...new Set(missing)].join(', ') +
+            ' (adapter skipped; export it to enable this member)',
+        });
+      }
+    }
+
+    const env = { ...process.env, FUSION_DEPTH: String(fusionDepth), ...(adapter.env || {}), ...envFrom };
 
     let child;
     try {

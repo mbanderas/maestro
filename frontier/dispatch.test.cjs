@@ -295,6 +295,40 @@ process.stdout.write(JSON.stringify({is_error:false, result: process.argv.slice(
 }
 
 // ------------------------------------------------------------------ //
+// (j) envFrom auth passthrough: host var injected into the child env
+//     (overriding a static adapter.env placeholder); missing host var
+//     fails the member cleanly BEFORE spawn, naming the var, never the
+//     value.
+// ------------------------------------------------------------------ //
+const stubJ = stub('j-envfrom', `
+process.stdout.write(JSON.stringify({is_error:false,
+  result: [process.env.CHILD_TOKEN, process.env.STATIC_V].join('|')}));
+`);
+
+process.env.FRONTIER_TEST_SRC_KEY = 'sekret-value';
+const jOk = await spawnOne('prompt', adapter(stubJ, {
+  env: { STATIC_V: 'static', CHILD_TOKEN: 'placeholder-loses' },
+  envFrom: { CHILD_TOKEN: 'FRONTIER_TEST_SRC_KEY' },
+}));
+check('(j) envFrom injects host value into child',  jOk.ok === true && jOk.content === 'sekret-value|static');
+delete process.env.FRONTIER_TEST_SRC_KEY;
+
+const jMissing = await spawnOne('prompt', adapter(stubJ, {
+  envFrom: { CHILD_TOKEN: 'FRONTIER_TEST_SRC_KEY' },
+}));
+check('(j) missing host var -> ok=false',            jMissing.ok === false);
+check('(j) missing host var -> empty content (no spawn)', jMissing.content === '');
+check('(j) error names the missing var',             jMissing.error && jMissing.error.includes('FRONTIER_TEST_SRC_KEY'));
+check('(j) error carries no secret material',        jMissing.error && !jMissing.error.includes('sekret-value'));
+
+process.env.FRONTIER_TEST_SRC_KEY = '';
+const jEmpty = await spawnOne('prompt', adapter(stubJ, {
+  envFrom: { CHILD_TOKEN: 'FRONTIER_TEST_SRC_KEY' },
+}));
+check('(j) empty host var counts as missing',        jEmpty.ok === false && jEmpty.error.includes('FRONTIER_TEST_SRC_KEY'));
+delete process.env.FRONTIER_TEST_SRC_KEY;
+
+// ------------------------------------------------------------------ //
 // cleanup + exit
 // ------------------------------------------------------------------ //
 fs.rmSync(tmp, { recursive: true, force: true });

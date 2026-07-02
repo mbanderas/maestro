@@ -386,6 +386,83 @@ const DEFAULTS = {
       output: 'stdout',
       parse: 'claude-json',
     },
+    // CN providers (GLM / Kimi / DeepSeek) ride the same read-only `claude`
+    // CLI pointed at each vendor's Anthropic-compatible endpoint via
+    // adapter.env; the API key is an envFrom passthrough read from the HOST
+    // env at spawn time (dispatch.cjs) — a var NAME here, never a value, so
+    // no token is ever stored. Both ANTHROPIC_AUTH_TOKEN and
+    // ANTHROPIC_API_KEY map to the provider key (claude CLI versions read
+    // either; this also keeps a host Anthropic key from reaching a CN
+    // endpoint). Model routing rides ANTHROPIC_MODEL + the tier pins from
+    // each vendor's official Claude Code recipe — these backends resolve
+    // Anthropic tier aliases server-side, so --model is not used. A missing
+    // host key fails the member cleanly pre-spawn (see dispatch envFrom).
+    // Qwen is deferred: its CLI's read-only/plan and one-shot flags are
+    // unverified, so it cannot honor the read-only panel invariant yet.
+    glm: {
+      model: 'glm',
+      bin: process.env.MAESTRO_CLAUDE_BIN || 'claude',
+      baseArgs: ['-p', '--output-format', 'json', '--permission-mode', 'plan'],
+      promptVia: 'stdin',
+      webTools: false,
+      output: 'stdout',
+      parse: 'claude-json',
+      env: {
+        ANTHROPIC_BASE_URL: 'https://api.z.ai/api/anthropic',
+        ANTHROPIC_MODEL: 'glm-5.2',
+        ANTHROPIC_DEFAULT_OPUS_MODEL: 'glm-5.2',
+        ANTHROPIC_DEFAULT_SONNET_MODEL: 'glm-5.2',
+        ANTHROPIC_DEFAULT_HAIKU_MODEL: 'glm-5.2',
+        CLAUDE_CODE_SUBAGENT_MODEL: 'glm-5.2',
+      },
+      envFrom: {
+        ANTHROPIC_AUTH_TOKEN: 'ZAI_API_KEY',
+        ANTHROPIC_API_KEY: 'ZAI_API_KEY',
+      },
+    },
+    kimi: {
+      model: 'kimi',
+      bin: process.env.MAESTRO_CLAUDE_BIN || 'claude',
+      baseArgs: ['-p', '--output-format', 'json', '--permission-mode', 'plan'],
+      promptVia: 'stdin',
+      webTools: false,
+      output: 'stdout',
+      parse: 'claude-json',
+      env: {
+        ANTHROPIC_BASE_URL: 'https://api.moonshot.ai/anthropic',
+        ANTHROPIC_MODEL: 'kimi-k2.7-code',
+        ANTHROPIC_DEFAULT_OPUS_MODEL: 'kimi-k2.7-code',
+        ANTHROPIC_DEFAULT_SONNET_MODEL: 'kimi-k2.7-code',
+        ANTHROPIC_DEFAULT_HAIKU_MODEL: 'kimi-k2.7-code',
+        CLAUDE_CODE_SUBAGENT_MODEL: 'kimi-k2.7-code',
+      },
+      envFrom: {
+        ANTHROPIC_AUTH_TOKEN: 'MOONSHOT_API_KEY',
+        ANTHROPIC_API_KEY: 'MOONSHOT_API_KEY',
+      },
+    },
+    deepseek: {
+      model: 'deepseek',
+      bin: process.env.MAESTRO_CLAUDE_BIN || 'claude',
+      baseArgs: ['-p', '--output-format', 'json', '--permission-mode', 'plan'],
+      promptVia: 'stdin',
+      webTools: false,
+      output: 'stdout',
+      parse: 'claude-json',
+      env: {
+        // Exact base URL per DeepSeek's checklist — no trailing slash, no /v1.
+        ANTHROPIC_BASE_URL: 'https://api.deepseek.com/anthropic',
+        ANTHROPIC_MODEL: 'deepseek-v4-pro',
+        ANTHROPIC_DEFAULT_OPUS_MODEL: 'deepseek-v4-pro',
+        ANTHROPIC_DEFAULT_SONNET_MODEL: 'deepseek-v4-pro',
+        ANTHROPIC_DEFAULT_HAIKU_MODEL: 'deepseek-v4-flash',
+        CLAUDE_CODE_SUBAGENT_MODEL: 'deepseek-v4-flash',
+      },
+      envFrom: {
+        ANTHROPIC_AUTH_TOKEN: 'DEEPSEEK_API_KEY',
+        ANTHROPIC_API_KEY: 'DEEPSEEK_API_KEY',
+      },
+    },
   },
   presets: {
     'opus-duo': ['opus', 'opus'],

@@ -14,8 +14,8 @@ const tmpBase = fs.mkdtempSync(path.join(os.tmpdir(), 'frontier-test-'));
 process.env.XDG_CONFIG_HOME = tmpBase;
 
 const { DEFAULTS, loadState, saveState, resolvePanel, validatePreset,
-  resolveJudgeModel, resolveSynthModel, sanitizeScope, resolveScope,
-  statePath, legacyStatePath, configDir, adoptLegacyState,
+  validateModel, resolveJudgeModel, resolveSynthModel, sanitizeScope,
+  resolveScope, statePath, legacyStatePath, configDir, adoptLegacyState,
   costAdvisory } = require('./config.cjs');
 
 let failures = 0;
@@ -268,6 +268,47 @@ async function main() {
       resolveSynthModel({ preset: 'frontier-quint' }, DEFAULTS) === 'opus');
     check('global judge default still opus', DEFAULTS.judgeModel === 'opus');
     check('global synth default still opus', DEFAULTS.synthModel === 'opus');
+  }
+
+  // (p) CN provider adapters (glm/kimi/deepseek) ride the read-only claude
+  //     CLI against each vendor's Anthropic-compatible endpoint. Auth is an
+  //     envFrom passthrough — the value here is a HOST env-var NAME, never a
+  //     key, and both claude auth vars map to it. Qwen stays deferred until
+  //     its CLI's read-only/one-shot flags are verified.
+  {
+    const endpoints = {
+      glm: 'https://api.z.ai/api/anthropic',
+      kimi: 'https://api.moonshot.ai/anthropic',
+      deepseek: 'https://api.deepseek.com/anthropic',
+    };
+    const hostKeys = { glm: 'ZAI_API_KEY', kimi: 'MOONSHOT_API_KEY', deepseek: 'DEEPSEEK_API_KEY' };
+    for (const [id, base] of Object.entries(endpoints)) {
+      const a = DEFAULTS.adapters[id];
+      check('cn: adapter ' + id + ' exists', !!a);
+      if (!a) continue;
+      check('cn: ' + id + ' is read-only (--permission-mode plan)',
+        (a.baseArgs || []).join(' ').includes('--permission-mode plan'));
+      check('cn: ' + id + ' pins the vendor endpoint',
+        a.env && a.env.ANTHROPIC_BASE_URL === base);
+      check('cn: ' + id + ' routes model via ANTHROPIC_MODEL',
+        a.env && typeof a.env.ANTHROPIC_MODEL === 'string' && a.env.ANTHROPIC_MODEL.length > 0);
+      check('cn: ' + id + ' maps ANTHROPIC_AUTH_TOKEN from ' + hostKeys[id],
+        a.envFrom && a.envFrom.ANTHROPIC_AUTH_TOKEN === hostKeys[id]);
+      check('cn: ' + id + ' maps ANTHROPIC_API_KEY from ' + hostKeys[id],
+        a.envFrom && a.envFrom.ANTHROPIC_API_KEY === hostKeys[id]);
+      check('cn: ' + id + ' webTools honestly false', a.webTools === false);
+      check('cn: ' + id + ' validateModel true', validateModel(id, DEFAULTS) === true);
+      // No secret material stored: static env carries no *KEY/TOKEN/SECRET
+      // entries, and every envFrom value is an UPPER_SNAKE env-var name.
+      for (const k of Object.keys(a.env || {})) {
+        check('cn: ' + id + ' env key ' + k + ' holds no key material', !/KEY|TOKEN|SECRET/i.test(k));
+      }
+      for (const v of Object.values(a.envFrom || {})) {
+        check('cn: ' + id + ' envFrom value is a var name: ' + v, /^[A-Z][A-Z0-9_]*$/.test(v));
+      }
+    }
+    check('cn: qwen deferred (no adapter)',
+      !Object.prototype.hasOwnProperty.call(DEFAULTS.adapters, 'qwen'));
   }
 
   // ----------------------------------------------------------------
