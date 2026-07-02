@@ -15,7 +15,8 @@ process.env.XDG_CONFIG_HOME = tmpBase;
 
 const { DEFAULTS, loadState, saveState, resolvePanel, validatePreset,
   resolveJudgeModel, resolveSynthModel, sanitizeScope, resolveScope,
-  statePath, legacyStatePath, configDir, adoptLegacyState } = require('./config.cjs');
+  statePath, legacyStatePath, configDir, adoptLegacyState,
+  costAdvisory } = require('./config.cjs');
 
 let failures = 0;
 function check(name, cond) {
@@ -218,6 +219,55 @@ async function main() {
     check('unknown affinity -> default opus',
       resolveJudgeModel({ preset: 'opus-gpt' },
         { ...DEFAULTS, perStepRouting: true, stageAffinity: { judge: 'no-such' } }) === 'opus');
+  }
+
+  // (n) costAdvisory — Fable subscription->Usage-Credits cutoff (2026-07-07).
+  //     Dormant before freeUntil, fires on/after for fable-bearing panels,
+  //     silent for non-fable panels. Deterministic via an injected clock.
+  {
+    const before = new Date('2026-07-06T23:59:59Z');
+    const atCut  = new Date('2026-07-07T00:00:00Z');
+    const after  = new Date('2026-08-01T12:00:00Z');
+    check('costAdvisory: fable panel before cutoff -> null',
+      costAdvisory(['fable', 'gpt-5.5'], DEFAULTS, before) === null);
+    check('costAdvisory: fable panel at cutoff boundary -> non-null',
+      typeof costAdvisory(['fable'], DEFAULTS, atCut) === 'string');
+    const msg = costAdvisory(['fable', 'gpt-5.5'], DEFAULTS, after);
+    check('costAdvisory: fable panel after cutoff -> advisory string', typeof msg === 'string');
+    check('costAdvisory: advisory names the cutoff date',
+      typeof msg === 'string' && msg.includes('2026-07-07'));
+    check('costAdvisory: advisory is [frontier]-prefixed',
+      typeof msg === 'string' && msg.startsWith('[frontier]'));
+    check('costAdvisory: non-fable panel after cutoff -> null',
+      costAdvisory(['opus', 'gpt-5.5', 'gemini'], DEFAULTS, after) === null);
+    check('costAdvisory: sonnet-5 (no costTier) after cutoff -> null',
+      costAdvisory(['sonnet-5', 'opus'], DEFAULTS, after) === null);
+    const dup = costAdvisory(['fable', 'fable', 'fable'], DEFAULTS, after);
+    check('costAdvisory: repeated fable deduped to a single mention',
+      typeof dup === 'string' && dup.indexOf('fable') === dup.lastIndexOf('fable'));
+    check('costAdvisory: empty panel -> null',
+      costAdvisory([], DEFAULTS, after) === null);
+  }
+
+  // (o) new Fable/Sonnet presets + self-judge stages present; global default
+  //     stays opus (D2/D3). frontier-quad/quint keep the global opus judge/synth.
+  {
+    check('fable-duo panel',
+      JSON.stringify(resolvePanel({ preset: 'fable-duo' }, DEFAULTS)) === JSON.stringify(['fable', 'fable']));
+    check('sonnet-gpt panel',
+      JSON.stringify(resolvePanel({ preset: 'sonnet-gpt' }, DEFAULTS)) === JSON.stringify(['sonnet-5', 'gpt-5.5']));
+    check('frontier-quint has 5 members',
+      resolvePanel({ preset: 'frontier-quint' }, DEFAULTS).length === 5);
+    check('fable-trio self-judges on fable',
+      resolveJudgeModel({ preset: 'fable-trio' }, DEFAULTS) === 'fable');
+    check('sonnet-duo self-synths on sonnet-5',
+      resolveSynthModel({ preset: 'sonnet-duo' }, DEFAULTS) === 'sonnet-5');
+    check('frontier-quad keeps opus judge (global default)',
+      resolveJudgeModel({ preset: 'frontier-quad' }, DEFAULTS) === 'opus');
+    check('frontier-quint keeps opus synth (global default)',
+      resolveSynthModel({ preset: 'frontier-quint' }, DEFAULTS) === 'opus');
+    check('global judge default still opus', DEFAULTS.judgeModel === 'opus');
+    check('global synth default still opus', DEFAULTS.synthModel === 'opus');
   }
 
   // ----------------------------------------------------------------

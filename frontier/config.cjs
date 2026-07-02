@@ -357,12 +357,51 @@ const DEFAULTS = {
       output: 'stdout',
       parse: 'gemini-json',
     },
+    // Fable 5 and Sonnet 5 ride the same read-only `claude` CLI as opus, so
+    // they MUST pin --model explicitly — otherwise all three claude adapters
+    // resolve to the bare-`claude` default (verified Opus-class 2026-07-02) and
+    // panel diversity silently collapses. Full model IDs are the durable form
+    // (the CLI also accepts short aliases). Reuse parse:'claude-json'.
+    fable: {
+      model: 'fable',
+      bin: process.env.MAESTRO_CLAUDE_BIN || 'claude',
+      baseArgs: ['-p', '--output-format', 'json', '--permission-mode', 'plan', '--model', 'claude-fable-5'],
+      promptVia: 'stdin',
+      webTools: false,
+      output: 'stdout',
+      parse: 'claude-json',
+      // Soft cost metadata (no pricing table / hard gate — see costAdvisory).
+      // Subscription covers Fable 5 (<=50% weekly limit) only through freeUntil;
+      // on/after that date it draws Usage Credits and burns usage faster than
+      // Opus 4.8. Surfaced as a non-blocking run-time advisory, never enforced.
+      costTier: 'subscription-until',
+      freeUntil: '2026-07-07',
+    },
+    'sonnet-5': {
+      model: 'sonnet-5',
+      bin: process.env.MAESTRO_CLAUDE_BIN || 'claude',
+      baseArgs: ['-p', '--output-format', 'json', '--permission-mode', 'plan', '--model', 'claude-sonnet-5'],
+      promptVia: 'stdin',
+      webTools: false,
+      output: 'stdout',
+      parse: 'claude-json',
+    },
   },
   presets: {
     'opus-duo': ['opus', 'opus'],
     'opus-gpt': ['opus', 'gpt-5.5'],
     'gpt-duo': ['gpt-5.5', 'gpt-5.5'],
     'frontier-trio': ['opus', 'gpt-5.5', 'gemini'],
+    'fable-duo': ['fable', 'fable'],
+    'fable-gpt': ['fable', 'gpt-5.5'],
+    'fable-trio': ['fable', 'gpt-5.5', 'gemini'],
+    'sonnet-duo': ['sonnet-5', 'sonnet-5'],
+    'sonnet-gpt': ['sonnet-5', 'gpt-5.5'],
+    'sonnet-trio': ['sonnet-5', 'gpt-5.5', 'gemini'],
+    // frontier-quint (5 members) <= the 8-model resolvePanel cap; 3 members
+    // (fable/opus/sonnet-5) share the claude CLI, fanned under concurrency:4.
+    'frontier-quad': ['fable', 'opus', 'gpt-5.5', 'gemini'],
+    'frontier-quint': ['fable', 'opus', 'sonnet-5', 'gpt-5.5', 'gemini'],
   },
   // Per-preset judge/synth model overrides. A preset listed here runs its
   // judge + synthesizer on the named model instead of the global default
@@ -371,6 +410,16 @@ const DEFAULTS = {
   // --judge/--synth flag (state.judgeModel/synthModel) overrides both.
   presetStages: {
     'gpt-duo': { judge: 'gpt-5.5', synth: 'gpt-5.5' },
+    // Family presets self-judge/synth (mirrors gpt-duo): fable-* on Fable,
+    // sonnet-* on Sonnet 5 — keeps each family's fusion runnable end-to-end
+    // on its own model. frontier-quad/quint are intentionally omitted so they
+    // fall through to the global opus judge/synth (Fable/Sonnet stay panelists).
+    'fable-duo': { judge: 'fable', synth: 'fable' },
+    'fable-gpt': { judge: 'fable', synth: 'fable' },
+    'fable-trio': { judge: 'fable', synth: 'fable' },
+    'sonnet-duo': { judge: 'sonnet-5', synth: 'sonnet-5' },
+    'sonnet-gpt': { judge: 'sonnet-5', synth: 'sonnet-5' },
+    'sonnet-trio': { judge: 'sonnet-5', synth: 'sonnet-5' },
   },
   judgeModel: 'opus',
   synthModel: 'opus',
@@ -494,6 +543,29 @@ function validateModel(m, cfg) {
   return Object.prototype.hasOwnProperty.call(c.adapters, m);
 }
 
+/**
+ * Soft, non-blocking cost advisory for a resolved run. Returns a one-line
+ * `[frontier] ...` string when any distinct member (panel + judge + synth) is a
+ * `subscription-until` adapter whose `freeUntil` cutoff has passed, else null.
+ * Pure and clock-injectable so it can be unit-tested deterministically. This
+ * never gates a run — the caller emits it to stderr and continues.
+ * @param {string[]} models resolved member ids (panel + judge + synth)
+ * @param {typeof DEFAULTS} cfg
+ * @param {Date} [now]
+ * @returns {string|null}
+ */
+function costAdvisory(models, cfg, now = new Date()) {
+  const flagged = [...new Set(models)].filter(m => {
+    const a = cfg.adapters[m];
+    return a && a.costTier === 'subscription-until' && a.freeUntil &&
+           now >= new Date(a.freeUntil + 'T00:00:00Z');
+  });
+  if (flagged.length === 0) return null;
+  return `[frontier] ${flagged.join(', ')} draws Usage Credits after ` +
+         `${cfg.adapters[flagged[0]].freeUntil} (subscription no longer covers it) ` +
+         `and burns usage faster than Opus 4.8.`;
+}
+
 module.exports = {
   DEFAULTS,
   configDir,
@@ -511,4 +583,5 @@ module.exports = {
   validateMode,
   validatePreset,
   validateModel,
+  costAdvisory,
 };
