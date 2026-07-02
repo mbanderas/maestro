@@ -357,12 +357,51 @@ const DEFAULTS = {
       output: 'stdout',
       parse: 'gemini-json',
     },
+    // Fable 5 and Sonnet 5 ride the same read-only `claude` CLI as opus, so
+    // they MUST pin --model explicitly — otherwise all three claude adapters
+    // resolve to the bare-`claude` default (verified Opus-class 2026-07-02) and
+    // panel diversity silently collapses. Full model IDs are the durable form
+    // (the CLI also accepts short aliases). Reuse parse:'claude-json'.
+    fable: {
+      model: 'fable',
+      bin: process.env.MAESTRO_CLAUDE_BIN || 'claude',
+      baseArgs: ['-p', '--output-format', 'json', '--permission-mode', 'plan', '--model', 'claude-fable-5'],
+      promptVia: 'stdin',
+      webTools: false,
+      output: 'stdout',
+      parse: 'claude-json',
+      // Soft cost metadata (no pricing table / hard gate — see costAdvisory).
+      // Subscription covers Fable 5 (<=50% weekly limit) only through freeUntil;
+      // on/after that date it draws Usage Credits and burns usage faster than
+      // Opus 4.8. Surfaced as a non-blocking run-time advisory, never enforced.
+      costTier: 'subscription-until',
+      freeUntil: '2026-07-07',
+    },
+    'sonnet-5': {
+      model: 'sonnet-5',
+      bin: process.env.MAESTRO_CLAUDE_BIN || 'claude',
+      baseArgs: ['-p', '--output-format', 'json', '--permission-mode', 'plan', '--model', 'claude-sonnet-5'],
+      promptVia: 'stdin',
+      webTools: false,
+      output: 'stdout',
+      parse: 'claude-json',
+    },
   },
   presets: {
     'opus-duo': ['opus', 'opus'],
     'opus-gpt': ['opus', 'gpt-5.5'],
     'gpt-duo': ['gpt-5.5', 'gpt-5.5'],
     'frontier-trio': ['opus', 'gpt-5.5', 'gemini'],
+    'fable-duo': ['fable', 'fable'],
+    'fable-gpt': ['fable', 'gpt-5.5'],
+    'fable-trio': ['fable', 'gpt-5.5', 'gemini'],
+    'sonnet-duo': ['sonnet-5', 'sonnet-5'],
+    'sonnet-gpt': ['sonnet-5', 'gpt-5.5'],
+    'sonnet-trio': ['sonnet-5', 'gpt-5.5', 'gemini'],
+    // frontier-quint (5 members) <= the 8-model resolvePanel cap; 3 members
+    // (fable/opus/sonnet-5) share the claude CLI, fanned under concurrency:4.
+    'frontier-quad': ['fable', 'opus', 'gpt-5.5', 'gemini'],
+    'frontier-quint': ['fable', 'opus', 'sonnet-5', 'gpt-5.5', 'gemini'],
   },
   // Per-preset judge/synth model overrides. A preset listed here runs its
   // judge + synthesizer on the named model instead of the global default
@@ -371,6 +410,16 @@ const DEFAULTS = {
   // --judge/--synth flag (state.judgeModel/synthModel) overrides both.
   presetStages: {
     'gpt-duo': { judge: 'gpt-5.5', synth: 'gpt-5.5' },
+    // Family presets self-judge/synth (mirrors gpt-duo): fable-* on Fable,
+    // sonnet-* on Sonnet 5 — keeps each family's fusion runnable end-to-end
+    // on its own model. frontier-quad/quint are intentionally omitted so they
+    // fall through to the global opus judge/synth (Fable/Sonnet stay panelists).
+    'fable-duo': { judge: 'fable', synth: 'fable' },
+    'fable-gpt': { judge: 'fable', synth: 'fable' },
+    'fable-trio': { judge: 'fable', synth: 'fable' },
+    'sonnet-duo': { judge: 'sonnet-5', synth: 'sonnet-5' },
+    'sonnet-gpt': { judge: 'sonnet-5', synth: 'sonnet-5' },
+    'sonnet-trio': { judge: 'sonnet-5', synth: 'sonnet-5' },
   },
   judgeModel: 'opus',
   synthModel: 'opus',
@@ -392,6 +441,14 @@ const DEFAULTS = {
   deadEndEscalation: false,
   concurrency: 4,
   timeoutMs: 180000,
+  // Whole-run wall-clock budget. Two invariants hold the pipeline together:
+  // (1) runBudgetMs < the autorun hook timeout (hooks/hooks.json, 600s) minus
+  //     a relay buffer, so the engine degrades gracefully inside the window
+  //     instead of the host killing the hook and discarding all output;
+  // (2) per-stage timeoutMs stays < the statusline progress-file staleness
+  //     window (300s, statusline/context-bar.mjs) or the live bar blanks
+  //     mid-stage. Non-finite/<=0 disables the budget (per-stage timeouts only).
+  runBudgetMs: 540000,
   // tokenBudget=0 means budget abort DISABLED (opt-in).
   // Set to a positive integer (e.g. 50000) to enable hard budget cutoff.
   tokenBudget: 0,
@@ -494,6 +551,74 @@ function validateModel(m, cfg) {
   return Object.prototype.hasOwnProperty.call(c.adapters, m);
 }
 
+/**
+ * The distinct adapter ids a run/arm actually invokes: [model] for single
+ * mode, panel + judge + synth for fusion, [] otherwise. Best-effort — returns
+ * [] rather than throwing on an unresolvable state, since its only consumer is
+ * the (non-blocking) cost advisory, never a gate.
+ * @param {object} state
+ * @param {typeof DEFAULTS} cfg
+ * @returns {string[]}
+ */
+function resolveRunModels(state, cfg) {
+  if (!state) return [];
+  if (state.mode === 'single') return state.model ? [state.model] : [];
+  if (state.mode === 'fusion') {
+    try {
+      return [
+        ...resolvePanel(state, cfg),
+        resolveStageModel('judge', state, cfg),
+        resolveStageModel('synth', state, cfg),
+      ];
+    } catch { return []; }
+  }
+  return [];
+}
+
+/**
+ * Soft, non-blocking cost advisory for a resolved run. Returns a one-line
+ * `[frontier] ...` string when any distinct member (panel + judge + synth) is a
+ * `subscription-until` adapter whose `freeUntil` cutoff has passed, else null.
+ * Pure and clock-injectable so it can be unit-tested deterministically. This
+ * never gates a run — the caller emits it to stderr and continues.
+ * @param {string[]} models resolved member ids (panel + judge + synth)
+ * @param {typeof DEFAULTS} cfg
+ * @param {Date} [now]
+ * @returns {string|null}
+ */
+function costAdvisory(models, cfg, now = new Date()) {
+  const flagged = [...new Set(models)].filter(m => {
+    const a = cfg.adapters[m];
+    return a && a.costTier === 'subscription-until' && a.freeUntil &&
+           now >= new Date(a.freeUntil + 'T00:00:00Z');
+  });
+  if (flagged.length === 0) return null;
+  return `[frontier] ${flagged.join(', ')} draws Usage Credits after ` +
+         `${cfg.adapters[flagged[0]].freeUntil} (subscription no longer covers it) ` +
+         `and burns usage faster than Opus 4.8.`;
+}
+
+/**
+ * Compose resolveRunModels + costAdvisory for a run/arm state — the single
+ * entry point every call site uses (autorun, cli run/mode, settings). The clock
+ * defaults to now, overridable via MAESTRO_FRONTIER_NOW (ISO date) so an
+ * operator can preview the post-cutoff advisory and the integration boundary is
+ * deterministically testable. Returns the one-line advisory string, or null.
+ * @param {object} state
+ * @param {typeof DEFAULTS} cfg
+ * @param {Date} [now]
+ * @returns {string|null}
+ */
+function runCostAdvisory(state, cfg, now) {
+  let clock = now;
+  if (!clock) {
+    const override = process.env.MAESTRO_FRONTIER_NOW;
+    const parsed = override ? new Date(override) : null;
+    clock = parsed && !Number.isNaN(parsed.getTime()) ? parsed : new Date();
+  }
+  return costAdvisory(resolveRunModels(state, cfg), cfg, clock);
+}
+
 module.exports = {
   DEFAULTS,
   configDir,
@@ -511,4 +636,6 @@ module.exports = {
   validateMode,
   validatePreset,
   validateModel,
+  costAdvisory,
+  runCostAdvisory,
 };

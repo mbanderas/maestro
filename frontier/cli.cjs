@@ -4,7 +4,7 @@
 'use strict';
 
 const fs = require('fs');
-const { DEFAULTS, loadState, saveState, resolveScope, validateMode, validatePreset, validateModel, adoptLegacyState } = require('./config.cjs');
+const { DEFAULTS, loadState, saveState, resolveScope, validateMode, validatePreset, validateModel, adoptLegacyState, runCostAdvisory } = require('./config.cjs');
 const { runFrontier, ensureRunId, canonicalModelId, canonicalPresetId } = require('./run.cjs');
 const runlock = require('./runlock.cjs');
 
@@ -123,6 +123,12 @@ function cmdMode(argv, scope) {
   }
 
   saveState(state, scope);
+  // Arm-time cost advisory (secondary echo): if the armed panel/model draws on
+  // a subscription-until adapter past its cutoff, note it on stderr. The run-
+  // time emit (cmdRun / autorun) is the load-bearing surface; this just flags
+  // it when the user arms. stderr keeps stdout the machine-readable state line.
+  const armAdvisory = runCostAdvisory(state, DEFAULTS);
+  if (armAdvisory) process.stderr.write(armAdvisory + '\n');
   process.stdout.write('frontier mode set: ' + JSON.stringify(state) + '\n');
 }
 
@@ -183,6 +189,10 @@ async function cmdRun(argv, scope) {
   // release self-heals via runlock's dead-pid pruning.
   ensureRunId();
   runlock.registerRun({ kind: 'frontier', cwd: process.cwd() });
+  // Non-blocking cost advisory (run time): flag a subscription-until adapter
+  // past its cutoff on stderr before the run. stdout stays the fused answer.
+  const runAdvisory = runCostAdvisory(state, DEFAULTS);
+  if (runAdvisory) process.stderr.write(runAdvisory + '\n');
   let result;
   try {
     result = await runFrontier({ prompt, state, deps: { onProgress } });

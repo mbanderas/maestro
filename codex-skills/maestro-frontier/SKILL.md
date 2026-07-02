@@ -43,10 +43,16 @@ maestro frontier mode fusion --preset frontier-trio --judge chatgpt --synth chat
 maestro frontier mode fusion --preset custom --models <a,b,c> --scope codex-project
 ```
 
-Models: `opus` (Claude Opus 4.8, needs `claude`), `gpt-5.5` (needs `codex`),
-`gemini` (needs `gemini`). Presets: `opus-duo`, `opus-gpt`, `gpt-duo`,
-`frontier-trio`, `custom`. Friendly aliases are accepted: `chatgpt` maps to
-`gpt-5.5`, and `chatgpt-duo` maps to `gpt-duo`.
+Models: `opus` (Claude Opus 4.8), `fable` (Claude Fable 5), `sonnet-5`
+(Claude Sonnet 5) — all need `claude`; `gpt-5.5` (needs `codex`), `gemini`
+(needs `gemini`). Presets: `opus-duo`, `opus-gpt`, `gpt-duo`, `frontier-trio`,
+`fable-duo`, `fable-gpt`, `fable-trio`, `sonnet-duo`, `sonnet-gpt`,
+`sonnet-trio`, `frontier-quad`, `frontier-quint`, `custom`. Friendly aliases
+are accepted: `chatgpt` maps to `gpt-5.5`, and `chatgpt-duo` maps to `gpt-duo`.
+The `fable-*`/`sonnet-*` presets self-judge/synth; `frontier-quad`/`-quint`
+keep the global Opus judge/synth. Fable 5 is subscription-covered only through
+2026-07-07, then draws Usage Credits — a non-blocking `[frontier] …` stderr
+advisory fires past the cutoff; relay it to the user.
 
 Judge + synth default to Opus except for presets with explicit stage defaults.
 Override them for mixed panels with `--judge <model>` and `--synth <model>`;

@@ -29,6 +29,8 @@ const MODEL_LABELS = {
   opus: 'Opus 4.8',
   'gpt-5.5': 'GPT-5.5 (Codex)',
   gemini: 'Gemini 3.1 Pro',
+  fable: 'Fable 5',
+  'sonnet-5': 'Sonnet 5',
 };
 
 // ---------- directory resolvers ----------
@@ -307,9 +309,20 @@ function setVerify(mode) {
 
 function readFrontier(scope) { return frontier.loadState(scope); }
 
+// Arm-time cost advisory (secondary echo): the one-line notice for a
+// subscription-until adapter (Fable 5) armed past its cutoff, routed into the
+// `warning` field so settings/cli prints it (r.warning). The load-bearing
+// surface is the run-time emit in frontier autorun/cmdRun; this only flags it
+// when the user arms. Best-effort — never blocks the save.
+function frontierCostWarning(state) {
+  try {
+    return frontier.runCostAdvisory(state, frontier.DEFAULTS);
+  } catch { return null; }
+}
+
 function saveFrontier(state, scope) {
   return frontier.saveState(state, scope)
-    ? { ok: true, warning: null }
+    ? { ok: true, warning: frontierCostWarning(state) }
     : { ok: false, error: 'failed to write frontier state' };
 }
 

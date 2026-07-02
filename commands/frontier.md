@@ -12,8 +12,15 @@ makes it **auto-run on every prompt** — a `UserPromptSubmit` hook
 (`hooks/frontier-autorun.cjs`) routes each prompt through the engine and
 the live session relays the synthesized answer. `off` disables auto-run.
 Autorun blocks the turn until the engine returns; the hook carries a
-300s timeout (`hooks/hooks.json`), and a run that exceeds it is skipped
-so the turn proceeds normally. Any engine error degrades the same way.
+600s timeout (`hooks/hooks.json`), and the engine keeps itself inside
+that window with an internal 540s run budget — a stage that would start
+over budget is skipped and the run degrades gracefully to the best
+answer already in hand (judge skipped -> synthesis on raw responses;
+synthesis skipped -> longest panel response). Any engine error degrades
+the same way.
+Plugin/slash command prompts (e.g. `/maestro:frontier off`, `/clear`)
+bypass autorun entirely — they are host directives, not questions
+(opt out with `autorunOnCommands: true` in frontier state).
 
 Requested action: `$ARGUMENTS`
 
@@ -30,12 +37,17 @@ self-contained; do not edit its state file yourself.
    node "${CLAUDE_PLUGIN_ROOT}/bin/maestro.cjs" frontier mode fusion --preset <preset> --judge <model> --synth <model>
    ```
 
-   Models: `opus` (Claude Opus 4.8), `gpt-5.5` (Codex), `gemini`
-   (Gemini 3.1 Pro). Presets: `opus-duo`, `opus-gpt`, `gpt-duo`,
-   `frontier-trio`, `custom`. The judge + synthesizer default to Opus,
-   but `gpt-duo` runs them on GPT-5.5 (a Codex-only fusion that needs no
-   `claude`), and `--judge`/`--synth` override the model for any preset,
-   so you can mix freely (e.g. `--judge opus --synth gpt-5.5`).
+   Models: `opus` (Claude Opus 4.8), `fable` (Claude Fable 5), `sonnet-5`
+   (Claude Sonnet 5), `gpt-5.5` (Codex), `gemini` (Gemini 3.1 Pro).
+   Presets: `opus-duo`, `opus-gpt`, `gpt-duo`, `frontier-trio`,
+   `fable-duo`, `fable-gpt`, `fable-trio`, `sonnet-duo`, `sonnet-gpt`,
+   `sonnet-trio`, `frontier-quad` (fable+opus+gpt+gemini), `frontier-quint`
+   (adds sonnet-5), `custom`. The judge + synthesizer default to Opus, but
+   the family presets self-judge (`gpt-duo` on GPT-5.5, `fable-*` on Fable,
+   `sonnet-*` on Sonnet 5 — each a single-family fusion), and
+   `--judge`/`--synth` override the model for any preset, so you can mix
+   freely (e.g. `--judge opus --synth gpt-5.5`). `frontier-quad`/`-quint`
+   keep the global Opus judge/synth (Fable/Sonnet stay panelists).
 
 2. Show current mode/preset:
 
@@ -58,6 +70,10 @@ self-contained; do not edit its state file yourself.
    - `fusion`: runs the panel in parallel, then the judge and
      synthesizer models; prints the final answer (a one-line run meta of
      preset, models, analysis present, and failed models goes to stderr).
+   - A run or arm that involves **Fable 5** on or after **2026-07-07**
+     also prints a one-line `[frontier] …` cost advisory to stderr (Fable
+     draws Usage Credits past that date instead of subscription). It never
+     blocks the run — **relay that advisory line to the user** if present.
 
 4. Adopt a previously-armed **global** mode into this workspace
    (per-workspace isolation means a workspace never inherits the old
@@ -91,6 +107,10 @@ self-contained; do not edit its state file yourself.
    On an error the engine prints `ERROR [<failure_reason>]: <detail>`
    to stderr and exits non-zero; relay the failure_reason.
 
+   Whenever the engine prints a `[frontier] …` advisory line to stderr
+   (e.g. the Fable 5 Usage-Credits cost notice), surface it to the user
+   verbatim alongside your answer — it is informational, never a failure.
+
 Notes:
 
 - **Arming in Claude Code is per-workspace.** State is stored in a
@@ -102,6 +122,14 @@ Notes:
 - Real `single`/`fusion` runs spawn local CLIs and cost tokens; each
   cold `claude -p` panel/judge/synth call is non-trivial. Use small
   prompts. `off` is free.
+- **Fable 5 cost:** under a Claude subscription, Fable 5 is covered (up to
+  ~50% of your weekly usage limit) only through **2026-07-07**; on or after
+  that date it draws Usage Credits and burns usage faster than Opus 4.8.
+  The engine surfaces this as a non-blocking `[frontier] …` stderr advisory
+  when a Fable-bearing panel runs past the cutoff — it never gates a run.
+  The claude-family panelists (`opus`, `fable`, `sonnet-5`) all share the
+  one `claude` CLI, so `frontier-quint` can make up to five `claude` calls
+  per run on a single subscription — mind the rate limit.
 - Headless web access varies per CLI (Codex confirmed; Claude and
   Gemini gated off in this build). The engine sets a per-adapter
   `webTools` flag accordingly; see the risk burndown.
@@ -115,11 +143,12 @@ Notes:
 ## Binary overrides
 
 The engine is zero-dependency CommonJS under `frontier/`. Each CLI is
-resolved from your `PATH`: `claude` (Opus 4.8), `codex` (GPT-5.5), and
-`gemini` (Gemini 3.1 Pro). When a binary is not on `PATH`, or you want a
-specific build, point at it with an environment variable:
+resolved from your `PATH`: `claude` (Opus 4.8, Fable 5, Sonnet 5 — one
+CLI, distinct `--model`), `codex` (GPT-5.5), and `gemini` (Gemini 3.1
+Pro). When a binary is not on `PATH`, or you want a specific build, point
+at it with an environment variable:
 
-- `MAESTRO_CLAUDE_BIN` sets the `claude` binary path.
+- `MAESTRO_CLAUDE_BIN` sets the `claude` binary path (all Claude models).
 - `MAESTRO_CODEX_BIN` sets the `codex` binary path.
 - `MAESTRO_GEMINI_BIN` sets the `gemini` binary path.
 

@@ -58,6 +58,23 @@ if (!state || state.mode === 'off') noop();
 
 const prompt = String(data.prompt || '');
 
+// Command guard (default ON): plugin/slash commands (/maestro:frontier off,
+// /clear, /loop) are host directives, not questions -- fanning one through
+// the panel costs minutes of blocking latency plus tokens for zero value.
+// The hooks contract does not specify what `prompt` carries for a slash
+// command, so detection covers BOTH candidate shapes: the raw typed `/cmd`
+// form (whole-first-token match only, so `/etc/hosts is broken` still fans)
+// and the transcript XML form (<command-name>/<command-message>/
+// <command-args>, tag order varies between commands -- checked within the
+// first 64 chars so a prose prompt merely quoting a tag mid-text still
+// fans). Opt out with state.autorunOnCommands === true.
+if (state.autorunOnCommands !== true) {
+  const trimmed = prompt.trim();
+  if (/<command-(?:name|message|args)>/.test(trimmed.slice(0, 64))) noop();
+  const firstToken = trimmed.split(/\s+/, 1)[0] || '';
+  if (/^\/[A-Za-z][\w:-]*$/.test(firstToken)) noop();
+}
+
 // Optional length gate (default 0 = every prompt). Skips trivially short
 // prompts ("yes"/"ok") so they don't pay a full engine run.
 const rawMin = Number(state.autorunMinChars);
@@ -76,7 +93,11 @@ if (prompt.trim().length < minChars) noop();
 // with state.autorunFanLoops === true.
 if (state.autorunFanLoops !== true) {
   const LOOP_PROMPT_RE = /(^|\s)\/loop\b|<<\s*autonomous-loop|autonomous[ _-]loop\b/i;
-  if (LOOP_PROMPT_RE.test(prompt)) noop();
+  // Test the raw prompt AND a copy with <command-*> tags stripped to spaces:
+  // the XML command form (<command-name>/loop</command-name>) puts `>` before
+  // /loop, which (^|\s) never matches.
+  const detagged = prompt.replace(/<\/?command-[a-z]+>/g, ' ');
+  if (LOOP_PROMPT_RE.test(prompt) || LOOP_PROMPT_RE.test(detagged)) noop();
 }
 
 // Any unexpected throw after the await boundary degrades to a normal turn,
@@ -92,8 +113,18 @@ async function run() {
   // Live statusline progress: write the current stage as each one starts so
   // the context-bar can show ƒ⠿ fanning / ƒ⚖ judging / ƒ✶ synth during the
   // otherwise-silent blocking run. Cleared below on completion or error.
+  // Composed with a one-line stderr breadcrumb per stage event (CLI verbose /
+  // transcript view; the only live surface Codex has) — stderr only, never
+  // stdout: stdout is the fused-answer channel the host relays.
   const progress = require('../frontier/progress.cjs');
-  const onProgress = progress.makeProgressWriter(scope);
+  const progressWriter = progress.makeProgressWriter(scope);
+  const onProgress = (ev) => {
+    progressWriter(ev);
+    try {
+      const line = stageBreadcrumb(ev);
+      if (line) process.stderr.write('[frontier] ' + line + '\n');
+    } catch { /* breadcrumbs are best-effort */ }
+  };
   // Register this armed run so an out-of-process observer (the Stop
   // loop-guard, or an agent re-grounding per S10) can see a coordinated,
   // read-only Frontier run is in flight -- not a rogue write-loop. Released
@@ -105,7 +136,31 @@ async function run() {
     const { runFrontier, ensureRunId } = require('../frontier/run.cjs');
     ensureRunId();
     runlock.registerRun({ kind: 'frontier', cwd: runCwd });
-    result = await runFrontier({ prompt, state, deps: { onProgress } });
+    // Non-blocking cost advisory (run time, the load-bearing surface): if this
+    // run invokes a subscription-until adapter past its cutoff (Fable 5 after
+    // 2026-07-07), emit a one-line stderr notice. stderr only — stdout is the
+    // fused-answer channel the host relays. Best-effort; never gates the run.
+    try {
+      const cfg = require('../frontier/config.cjs');
+      const advisory = cfg.runCostAdvisory(state, cfg.DEFAULTS);
+      if (advisory) process.stderr.write(advisory + '\n');
+    } catch { /* advisory is best-effort */ }
+    // Operator tuning without code: finite positive state.runBudgetMs /
+    // state.timeoutMs override DEFAULTS, clamped to [30s, 570s] so a typo can
+    // neither hang the engine past the hook's 600s window nor starve a stage.
+    // Autorun has no other cfg path (runFrontier without cfg -> DEFAULTS).
+    let cfgOverride;
+    const clampMs = (v) => Math.min(570000, Math.max(30000, v));
+    const stateBudget = Number(state.runBudgetMs);
+    const stateTimeout = Number(state.timeoutMs);
+    if ((Number.isFinite(stateBudget) && stateBudget > 0) ||
+        (Number.isFinite(stateTimeout) && stateTimeout > 0)) {
+      const { DEFAULTS } = require('../frontier/config.cjs');
+      cfgOverride = { ...DEFAULTS };
+      if (Number.isFinite(stateBudget) && stateBudget > 0) cfgOverride.runBudgetMs = clampMs(stateBudget);
+      if (Number.isFinite(stateTimeout) && stateTimeout > 0) cfgOverride.timeoutMs = clampMs(stateTimeout);
+    }
+    result = await runFrontier({ prompt, state, cfg: cfgOverride, deps: { onProgress } });
   } catch (e) {
     runlock.releaseRun();
     progress.clearProgress(scope);
@@ -148,6 +203,44 @@ async function run() {
     },
   }));
   process.exit(0);
+}
+
+/**
+ * One stderr line per stage event, e.g. `panel 2/3 (gpt-5.5 41s)` /
+ * `judge start (opus)`. Model names are whitelisted (same regex as
+ * frontier/progress.cjs) and counts clamped — presentation data only.
+ * Returns null for events not worth a line.
+ * @param {object} ev @returns {string|null}
+ */
+function stageBreadcrumb(ev) {
+  if (!ev || typeof ev.phase !== 'string') return null;
+  const model = typeof ev.model === 'string' && /^[a-z0-9.-]{1,24}$/i.test(ev.model) ? ev.model : '';
+  const ms = Number(ev.ms);
+  const secs = Number.isFinite(ms) && ms >= 0 ? Math.round(ms / 1000) + 's' : '';
+  const clamp = (v) => {
+    const n = Math.floor(Number(v));
+    return Number.isFinite(n) && n >= 0 ? Math.min(n, 99) : 0;
+  };
+  const paren = (parts) => {
+    const inner = parts.filter(Boolean).join(' ');
+    return inner ? ' (' + inner + ')' : '';
+  };
+  switch (ev.phase) {
+    case 'panel-start':
+      return 'panel start' + paren([(Array.isArray(ev.models) ? ev.models.length : 0) + ' models']);
+    case 'panel-progress':
+      return 'panel ' + clamp(ev.done) + '/' + clamp(ev.total) + paren([model, secs]);
+    case 'judge-start':
+      return 'judge start' + paren([model]);
+    case 'synth-start':
+      return 'synth start' + paren([model]);
+    case 'escalate-start':
+      return 'escalate start' + paren([model]);
+    case 'degraded':
+      return 'degraded' + paren([ev.reason === 'budget' ? 'budget' : clamp(ev.failed) + ' failed']);
+    default:
+      return null;
+  }
 }
 
 function presetHeader(st) {
