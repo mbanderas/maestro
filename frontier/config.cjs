@@ -219,17 +219,15 @@ function loadState(scope) {
 }
 
 /**
- * Atomic temp+rename write, 0600, symlink-refusing.
- * Ported from safeWriteFlag in hooks/maestro-terse-mode.cjs.
- * @param {object} state
- * @param {string} [scope] Omit to autodetect the runtime scope via resolveScope([]).
+ * Atomic temp+rename JSON write, 0600, symlink-refusing — the single write
+ * pattern for every file under configDir() (state here, saved presets in
+ * presets.cjs). Ported from safeWriteFlag in hooks/maestro-terse-mode.cjs.
+ * @param {string} p absolute target path
+ * @param {object} obj
  * @returns {boolean}
  */
-function saveState(state, scope) {
-  if (scope === undefined) scope = resolveScope([]);
-  else scope = resolveScopeAlias(scope);
+function safeWriteJson(p, obj) {
   try {
-    const p = statePath(scope);
     const dir = path.dirname(p);
     fs.mkdirSync(dir, { recursive: true });
     try { if (fs.lstatSync(dir).isSymbolicLink()) return false; } catch { return false; }
@@ -238,7 +236,7 @@ function saveState(state, scope) {
     } catch (e) {
       if (e.code !== 'ENOENT') return false;
     }
-    const tempPath = path.join(dir, `.frontier-state.${process.pid}.${Date.now()}.tmp`);
+    const tempPath = path.join(dir, `.${path.basename(p)}.${process.pid}.${Date.now()}.tmp`);
     const O_NOFOLLOW = typeof fs.constants.O_NOFOLLOW === 'number' ? fs.constants.O_NOFOLLOW : 0;
     const flags = fs.constants.O_WRONLY | fs.constants.O_CREAT | fs.constants.O_EXCL | O_NOFOLLOW;
     let fd;
@@ -247,7 +245,7 @@ function saveState(state, scope) {
         try { if (fs.lstatSync(tempPath).isSymbolicLink()) return false; } catch {}
       }
       fd = fs.openSync(tempPath, flags, 0o600);
-      fs.writeSync(fd, JSON.stringify(state));
+      fs.writeSync(fd, JSON.stringify(obj));
       try { fs.fchmodSync(fd, 0o600); } catch {}
     } finally {
       if (fd !== undefined) fs.closeSync(fd);
@@ -257,6 +255,17 @@ function saveState(state, scope) {
   } catch {
     return false;
   }
+}
+
+/**
+ * @param {object} state
+ * @param {string} [scope] Omit to autodetect the runtime scope via resolveScope([]).
+ * @returns {boolean}
+ */
+function saveState(state, scope) {
+  if (scope === undefined) scope = resolveScope([]);
+  else scope = resolveScopeAlias(scope);
+  return safeWriteJson(statePath(scope), state);
 }
 
 /**
@@ -714,10 +723,12 @@ module.exports = {
   sanitizeScope,
   workspaceHash,
   resolveScope,
+  resolveScopeAlias,
   statePath,
   legacyStatePath,
   loadState,
   saveState,
+  safeWriteJson,
   adoptLegacyState,
   resolvePanel,
   resolveJudgeModel,

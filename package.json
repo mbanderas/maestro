@@ -21,6 +21,7 @@
     "frontier/dispatch.cjs",
     "frontier/judge.cjs",
     "frontier/progress.cjs",
+    "frontier/presets.cjs",
     "frontier/run.cjs",
     "frontier/runlock.cjs",
     "frontier/schema.cjs",
