@@ -200,11 +200,19 @@ Presets define the panel; the judge and synthesizer default to Opus 4.8
 - **`opus-gpt`**: Opus + GPT-5.5 (via `codex exec`); the recommended default for bounded spend.
 - **`chatgpt-duo`** (`gpt-duo` alias): two ChatGPT/Codex runs whose judge and synthesizer also run on ChatGPT/Codex: a Codex-only fusion that needs no `claude`.
 - **`frontier-trio`**: Opus + GPT-5.5 + Gemini 3.1 Pro (via `gemini -p`).
+- **`fable-duo` / `fable-gpt` / `fable-trio`**: Fable 5 panels that self-judge and self-synth on Fable (trio adds GPT-5.5 + Gemini).
+- **`sonnet-duo` / `sonnet-gpt` / `sonnet-trio`**: Sonnet 5 panels that self-judge and self-synth on Sonnet 5 (trio adds GPT-5.5 + Gemini).
+- **`frontier-quad`**: Fable 5 + Opus + GPT-5.5 + Gemini, judged/synthesized on Opus.
+- **`frontier-quint`**: adds Sonnet 5 to the quad — the full five-model panel.
 - **`custom`**: 1-8 of the known models.
 
-Three model CLIs ship as adapters today: Opus 4.8 (`claude`), GPT-5.5
-(`codex`), and Gemini 3.1 Pro (`gemini`). Kimi, DeepSeek, GLM, and Qwen
-adapters follow in an update soon.
+Five model CLIs ship as adapters today: Opus 4.8, Fable 5, and Sonnet 5
+(all via `claude` with a distinct `--model`), GPT-5.5 (`codex`), and
+Gemini 3.1 Pro (`gemini`). Kimi, DeepSeek, GLM, and Qwen adapters follow
+in an update soon. Fable 5 is subscription-covered only through
+2026-07-07; after that it draws Usage Credits, and the engine prints a
+non-blocking `[frontier] …` cost advisory when a Fable panel runs past
+the cutoff.
 
 Pass `--judge <model>` / `--synth <model>` to run those stages on any
 model for any preset (e.g. `--judge opus --synth gpt-5.5`), so you can mix
@@ -216,9 +224,11 @@ failure synthesizes from the raw responses; a hard failure returns a typed
 Honest scope, measured rather than implied: the **engine is built,
 unit-tested (degradation, recursion, budget, anti-majority all covered),
 and verified end-to-end on real runs of `single` mode and the
-`opus-gpt`, `opus-duo`, and `frontier-trio` presets**. The `chatgpt-duo`
-preset and `--judge`/`--synth` selection share that same code path and
-are unit-tested, but not yet live-run. The quality *lift* of local fusion
+`opus-gpt`, `opus-duo`, and `frontier-trio` presets**. The `chatgpt-duo`,
+`fable-*`, `sonnet-*`, `frontier-quad`, and `frontier-quint` presets and
+`--judge`/`--synth` selection share that same code path and are
+unit-tested (Fable/Sonnet `--model` acceptance smoke-tested against the
+live CLI), but not yet live-run end-to-end. The quality *lift* of local fusion
 is **measured, not asserted**: on a 100-task suite (93 scored) every
 fusion panel outscored its own member models, with the strongest fusion
 leading the field. That fusion-vs-solo result is a separate axis from the
@@ -366,7 +376,7 @@ actions also run through the portable scripts noted below.
 | Toggle | Values | What it controls |
 |---|---|---|
 | `terse` | `off`, `lite`, `full`, `ultra` | Output-token reduction. Shows an amber level badge (`ULTRA`) on the status bar. |
-| `frontier` | `off`; `single:` `opus` / `gpt-5.5` / `gemini`; `fusion:` `opus-duo` / `opus-gpt` / `chatgpt-duo` / `frontier-trio` / `custom`, each with optional `--judge` / `--synth` | The local fusion engine. When armed it auto-runs on every prompt. The blue `f` panel badge means auto-run is on: `fO+C`, `fO+C+G`, `f*3` (`O`=Opus, `C`=ChatGPT/GPT-5.5, `G`=Gemini). |
+| `frontier` | `off`; `single:` `opus` / `fable` / `sonnet-5` / `gpt-5.5` / `gemini`; `fusion:` `opus-duo` / `opus-gpt` / `chatgpt-duo` / `frontier-trio` / `fable-duo` / `fable-gpt` / `fable-trio` / `sonnet-duo` / `sonnet-gpt` / `sonnet-trio` / `frontier-quad` / `frontier-quint` / `custom`, each with optional `--judge` / `--synth` | The local fusion engine. When armed it auto-runs on every prompt. The blue `f` panel badge means auto-run is on: `fO+C`, `fO+C+G`, `f*3` (`O`=Opus, `F`=Fable 5, `S`=Sonnet 5, `C`=ChatGPT/GPT-5.5, `G`=Gemini). |
 | `context-bar` | `on`, `off` | The status-line context-window progress bar. |
 | `discipline` | `on`, `off` | The enforcement-hook pack (gate-reminder, doctrine-guard, phase-scope, subagent-guard, verify-gate, loop-guard, gate-telemetry, toolbudget). `off` silences every hook for users who want only the Frontier engine. See [Discipline layer toggle](#discipline-layer-toggle) for the one caveat. |
 | `verify` | `off`, `warn`, `block` | The S7.3 verify-gate Stop hook. `warn` (default) injects a non-blocking nudge when a session modified files but ran no checker and stated no honest status token; `block` blocks the Stop once to force a checker run or honest token; `off` disables. `MAESTRO_VERIFY_GATE` overrides per-session. Arm `block` in repos with a real test suite. |
