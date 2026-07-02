@@ -80,6 +80,54 @@ test('makeProgressWriter maps engine events to phases', () => {
   assert.strictEqual(read(SCOPE).phase, 'single');
 });
 
+test('makeProgressWriter maps escalate-start to the escalate phase', () => {
+  const w = progress.makeProgressWriter(SCOPE);
+  w({ phase: 'escalate-start', model: 'gemini' });
+  const rec = read(SCOPE);
+  assert.strictEqual(rec.phase, 'escalate');
+  assert.strictEqual(rec.model, 'gemini');
+});
+
+test('writeProgress whitelists the model name (pass) and omits it (reject)', () => {
+  progress.writeProgress(SCOPE, { phase: 'judge', model: 'gpt-5.5' });
+  assert.strictEqual(read(SCOPE).model, 'gpt-5.5');
+  for (const bad of ['no spaces', 'a'.repeat(25), 'evil;rm -rf', '', 42, null]) {
+    progress.writeProgress(SCOPE, { phase: 'judge', model: bad });
+    assert.strictEqual('model' in read(SCOPE), false, 'model leaked: ' + String(bad));
+  }
+});
+
+test('writeProgress forwards a sane startTs and drops an insane one', () => {
+  const now = Date.now();
+  progress.writeProgress(SCOPE, { phase: 'synth', startTs: now });
+  assert.strictEqual(read(SCOPE).startTs, now);
+  for (const bad of [0, -5, NaN, 'soon', undefined]) {
+    progress.writeProgress(SCOPE, { phase: 'synth', startTs: bad });
+    assert.strictEqual('startTs' in read(SCOPE), false, 'startTs leaked: ' + String(bad));
+  }
+});
+
+test('startTs is captured once and stable across successive writes', async () => {
+  const w = progress.makeProgressWriter(SCOPE);
+  w({ phase: 'panel-start', models: ['opus', 'gemini'] });
+  const first = read(SCOPE).startTs;
+  assert.ok(Number.isFinite(first) && first > 0, 'startTs missing on first write');
+  await new Promise((r) => setTimeout(r, 15));
+  w({ phase: 'panel-progress', done: 1, total: 2, model: 'opus' });
+  assert.strictEqual(read(SCOPE).startTs, first);
+  w({ phase: 'synth-start', model: 'opus' });
+  const last = read(SCOPE);
+  assert.strictEqual(last.startTs, first);
+  assert.ok(last.ts > first || last.ts >= first, 'ts still fresh per write');
+});
+
+test('panel-progress passes the completing member model through', () => {
+  const w = progress.makeProgressWriter(SCOPE);
+  w({ phase: 'panel-progress', done: 2, total: 3, model: 'gpt-5.5' });
+  const rec = read(SCOPE);
+  assert.deepStrictEqual([rec.phase, rec.done, rec.total, rec.model], ['panel', 2, 3, 'gpt-5.5']);
+});
+
 test('makeProgressWriter ignores terminal/unknown events (no write)', () => {
   const w = progress.makeProgressWriter(SCOPE);
   for (const phase of ['panel-done', 'degraded', 'done', 'mystery']) {

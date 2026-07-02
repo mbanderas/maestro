@@ -441,6 +441,14 @@ const DEFAULTS = {
   deadEndEscalation: false,
   concurrency: 4,
   timeoutMs: 180000,
+  // Whole-run wall-clock budget. Two invariants hold the pipeline together:
+  // (1) runBudgetMs < the autorun hook timeout (hooks/hooks.json, 600s) minus
+  //     a relay buffer, so the engine degrades gracefully inside the window
+  //     instead of the host killing the hook and discarding all output;
+  // (2) per-stage timeoutMs stays < the statusline progress-file staleness
+  //     window (300s, statusline/context-bar.mjs) or the live bar blanks
+  //     mid-stage. Non-finite/<=0 disables the budget (per-stage timeouts only).
+  runBudgetMs: 540000,
   // tokenBudget=0 means budget abort DISABLED (opt-in).
   // Set to a positive integer (e.g. 50000) to enable hard budget cutoff.
   tokenBudget: 0,

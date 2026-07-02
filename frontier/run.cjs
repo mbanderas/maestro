@@ -114,6 +114,24 @@ async function runFrontier({ prompt, state, cfg, deps }) {
 
   const startMs = Date.now();
 
+  // Whole-run wall-clock budget (cfg.runBudgetMs): keeps the engine inside
+  // the autorun hook's outer timeout so a slow run degrades to the best
+  // available answer instead of the host killing the hook and discarding
+  // everything. Non-finite or <=0 disables it (backward compatible for
+  // direct runFrontier callers). Stages started with < BUDGET_FLOOR_MS left
+  // are skipped outright — each skip has an existing graceful fallback.
+  const runBudgetMs = Number(cfg.runBudgetMs);
+  const hasRunBudget = Number.isFinite(runBudgetMs) && runBudgetMs > 0;
+  const BUDGET_FLOOR_MS = 15000;
+  /** @returns {number} ms left in the run budget; Infinity when no budget. */
+  function budgetRemaining() {
+    return hasRunBudget ? runBudgetMs - (Date.now() - startMs) : Infinity;
+  }
+  /** @param {number} remaining @returns {number} stage timeout clamped to the budget. */
+  function stageTimeout(remaining) {
+    return Math.min(cfg.timeoutMs, remaining);
+  }
+
   /** Emit a progress event; swallows any error thrown by the callback. */
   function emit(eventObj) {
     if (!onProgress) return;
@@ -162,7 +180,8 @@ async function runFrontier({ prompt, state, cfg, deps }) {
       };
     }
     emit({ phase: 'single-start', model: state.model });
-    const resp = await spawnOne(prompt, adapter, { timeoutMs: cfg.timeoutMs, fusionDepth: depth + 1 });
+    const resp = await spawnOne(prompt, adapter,
+      { timeoutMs: stageTimeout(budgetRemaining()), fusionDepth: depth + 1 });
     if (!resp.ok) {
       return {
         status: 'error',
@@ -231,28 +250,52 @@ async function runFrontier({ prompt, state, cfg, deps }) {
       judgeModel: resolveJudgeModel(state, cfg),
       synthModel: resolveSynthModel(state, cfg),
     };
-    emit({ phase: 'judge-start', model: stageCfg.judgeModel });
-    const analysis = await runJudge(prompt, ok, stageCfg);
+    let analysis;
+    const judgeRemaining = budgetRemaining();
+    if (judgeRemaining < BUDGET_FLOOR_MS) {
+      // Budget exhausted before the judge: skip it and synthesize on the raw
+      // panel responses (runSynth accepts analysis === undefined).
+      emit({ phase: 'degraded', reason: 'budget' });
+    } else {
+      emit({ phase: 'judge-start', model: stageCfg.judgeModel });
+      analysis = await runJudge(prompt, ok,
+        { ...stageCfg, timeoutMs: stageTimeout(judgeRemaining) });
+    }
     // Task-matched synthesizer: re-resolve now the analysis crux is known
     // (opt-in via cfg.analysisSynthSelect; default keeps stageCfg.synthModel).
     const synthModel = resolveSynthModel(state, cfg, analysis);
-    emit({ phase: 'synth-start', model: synthModel });
-    let final = await runSynth(prompt, { analysis, responses: ok }, { ...stageCfg, synthModel });
+    let final = null;
+    const synthRemaining = budgetRemaining();
+    if (synthRemaining < BUDGET_FLOOR_MS) {
+      // Budget exhausted before synth: fall through to the longest-response
+      // fallback below.
+      emit({ phase: 'degraded', reason: 'budget' });
+    } else {
+      emit({ phase: 'synth-start', model: synthModel });
+      final = await runSynth(prompt, { analysis, responses: ok },
+        { ...stageCfg, synthModel, timeoutMs: stageTimeout(synthRemaining) });
+    }
 
     // Dead-end escalation (opt-in): a scored dead-end gets a clean-slate
     // re-examination by a FRESH perspective, not a same-agent retry.
     let escalated = false;
     let escalationModel = null;
     if (cfg.deadEndEscalation && judge.isDeadEnd(analysis)) {
-      escalationModel = pickFreshAdapter(cfg, panelIds, synthModel);
-      if (escalationModel) {
-        emit({ phase: 'escalate-start', model: escalationModel });
-        let er;
-        try {
-          er = await spawnOne(buildReframeBrief(prompt), cfg.adapters[escalationModel],
-            { timeoutMs: cfg.timeoutMs, fusionDepth: depth + 1 });
-        } catch { er = null; }
-        if (er && er.ok && er.content) { final = er.content; escalated = true; }
+      const escalateRemaining = budgetRemaining();
+      if (escalateRemaining < BUDGET_FLOOR_MS) {
+        // Budget exhausted: never start an escalation spawn over budget.
+        emit({ phase: 'degraded', reason: 'budget' });
+      } else {
+        escalationModel = pickFreshAdapter(cfg, panelIds, synthModel);
+        if (escalationModel) {
+          emit({ phase: 'escalate-start', model: escalationModel });
+          let er;
+          try {
+            er = await spawnOne(buildReframeBrief(prompt), cfg.adapters[escalationModel],
+              { timeoutMs: stageTimeout(escalateRemaining), fusionDepth: depth + 1 });
+          } catch { er = null; }
+          if (er && er.ok && er.content) { final = er.content; escalated = true; }
+        }
       }
     }
 

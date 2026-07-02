@@ -104,29 +104,40 @@ function terseBadge() {
   return ` ${ESC}[38;5;172m${mode.toUpperCase()}${RESET}`;
 }
 
-// Live Frontier run progress -- emits only whitelisted phase words + clamped
-// integer counts, never raw bytes. Stale files (ts older than 300s) ignored.
+// Live Frontier run progress -- emits only whitelisted phase words, clamped
+// integer counts, a regex-whitelisted model name, and a clamped elapsed-secs
+// figure, never raw bytes. Stale files (ts older than 300s) ignored.
 function frontierProgress(cfgDir, ws) {
   const path = scopedOrLegacy(cfgDir, ws, 'frontier-progress');
   if (!path) return '';
   const p = readGuardedJson(path, 8192);
   if (!p) return '';
   const phase = String(p.phase || '');
-  if (!['panel', 'judge', 'synth', 'single'].includes(phase)) return '';
+  if (!['panel', 'judge', 'synth', 'single', 'escalate'].includes(phase)) return '';
   const ts = Number.parseInt(p.ts, 10);
   if (!Number.isFinite(ts) || ts <= 0 || Date.now() - ts > 300000) return '';
   let done = Number.parseInt(p.done, 10); if (!Number.isFinite(done)) done = 0;
   let total = Number.parseInt(p.total, 10); if (!Number.isFinite(total)) total = 0;
   done = Math.max(0, Math.min(99, done));
   total = Math.max(0, Math.min(99, total));
+  // Optional enrichments; absent or invalid fields degrade to the bare label
+  // (old progress files keep rendering exactly as before). The model string is
+  // re-validated reader-side with the writer's own whitelist regex.
+  const model = typeof p.model === 'string' && /^[a-z0-9.-]{1,24}$/i.test(p.model) ? p.model : '';
+  const startTs = Number.parseInt(p.startTs, 10);
+  const elapsedMs = Number.isFinite(startTs) && startTs > 0 ? Date.now() - startTs : 0;
+  const secs = elapsedMs > 0 && elapsedMs < 86400000 ? `${Math.floor(elapsedMs / 1000)}s` : '';
   let label;
   switch (phase) {
     case 'panel': label = total > 0 ? `⠿ fanning ${done}/${total}` : '⠿ fanning'; break;
     case 'judge': label = '⚖ judging'; break;
     case 'synth': label = '✦ synthesizing'; break;
+    case 'escalate': label = '⟳ escalating'; break;
     case 'single': label = '⠿ running'; break;
     default: return '';
   }
+  if (phase !== 'panel' && model) label += ` · ${model}`;
+  if (secs) label += ` · ${secs}`;
   return ` ${ESC}[38;5;214mƒ${label}${RESET}`;
 }
 

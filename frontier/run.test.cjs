@@ -643,6 +643,118 @@ async function runTests() {
     check('(r4) final rescued', result.final === 'RESCUED', 'got ' + result.final);
   }
 
+  // (s) run budget exhausted before judge -> judge + synth skipped, degraded
+  //     (reason budget) emitted, final falls back to the longest panel response.
+  {
+    const spyJudge = spy(async () => VALID_ANALYSIS);
+    const spySynth = spy(async () => 'FINAL');
+    const events = [];
+    const result = await runFrontier({
+      prompt: 'hello',
+      state: { mode: 'fusion', preset: 'opus-gpt' },
+      cfg: { ...baseCfg, runBudgetMs: 1 },
+      deps: {
+        fanOut: async () => [makeOk('opus', 'short'), makeOk('gpt-5.5', 'longercontent')],
+        runJudge: spyJudge,
+        runSynth: spySynth,
+        onProgress: (ev) => events.push(ev),
+      },
+    });
+    check('(s) budget-skip status ok', result.status === 'ok', 'got ' + result.status);
+    check('(s) budget-skip final = longest panel response', result.final === 'longercontent',
+      'got ' + result.final);
+    check('(s) budget-skip judge not called', !spyJudge.wasCalled(), 'runJudge called');
+    check('(s) budget-skip synth not called', !spySynth.wasCalled(), 'runSynth called');
+    const budgetEvents = events.filter(e => e.phase === 'degraded' && e.reason === 'budget');
+    check('(s) budget-skip degraded(budget) emitted', budgetEvents.length >= 1,
+      'events: ' + events.map(e => e.phase).join(','));
+  }
+
+  // (s2) stage timeout clamped to the remaining budget (observed by the stub).
+  {
+    let judgeCfg = null;
+    let synthCfg = null;
+    const result = await runFrontier({
+      prompt: 'hello',
+      state: { mode: 'fusion', preset: 'opus-gpt' },
+      cfg: { ...baseCfg, timeoutMs: 300000, runBudgetMs: 20000 },
+      deps: {
+        fanOut: async () => [makeOk('opus', 'a'), makeOk('gpt-5.5', 'b')],
+        runJudge: async (_p, _r, cfg) => { judgeCfg = cfg; return VALID_ANALYSIS; },
+        runSynth: async (_p, _b, cfg) => { synthCfg = cfg; return 'FINAL'; },
+      },
+    });
+    check('(s2) clamped run ok', result.status === 'ok', 'got ' + result.status);
+    check('(s2) judge timeout clamped below budget',
+      judgeCfg && judgeCfg.timeoutMs <= 20000 && judgeCfg.timeoutMs >= 15000,
+      'got ' + (judgeCfg && judgeCfg.timeoutMs));
+    check('(s2) synth timeout clamped below budget',
+      synthCfg && synthCfg.timeoutMs <= 20000 && synthCfg.timeoutMs >= 15000,
+      'got ' + (synthCfg && synthCfg.timeoutMs));
+  }
+
+  // (s3) no budget (absent / 0) -> identical to today: full stage timeouts,
+  //      no degraded(budget) event.
+  {
+    for (const noBudget of [undefined, 0]) {
+      let judgeCfg = null;
+      const events = [];
+      const result = await runFrontier({
+        prompt: 'hello',
+        state: { mode: 'fusion', preset: 'opus-gpt' },
+        cfg: { ...baseCfg, runBudgetMs: noBudget },
+        deps: {
+          fanOut: async () => [makeOk('opus', 'a'), makeOk('gpt-5.5', 'b')],
+          runJudge: async (_p, _r, cfg) => { judgeCfg = cfg; return VALID_ANALYSIS; },
+          runSynth: async () => 'FINAL',
+          onProgress: (ev) => events.push(ev),
+        },
+      });
+      check('(s3) no-budget(' + noBudget + ') ok + synth final',
+        result.status === 'ok' && result.final === 'FINAL', 'got ' + result.status + '/' + result.final);
+      check('(s3) no-budget(' + noBudget + ') full stage timeout',
+        judgeCfg && judgeCfg.timeoutMs === baseCfg.timeoutMs, 'got ' + (judgeCfg && judgeCfg.timeoutMs));
+      check('(s3) no-budget(' + noBudget + ') no degraded(budget)',
+        !events.some(e => e.phase === 'degraded' && e.reason === 'budget'),
+        'events: ' + events.map(e => e.phase).join(','));
+    }
+  }
+
+  // (s4) single mode: spawn timeout clamped to the remaining budget.
+  {
+    let spawnOpts = null;
+    const result = await runFrontier({
+      prompt: 'hello',
+      state: { mode: 'single', model: 'opus' },
+      cfg: { ...baseCfg, timeoutMs: 300000, runBudgetMs: 20000 },
+      deps: { spawnOne: async (_p, _a, opts) => { spawnOpts = opts; return makeOk('opus', 'X'); } },
+    });
+    check('(s4) single clamped ok', result.status === 'ok', 'got ' + result.status);
+    check('(s4) single spawn timeout clamped',
+      spawnOpts && spawnOpts.timeoutMs <= 20000 && spawnOpts.timeoutMs >= 15000,
+      'got ' + (spawnOpts && spawnOpts.timeoutMs));
+  }
+
+  // (s5) escalation never starts over budget: dead-end + exhausted budget ->
+  //      no escalation spawn, passive fallback final.
+  {
+    const spySpawn = spy(async () => makeOk('gemini', 'fresh'));
+    const result = await runFrontier({
+      prompt: 'hello',
+      state: { mode: 'fusion', preset: 'opus-gpt' },
+      cfg: { ...baseCfg, deadEndEscalation: true, runBudgetMs: 1 },
+      deps: {
+        fanOut: async () => [makeOk('opus', 'short'), makeOk('gpt-5.5', 'longercontent')],
+        runJudge: async () => DEAD_ANALYSIS,
+        runSynth: async () => '',
+        spawnOne: spySpawn,
+      },
+    });
+    check('(s5) over-budget no escalation', !result.escalated, 'escalated: ' + result.escalated);
+    check('(s5) over-budget spawnOne not called', !spySpawn.wasCalled(), 'spawnOne called');
+    check('(s5) over-budget passive fallback', result.final === 'longercontent', 'got ' + result.final);
+  }
+
   // ---------- report ----------
   if (failures.length === 0) {
     process.stdout.write('\nAll cases passed.\n');
