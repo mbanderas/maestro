@@ -25,6 +25,19 @@
   <sub>17 fixture tasks &middot; 147 valid A/B runs &middot; 11 voids excluded &amp; re-run &middot; 6 hooks, all tested &middot; ~10 KB always-on kernel &middot; plugin + portable installs</sub>
 </p>
 
+> **UPDATED — the panel goes global.** Frontier now ships **eight adapters**:
+> **GLM 5.2**, **Kimi K2.7 Code**, and **DeepSeek V4** join Opus 4.8, Fable 5,
+> Sonnet 5, GPT-5.5, and Gemini 3.1 Pro. The newcomers ride the `claude` CLI
+> you already have, pointed at each vendor's Anthropic-compatible endpoint —
+> API keys are read from your environment at spawn time and never stored.
+> Fuse them with the new **`budget-trio`** preset (Kimi + DeepSeek + GLM, no
+> Anthropic subscription needed) or **`east-west`** (DeepSeek + GPT-5.5), save
+> your own panels with `maestro frontier preset save`, and see what's ready to
+> run with `maestro frontier roster`. Full walkthrough in
+> [The Frontier Engine](#the-frontier-engine).
+
+---
+
 > **Install — run the command block for your tool, inside that tool.**
 > Claude Code and Codex use native plugins. Cursor, Gemini, Cline,
 > Windsurf, and other CLIs use the portable installer, which copies
