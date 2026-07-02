@@ -3,7 +3,7 @@
 // wrapper and the docs call `maestro frontier ...` instead of the raw
 // `node frontier/cli.cjs` path.
 //
-//   maestro frontier <mode|status|run|adopt> [...]
+//   maestro frontier <mode|status|run|adopt|preset|roster> [...]
 //       Delegates verbatim to frontier/cli.cjs in a child process with
 //       inherited cwd, env, and stdio -> identical Frontier state and
 //       scope (the engine's own scope autodetect and MAESTRO_SCOPE both
@@ -39,13 +39,15 @@ function usage(code) {
     'Maestro — unified CLI\n' +
     '\n' +
     'Usage:\n' +
-    '  maestro frontier <mode|status|run|adopt> [...]   run the Frontier engine\n' +
+    '  maestro frontier <mode|status|run|adopt|preset|roster> [...]   run the Frontier engine\n' +
     '  maestro install [--target <tool>] [--dry-run] [--project <path>] [--user] [--no-hooks] [--doctrine-only | --engine-only]\n' +
     '\n' +
     'Examples:\n' +
     '  maestro frontier status\n' +
     '  maestro frontier mode fusion --preset opus-gpt\n' +
     '  maestro frontier run "fix the failing test"\n' +
+    '  maestro frontier preset save my-duo --models kimi,gpt-5.5 --judge deepseek\n' +
+    '  maestro frontier roster\n' +
     '  maestro install --target auto --project .\n' +
     '  maestro install --engine-only --project .   (Frontier engine, no discipline layer)\n'
   );

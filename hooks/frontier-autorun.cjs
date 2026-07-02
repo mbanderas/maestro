@@ -145,18 +145,27 @@ async function run() {
       const advisory = cfg.runCostAdvisory(state, cfg.DEFAULTS);
       if (advisory) process.stderr.write(advisory + '\n');
     } catch { /* advisory is best-effort */ }
+    let cfgOverride;
+    const { DEFAULTS } = require('../frontier/config.cjs');
+    // Saved user presets: an armed fusion state naming a non-built-in preset
+    // resolves through the scope's saved presets (built-ins always win, and
+    // withUserPresets returns the DEFAULTS identity when the scope has none).
+    if (state.mode === 'fusion' && typeof state.preset === 'string' &&
+        state.preset !== 'custom' &&
+        !Object.prototype.hasOwnProperty.call(DEFAULTS.presets, state.preset)) {
+      const { withUserPresets } = require('../frontier/presets.cjs');
+      const merged = withUserPresets(DEFAULTS, scope);
+      if (merged !== DEFAULTS) cfgOverride = merged;
+    }
     // Operator tuning without code: finite positive state.runBudgetMs /
     // state.timeoutMs override DEFAULTS, clamped to [30s, 570s] so a typo can
     // neither hang the engine past the hook's 600s window nor starve a stage.
-    // Autorun has no other cfg path (runFrontier without cfg -> DEFAULTS).
-    let cfgOverride;
     const clampMs = (v) => Math.min(570000, Math.max(30000, v));
     const stateBudget = Number(state.runBudgetMs);
     const stateTimeout = Number(state.timeoutMs);
     if ((Number.isFinite(stateBudget) && stateBudget > 0) ||
         (Number.isFinite(stateTimeout) && stateTimeout > 0)) {
-      const { DEFAULTS } = require('../frontier/config.cjs');
-      cfgOverride = { ...DEFAULTS };
+      cfgOverride = { ...(cfgOverride || DEFAULTS) };
       if (Number.isFinite(stateBudget) && stateBudget > 0) cfgOverride.runBudgetMs = clampMs(stateBudget);
       if (Number.isFinite(stateTimeout) && stateTimeout > 0) cfgOverride.timeoutMs = clampMs(stateTimeout);
     }

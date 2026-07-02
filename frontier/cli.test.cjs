@@ -212,6 +212,72 @@ function runTests() {
       r.stdout.includes('Frontier off'), 'stdout: ' + r.stdout.trim());
   }
 
+  // (k) saved presets: save/list/arm/delete round-trip via the CLI
+  {
+    const dir = makeTmpDir();
+    const r1 = run(['preset', 'save', 'my-duo', '--models', 'kimi,gpt-5.5', '--judge', 'deepseek'], dir);
+    check('(k) preset save exit 0', r1.code === 0, 'exit ' + r1.code + ' stderr: ' + r1.stderr.trim());
+    check('(k) save echoes name', r1.stdout.includes('my-duo'), 'stdout: ' + r1.stdout.trim());
+
+    const r2 = run(['preset', 'list'], dir);
+    check('(k) list shows preset', r2.stdout.includes('my-duo'), 'stdout: ' + r2.stdout.trim());
+    check('(k) list shows models', r2.stdout.includes('kimi,gpt-5.5'), 'stdout: ' + r2.stdout.trim());
+    check('(k) list shows judge', r2.stdout.includes('judge=deepseek'), 'stdout: ' + r2.stdout.trim());
+
+    const r3 = run(['mode', 'fusion', '--preset', 'my-duo'], dir);
+    check('(k) arm saved preset exit 0', r3.code === 0, 'exit ' + r3.code + ' stderr: ' + r3.stderr.trim());
+    const r3s = run(['status'], dir);
+    check('(k) status shows saved preset', r3s.stdout.includes('my-duo'), 'stdout: ' + r3s.stdout.trim());
+
+    const r4 = run(['preset', 'save', 'gpt-duo', '--models', 'kimi'], dir);
+    check('(k) built-in collision exit 2', r4.code === 2, 'exit ' + r4.code);
+    check('(k) collision names built-in rule', r4.stderr.includes('built-in'), 'stderr: ' + r4.stderr.trim());
+
+    const r5 = run(['preset', 'save', 'bad', '--models', 'kimi,no-such'], dir);
+    check('(k) unknown model exit 2', r5.code === 2, 'exit ' + r5.code);
+
+    const r6 = run(['preset', 'delete', 'my-duo'], dir);
+    check('(k) delete exit 0', r6.code === 0, 'exit ' + r6.code + ' stderr: ' + r6.stderr.trim());
+    const r7 = run(['preset', 'list'], dir);
+    check('(k) list empty after delete', r7.stdout.includes('no saved presets'), 'stdout: ' + r7.stdout.trim());
+    const r8 = run(['mode', 'fusion', '--preset', 'my-duo'], dir);
+    check('(k) arming deleted preset exit 2', r8.code === 2, 'exit ' + r8.code);
+    const r9 = run(['preset', 'delete', 'my-duo'], dir);
+    check('(k) deleting missing preset exit 2', r9.code === 2, 'exit ' + r9.code);
+  }
+
+  // (k2) saved preset runs end-to-end: fake claude bin, judge/synth on the
+  //      saved panel's models — proves cmdRun feeds the merged cfg through.
+  {
+    const dir = makeTmpDirGlobal();
+    const fakeClaude = path.join(dir, 'fake-claude.cjs');
+    fs.writeFileSync(fakeClaude,
+      "#!/usr/bin/env node\n'use strict';\n" +
+      "process.stdout.write(JSON.stringify({ is_error: false, result: 'FUSED' }));\n");
+    run(['preset', 'save', 'solo-run', '--models', 'opus', '--judge', 'opus', '--synth', 'opus'], dir);
+    run(['mode', 'fusion', '--preset', 'solo-run'], dir);
+    const r = runWithStderr(['run', 'hello world'], dir, { MAESTRO_CLAUDE_BIN: fakeClaude });
+    check('(k2) saved-preset run exit 0', r.code === 0, 'exit ' + r.code + ' stderr: ' + r.stderr.trim());
+    check('(k2) saved-preset run produced output', r.stdout.trim().length > 0, 'stdout: ' + r.stdout.trim());
+    check('(k2) meta names saved preset', r.stderr.includes('preset=solo-run'), 'stderr: ' + r.stderr.trim());
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+
+  // (l) roster: every adapter listed with bin + env availability (names
+  //     only — never values); glm/kimi/deepseek name their host key vars.
+  {
+    const dir = makeTmpDir();
+    const r = run(['roster'], dir);
+    check('(l) roster exit 0', r.code === 0, 'exit ' + r.code + ' stderr: ' + r.stderr.trim());
+    for (const id of ['opus', 'gpt-5.5', 'gemini', 'fable', 'sonnet-5', 'glm', 'kimi', 'deepseek']) {
+      check('(l) roster lists ' + id, r.stdout.includes(id), 'stdout: ' + r.stdout.trim());
+    }
+    check('(l) roster names ZAI_API_KEY', r.stdout.includes('ZAI_API_KEY'), 'stdout: ' + r.stdout.trim());
+    check('(l) roster names MOONSHOT_API_KEY', r.stdout.includes('MOONSHOT_API_KEY'), 'stdout: ' + r.stdout.trim());
+    check('(l) roster names DEEPSEEK_API_KEY', r.stdout.includes('DEEPSEEK_API_KEY'), 'stdout: ' + r.stdout.trim());
+    check('(l) roster marks readiness', /-> (ready|blocked)/.test(r.stdout), 'stdout: ' + r.stdout.trim());
+  }
+
   // ---------- report ----------
   if (failures.length === 0) {
     process.stdout.write('\nAll CLI cases passed.\n');

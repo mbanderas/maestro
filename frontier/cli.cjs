@@ -4,7 +4,9 @@
 'use strict';
 
 const fs = require('fs');
+const path = require('path');
 const { DEFAULTS, loadState, saveState, resolveScope, validateMode, validatePreset, validateModel, adoptLegacyState, runCostAdvisory } = require('./config.cjs');
+const { loadUserPresets, saveUserPreset, deleteUserPreset, withUserPresets } = require('./presets.cjs');
 const { runFrontier, ensureRunId, canonicalModelId, canonicalPresetId } = require('./run.cjs');
 const runlock = require('./runlock.cjs');
 
@@ -46,7 +48,10 @@ function usage() {
     '  frontier mode <off|single|fusion> [--model X] [--preset Y] [--models a,b,c] [--scope <name>]\n' +
     '  frontier status [--scope <name>]\n' +
     '  frontier run [<prompt>|-] [--scope <name>]\n' +
-    '  frontier adopt [--force] [--scope <name>]\n'
+    '  frontier adopt [--force] [--scope <name>]\n' +
+    '  frontier preset save <name> --models a,b,c [--judge m] [--synth m] [--scope <name>]\n' +
+    '  frontier preset list|delete <name> [--scope <name>]\n' +
+    '  frontier roster\n'
   );
 }
 
@@ -83,7 +88,9 @@ function cmdMode(argv, scope) {
       process.stderr.write('ERROR: --preset required for fusion mode\n');
       process.exit(2);
     }
-    if (!validatePreset(preset)) {
+    // Saved user presets are armable too — validate against the merged cfg
+    // (built-ins always win on a name collision).
+    if (!validatePreset(preset, withUserPresets(DEFAULTS, scope))) {
       process.stderr.write('ERROR: unknown preset: ' + preset + '\n');
       process.exit(2);
     }
@@ -127,7 +134,7 @@ function cmdMode(argv, scope) {
   // a subscription-until adapter past its cutoff, note it on stderr. The run-
   // time emit (cmdRun / autorun) is the load-bearing surface; this just flags
   // it when the user arms. stderr keeps stdout the machine-readable state line.
-  const armAdvisory = runCostAdvisory(state, DEFAULTS);
+  const armAdvisory = runCostAdvisory(state, withUserPresets(DEFAULTS, scope));
   if (armAdvisory) process.stderr.write(armAdvisory + '\n');
   process.stdout.write('frontier mode set: ' + JSON.stringify(state) + '\n');
 }
@@ -189,13 +196,16 @@ async function cmdRun(argv, scope) {
   // release self-heals via runlock's dead-pid pruning.
   ensureRunId();
   runlock.registerRun({ kind: 'frontier', cwd: process.cwd() });
+  // Saved user presets resolve through the merged cfg (identity when the
+  // scope has none, so the built-in-only path is unchanged).
+  const runCfg = withUserPresets(DEFAULTS, scope);
   // Non-blocking cost advisory (run time): flag a subscription-until adapter
   // past its cutoff on stderr before the run. stdout stays the fused answer.
-  const runAdvisory = runCostAdvisory(state, DEFAULTS);
+  const runAdvisory = runCostAdvisory(state, runCfg);
   if (runAdvisory) process.stderr.write(runAdvisory + '\n');
   let result;
   try {
-    result = await runFrontier({ prompt, state, deps: { onProgress } });
+    result = await runFrontier({ prompt, state, cfg: runCfg, deps: { onProgress } });
   } finally {
     runlock.releaseRun();
   }
@@ -220,6 +230,102 @@ async function cmdRun(argv, scope) {
   }
 
   process.exit(0);
+}
+
+// Saved user presets: save/list/delete under the active scope. Persistence,
+// validation, and the built-ins-always-win rule live in presets.cjs.
+function cmdPreset(argv, scope) {
+  const sub = argv[0];
+
+  if (sub === 'save') {
+    const name = argv[1] && !argv[1].startsWith('--') ? String(argv[1]).toLowerCase() : null;
+    const modelsRaw = getFlag(argv, '--models');
+    if (!name || !modelsRaw) {
+      process.stderr.write('ERROR: usage: frontier preset save <name> --models a,b,c [--judge m] [--synth m]\n');
+      process.exit(2);
+    }
+    const def = { models: modelsRaw.split(',').map(m => canonicalModelId(m.trim())).filter(Boolean) };
+    const rawJudge = getFlag(argv, '--judge');
+    if (rawJudge !== null) def.judge = canonicalModelId(rawJudge);
+    const rawSynth = getFlag(argv, '--synth');
+    if (rawSynth !== null) def.synth = canonicalModelId(rawSynth);
+    const res = saveUserPreset(name, def, scope);
+    if (!res.ok) {
+      process.stderr.write('ERROR: ' + res.error + '\n');
+      process.exit(2);
+    }
+    process.stdout.write('frontier preset saved: ' + name + ' ' + JSON.stringify(def) + '\n');
+    return;
+  }
+
+  if (sub === 'list') {
+    const all = loadUserPresets(scope);
+    const names = Object.keys(all).sort();
+    if (names.length === 0) {
+      process.stdout.write('no saved presets\n');
+      return;
+    }
+    for (const n of names) {
+      const d = all[n];
+      process.stdout.write(
+        n + ' models=' + d.models.join(',') +
+        ' judge=' + (d.judge || '-') + ' synth=' + (d.synth || '-') + '\n');
+    }
+    return;
+  }
+
+  if (sub === 'delete') {
+    const name = argv[1] && !argv[1].startsWith('--') ? String(argv[1]).toLowerCase() : null;
+    if (!name) {
+      process.stderr.write('ERROR: usage: frontier preset delete <name>\n');
+      process.exit(2);
+    }
+    const res = deleteUserPreset(name, scope);
+    if (!res.ok) {
+      process.stderr.write('ERROR: ' + res.error + '\n');
+      process.exit(2);
+    }
+    process.stdout.write('frontier preset deleted: ' + name + '\n');
+    return;
+  }
+
+  process.stderr.write('ERROR: preset subcommand must be save, list, or delete\n');
+  process.exit(2);
+}
+
+// Resolve a bin the way spawn will see it: node scripts and explicit paths
+// by existence, bare names by PATH scan (win32 shims add .exe/.cmd/.bat).
+function findOnPath(bin) {
+  if (path.isAbsolute(bin) || bin.includes('/') || bin.includes('\\')) {
+    return fs.existsSync(bin) ? bin : null;
+  }
+  const dirs = String(process.env.PATH || '').split(path.delimiter).filter(Boolean);
+  const exts = process.platform === 'win32' ? ['.exe', '.cmd', '.bat', ''] : [''];
+  for (const d of dirs) {
+    for (const ext of exts) {
+      try { if (fs.existsSync(path.join(d, bin + ext))) return path.join(d, bin + ext); } catch {}
+    }
+  }
+  return null;
+}
+
+// Roster: one line per adapter — bin presence on PATH plus the host env vars
+// its auth passthrough needs (names only; values are never read into output).
+function cmdRoster() {
+  const binCache = {};
+  for (const [id, a] of Object.entries(DEFAULTS.adapters)) {
+    if (!(a.bin in binCache)) binCache[a.bin] = findOnPath(a.bin) !== null;
+    const binOk = binCache[a.bin];
+    const vars = [...new Set(Object.values(a.envFrom || {}))];
+    const missing = vars.filter(v => !process.env[v]);
+    const envCol = vars.length === 0
+      ? '-'
+      : vars.map(v => v + '(' + (process.env[v] ? 'set' : 'missing') + ')').join(',');
+    const ready = binOk && missing.length === 0;
+    process.stdout.write(
+      id.padEnd(10) + ' bin=' + a.bin + '(' + (binOk ? 'found' : 'missing') + ')' +
+      ' env=' + envCol + ' -> ' + (ready ? 'ready' : 'blocked') + '\n');
+  }
 }
 
 // Adopt the legacy global frontier-state.json into the current Claude Code
@@ -285,6 +391,10 @@ async function main() {
     await cmdRun(argv.slice(1), scope);
   } else if (cmd === 'adopt') {
     cmdAdopt(argv.slice(1), scope);
+  } else if (cmd === 'preset') {
+    cmdPreset(argv.slice(1), scope);
+  } else if (cmd === 'roster') {
+    cmdRoster();
   } else {
     usage();
     process.exit(2);
