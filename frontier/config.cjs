@@ -544,6 +544,30 @@ function validateModel(m, cfg) {
 }
 
 /**
+ * The distinct adapter ids a run/arm actually invokes: [model] for single
+ * mode, panel + judge + synth for fusion, [] otherwise. Best-effort — returns
+ * [] rather than throwing on an unresolvable state, since its only consumer is
+ * the (non-blocking) cost advisory, never a gate.
+ * @param {object} state
+ * @param {typeof DEFAULTS} cfg
+ * @returns {string[]}
+ */
+function resolveRunModels(state, cfg) {
+  if (!state) return [];
+  if (state.mode === 'single') return state.model ? [state.model] : [];
+  if (state.mode === 'fusion') {
+    try {
+      return [
+        ...resolvePanel(state, cfg),
+        resolveStageModel('judge', state, cfg),
+        resolveStageModel('synth', state, cfg),
+      ];
+    } catch { return []; }
+  }
+  return [];
+}
+
+/**
  * Soft, non-blocking cost advisory for a resolved run. Returns a one-line
  * `[frontier] ...` string when any distinct member (panel + judge + synth) is a
  * `subscription-until` adapter whose `freeUntil` cutoff has passed, else null.
@@ -566,6 +590,27 @@ function costAdvisory(models, cfg, now = new Date()) {
          `and burns usage faster than Opus 4.8.`;
 }
 
+/**
+ * Compose resolveRunModels + costAdvisory for a run/arm state — the single
+ * entry point every call site uses (autorun, cli run/mode, settings). The clock
+ * defaults to now, overridable via MAESTRO_FRONTIER_NOW (ISO date) so an
+ * operator can preview the post-cutoff advisory and the integration boundary is
+ * deterministically testable. Returns the one-line advisory string, or null.
+ * @param {object} state
+ * @param {typeof DEFAULTS} cfg
+ * @param {Date} [now]
+ * @returns {string|null}
+ */
+function runCostAdvisory(state, cfg, now) {
+  let clock = now;
+  if (!clock) {
+    const override = process.env.MAESTRO_FRONTIER_NOW;
+    const parsed = override ? new Date(override) : null;
+    clock = parsed && !Number.isNaN(parsed.getTime()) ? parsed : new Date();
+  }
+  return costAdvisory(resolveRunModels(state, cfg), cfg, clock);
+}
+
 module.exports = {
   DEFAULTS,
   configDir,
@@ -584,4 +629,5 @@ module.exports = {
   validatePreset,
   validateModel,
   costAdvisory,
+  runCostAdvisory,
 };

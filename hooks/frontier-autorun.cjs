@@ -105,6 +105,15 @@ async function run() {
     const { runFrontier, ensureRunId } = require('../frontier/run.cjs');
     ensureRunId();
     runlock.registerRun({ kind: 'frontier', cwd: runCwd });
+    // Non-blocking cost advisory (run time, the load-bearing surface): if this
+    // run invokes a subscription-until adapter past its cutoff (Fable 5 after
+    // 2026-07-07), emit a one-line stderr notice. stderr only — stdout is the
+    // fused-answer channel the host relays. Best-effort; never gates the run.
+    try {
+      const cfg = require('../frontier/config.cjs');
+      const advisory = cfg.runCostAdvisory(state, cfg.DEFAULTS);
+      if (advisory) process.stderr.write(advisory + '\n');
+    } catch { /* advisory is best-effort */ }
     result = await runFrontier({ prompt, state, deps: { onProgress } });
   } catch (e) {
     runlock.releaseRun();

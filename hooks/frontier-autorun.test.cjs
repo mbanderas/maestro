@@ -10,7 +10,7 @@
 
 'use strict';
 
-const { execFileSync } = require('child_process');
+const { execFileSync, spawnSync } = require('child_process');
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
@@ -61,6 +61,28 @@ function runHook(payload, env) {
       ...env,
     },
   });
+}
+
+// Like runHook but returns both streams — the cost advisory writes to stderr.
+function runHookCapture(payload, env) {
+  const r = spawnSync(process.execPath, [HOOK], {
+    input: typeof payload === 'string' ? payload : JSON.stringify(payload),
+    encoding: 'utf8',
+    env: {
+      ...process.env,
+      XDG_CONFIG_HOME: xdgDir,
+      MAESTRO_CLAUDE_BIN: fakeClaude,
+      FUSION_DEPTH: '',
+      MAESTRO_SCOPE: '',
+      CLAUDE_PLUGIN_ROOT: path.join(tmp, 'claude-plugin-root'),
+      CLAUDECODE: '',
+      CLAUDE_PROJECT_DIR: '',
+      PLUGIN_ROOT: '',
+      PLUGIN_DATA: '',
+      ...env,
+    },
+  });
+  return { stdout: r.stdout || '', stderr: r.stderr || '' };
 }
 
 function ctx(out) {
@@ -257,6 +279,38 @@ check('loop guard: ordinary "event loop" prompt still runs', (ctx(out) || '').in
 setState({ mode: 'single', model: 'opus', autorunFanLoops: true });
 out = runHook({ hook_event_name: 'UserPromptSubmit', prompt: '/loop 5m /babysit-prs' });
 check('loop guard opt-out: autorunFanLoops -> runs', (ctx(out) || '').includes('FAKE_ENGINE_ANSWER'));
+
+// 21. Cost advisory (run time): a Fable panel armed past the subscription
+// cutoff emits a one-line [frontier] notice on STDERR only — never into the
+// relayed answer on stdout. Clock is controlled via MAESTRO_FRONTIER_NOW.
+setState({ mode: 'fusion', preset: 'fable-duo' });
+let cap = runHookCapture(
+  { hook_event_name: 'UserPromptSubmit', prompt: 'fable cost after cutoff' },
+  { MAESTRO_FRONTIER_NOW: '2026-08-01T00:00:00Z' });
+check('advisory: fires on stderr after cutoff',
+  /\[frontier\].*Usage Credits/.test(cap.stderr));
+check('advisory: names the 2026-07-07 cutoff', cap.stderr.includes('2026-07-07'));
+check('advisory: run still injects the engine answer',
+  (ctx(cap.stdout) || '').includes('FAKE_ENGINE_ANSWER'));
+check('advisory: never leaks into stdout / the relayed answer',
+  !cap.stdout.includes('[frontier]'));
+
+// 22. Dormant before cutoff: same Fable panel, clock before freeUntil -> silent.
+cap = runHookCapture(
+  { hook_event_name: 'UserPromptSubmit', prompt: 'fable cost before cutoff' },
+  { MAESTRO_FRONTIER_NOW: '2026-07-01T00:00:00Z' });
+check('advisory: dormant before cutoff (no stderr notice)',
+  !cap.stderr.includes('[frontier]'));
+check('advisory: dormant run still injects the answer',
+  (ctx(cap.stdout) || '').includes('FAKE_ENGINE_ANSWER'));
+
+// 23. Non-Fable panel after cutoff -> no advisory (opus/gpt/gemini uncharged).
+setState({ mode: 'fusion', preset: 'opus-duo' });
+cap = runHookCapture(
+  { hook_event_name: 'UserPromptSubmit', prompt: 'opus panel after cutoff' },
+  { MAESTRO_FRONTIER_NOW: '2026-08-01T00:00:00Z' });
+check('advisory: non-fable panel silent after cutoff',
+  !cap.stderr.includes('[frontier]'));
 
 fs.rmSync(tmp, { recursive: true, force: true });
 
