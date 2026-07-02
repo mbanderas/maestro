@@ -31,6 +31,18 @@ All notable changes to Maestro are documented here. The format follows
   exceeded the 300s hook timeout, so the host discarded the entire result
   after burning the tokens. Operators can tune per workspace without code via
   `runBudgetMs` / `timeoutMs` in frontier state (clamped to 30–570s).
+- **Live stage progress now names the model and shows elapsed time.** The
+  progress file (`frontier/progress.cjs`) gains a whitelisted `model`
+  (`/^[a-z0-9.-]{1,24}$/i`, else omitted), a run-start `startTs` captured once
+  per run, and a new `escalate` phase, so the statusline
+  (`statusline/context-bar.mjs`) renders `ƒ⠿ fanning 2/3 · 41s`,
+  `ƒ⚖ judging · opus · 12s`, `ƒ✦ synthesizing · fable · 8s`, and
+  `ƒ⟳ escalating · gemini · 4s` (old progress files keep rendering exactly as
+  before; the model string is re-validated reader-side). The autorun hook also
+  emits one `[frontier] …` stderr breadcrumb per stage event — e.g.
+  `[frontier] panel 2/3 (gpt-5.5 41s)` — visible in the CLI verbose/transcript
+  view and on Codex, which has no statusline; stdout stays reserved for the
+  fused answer.
 - **Two more Claude models join the fusion panel: Fable 5 and Sonnet 5.**
   `frontier/config.cjs` gains `fable` (`claude-fable-5`) and `sonnet-5`
   (`claude-sonnet-5`) adapters, each pinning `--model` explicitly so the three

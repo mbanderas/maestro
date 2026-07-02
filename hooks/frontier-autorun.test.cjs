@@ -306,7 +306,7 @@ cap = runHookCapture(
   { hook_event_name: 'UserPromptSubmit', prompt: 'fable cost before cutoff' },
   { MAESTRO_FRONTIER_NOW: '2026-07-01T00:00:00Z' });
 check('advisory: dormant before cutoff (no stderr notice)',
-  !cap.stderr.includes('[frontier]'));
+  !cap.stderr.includes('Usage Credits'));
 check('advisory: dormant run still injects the answer',
   (ctx(cap.stdout) || '').includes('FAKE_ENGINE_ANSWER'));
 
@@ -316,7 +316,17 @@ cap = runHookCapture(
   { hook_event_name: 'UserPromptSubmit', prompt: 'opus panel after cutoff' },
   { MAESTRO_FRONTIER_NOW: '2026-08-01T00:00:00Z' });
 check('advisory: non-fable panel silent after cutoff',
-  !cap.stderr.includes('[frontier]'));
+  !cap.stderr.includes('Usage Credits'));
+
+// 23b. Stage breadcrumbs: a fusion run emits one [frontier] line per stage
+// event on STDERR (the live surface for CLI verbose view + Codex), never
+// stdout (the fused-answer channel).
+setState({ mode: 'fusion', preset: 'opus-duo' });
+cap = runHookCapture({ hook_event_name: 'UserPromptSubmit', prompt: 'breadcrumb run' });
+check('breadcrumbs: panel start on stderr', /\[frontier\] panel start \(2 models\)/.test(cap.stderr));
+check('breadcrumbs: judge start on stderr', /\[frontier\] judge start/.test(cap.stderr));
+check('breadcrumbs: synth start on stderr', /\[frontier\] synth start/.test(cap.stderr));
+check('breadcrumbs: stdout stays clean', !cap.stdout.includes('[frontier]'));
 
 // 24. Command guard: armed engine never fans plugin/slash command prompts —
 // raw typed form and the transcript XML form (both tag orders).

@@ -28,7 +28,10 @@ const { statePath } = require('./config.cjs');
 
 // Phases the statusline knows how to render. The writer maps the engine's
 // onProgress events onto exactly these; anything else is dropped.
-const PHASES = ['panel', 'judge', 'synth', 'single'];
+const PHASES = ['panel', 'judge', 'synth', 'single', 'escalate'];
+
+// Model names are presentation data: whitelisted or omitted, never raw bytes.
+const MODEL_RE = /^[a-z0-9.-]{1,24}$/i;
 
 /**
  * Progress file path for a scope, derived from statePath so the scope-alias
@@ -46,7 +49,7 @@ function progressPath(scope) {
  * Atomic, symlink-refusing, 0600 write of the progress record. Mirrors
  * saveState in config.cjs. Never throws — progress is best-effort telemetry.
  * @param {string} scope
- * @param {{ phase:string, done?:number, total?:number }} rec
+ * @param {{ phase:string, done?:number, total?:number, model?:string, startTs?:number }} rec
  * @returns {boolean}
  */
 function writeProgress(scope, rec) {
@@ -56,13 +59,20 @@ function writeProgress(scope, rec) {
     if (!Number.isFinite(n) || n < 0) return 0;
     return n > 99 ? 99 : n;
   };
-  const payload = JSON.stringify({
+  const record = {
     phase: rec.phase,
     done: clampInt(rec.done),
     total: clampInt(rec.total),
     ts: Date.now(),
     pid: process.pid,
-  });
+  };
+  // Optional enrichments (statusline renders model + elapsed): whitelist the
+  // model name or omit it; startTs is the run start, forwarded verbatim only
+  // when it is a sane positive epoch ms.
+  if (typeof rec.model === 'string' && MODEL_RE.test(rec.model)) record.model = rec.model;
+  const startTs = Math.floor(Number(rec.startTs));
+  if (Number.isFinite(startTs) && startTs > 0) record.startTs = startTs;
+  const payload = JSON.stringify(record);
   try {
     const p = progressPath(scope);
     const dir = path.dirname(p);
@@ -109,6 +119,9 @@ function clearProgress(scope) {
  * @returns {(event:object)=>void}
  */
 function makeProgressWriter(scope) {
+  // Run start, captured once at writer creation so every stage record carries
+  // the same origin and the statusline can render elapsed time.
+  const startTs = Date.now();
   return function onProgress(ev) {
     if (!ev || typeof ev.phase !== 'string') return;
     let rec = null;
@@ -117,20 +130,26 @@ function makeProgressWriter(scope) {
         rec = { phase: 'panel', done: 0, total: Array.isArray(ev.models) ? ev.models.length : 0 };
         break;
       case 'panel-progress':
-        rec = { phase: 'panel', done: ev.done, total: ev.total };
+        // ev.model is the completing member — passed through (sanitized in
+        // writeProgress) so the bar can name who just finished.
+        rec = { phase: 'panel', done: ev.done, total: ev.total, model: ev.model };
         break;
       case 'judge-start':
-        rec = { phase: 'judge', done: 0, total: 0 };
+        rec = { phase: 'judge', done: 0, total: 0, model: ev.model };
         break;
       case 'synth-start':
-        rec = { phase: 'synth', done: 0, total: 0 };
+        rec = { phase: 'synth', done: 0, total: 0, model: ev.model };
+        break;
+      case 'escalate-start':
+        rec = { phase: 'escalate', done: 0, total: 0, model: ev.model };
         break;
       case 'single-start':
-        rec = { phase: 'single', done: 0, total: 0 };
+        rec = { phase: 'single', done: 0, total: 0, model: ev.model };
         break;
       default:
         return;
     }
+    rec.startTs = startTs;
     writeProgress(scope, rec);
   };
 }
