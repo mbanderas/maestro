@@ -6,6 +6,8 @@ All notable changes to Maestro are documented here. The format follows
 
 ## [Unreleased]
 
+## [1.12.0] - 2026-07-02
+
 ### Added
 
 - **Autorun now skips plugin/slash command prompts, saving minutes of latency
