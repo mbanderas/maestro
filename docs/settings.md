@@ -16,7 +16,7 @@ The design and the staff-engineer review are recorded in
 | Toggle | Values | What it controls |
 |---|---|---|
 | `terse` | `off`, `lite`, `full`, `ultra` | Output-token reduction (`/maestro:terse`). |
-| `frontier` | `off`; `single:` `opus` / `fable` / `sonnet-5` / `gpt-5.5` / `gemini`; `fusion:` `opus-duo` / `opus-gpt` / `chatgpt-duo` / `frontier-trio` / `fable-duo` / `fable-gpt` / `fable-trio` / `sonnet-duo` / `sonnet-gpt` / `sonnet-trio` / `frontier-quad` / `frontier-quint` / `custom`, each with optional `--judge` / `--synth` | The local multi-CLI fusion engine (`/maestro:frontier`). Any non-`off` value arms auto-run: every prompt is routed through the engine and the answer relayed; `off` disables it. Arming/running a Fable panel past 2026-07-07 prints a non-blocking `[frontier] …` Usage-Credits cost advisory. |
+| `frontier` | `off`; `single:` `opus` / `fable` / `sonnet-5` / `gpt-5.5` / `gemini` / `glm` / `kimi` / `deepseek`; `fusion:` `opus-duo` / `opus-gpt` / `chatgpt-duo` / `frontier-trio` / `fable-duo` / `fable-gpt` / `fable-trio` / `sonnet-duo` / `sonnet-gpt` / `sonnet-trio` / `frontier-quad` / `frontier-quint` / `budget-trio` / `east-west` / `custom`, each with optional `--judge` / `--synth` | The local multi-CLI fusion engine (`/maestro:frontier`). Any non-`off` value arms auto-run: every prompt is routed through the engine and the answer relayed; `off` disables it. Arming/running a Fable panel past 2026-07-07 prints a non-blocking `[frontier] …` Usage-Credits cost advisory. |
 | `context-bar` | `on`, `off` | The status-line context progress bar (`/maestro:context-bar`). |
 | `discipline` | `on`, `off` | The discipline enforcement-hook pack (gate-reminder, doctrine-guard, phase-scope, subagent-guard, verify-gate, loop-guard, gate-telemetry, toolbudget). `off` makes every hook no-op — the runtime counterpart to `frontier off` for users who want only the engine. The doctrine TEXT (`AGENTS.md` kernel) is autoloaded at session start and cannot be unloaded mid-session, so the toggle covers the hook half only; install `--engine-only` to omit the kernel entirely. |
 | `verify` | `off`, `warn`, `block` | The S7.3 verify-gate Stop hook (`hooks/maestro-verify-gate.cjs`). `warn` (default) injects a non-blocking nudge when a session modified files but ran no checker and stated no honest status token; `block` blocks the Stop once to force a checker run or honest token (`VERIFIED` with no checker still fires); `off` disables. Arm `block` per-repo where a real test suite exists. |
@@ -94,8 +94,10 @@ node settings/cli.cjs set discipline off
 node settings/cli.cjs set verify block
 node settings/cli.cjs set frontier fusion:opus-gpt
 node settings/cli.cjs set frontier fusion:chatgpt-duo --scope codex-project
+node settings/cli.cjs set frontier fusion:budget-trio --scope codex-project
+node settings/cli.cjs set frontier fusion:east-west --scope codex-project
 node settings/cli.cjs set frontier fusion:frontier-trio --judge chatgpt --synth chatgpt --scope codex-project
-node settings/cli.cjs set frontier fusion:custom --models opus,gpt-5.5,gemini
+node settings/cli.cjs set frontier fusion:custom --models kimi,gpt-5.5,deepseek
 node settings/cli.cjs set frontier single:opus
 node settings/cli.cjs set frontier off --scope codex-project
 ```

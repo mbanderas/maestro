@@ -80,6 +80,11 @@ skills (`./codex-skills/`); the hook bundle lives at Codex's default plugin hook
 Codex or start a new thread after changing plugin installation/trust state,
 then review and trust the bundled hooks before expecting autorun.
 
+Codex Desktop and IDE sessions may not inherit shell environment variables.
+When Frontier adapters need local keys or binary overrides, put those values in
+`~/.codex/.env`, then restart the app or extension and open a new thread. This
+matches the current Codex manual guidance for local provider credentials.
+
 `maestro install --target codex` remains as a portable/manual fallback when
 you specifically want to copy files into a project instead of installing the
 Codex plugin.
@@ -165,6 +170,7 @@ Frontier is off until you arm it. For Codex, the normal workflow is:
 
 ```text
 maestro frontier mode fusion --preset chatgpt-duo --scope codex-project
+maestro frontier mode fusion --preset budget-trio --scope codex-project
 maestro frontier mode fusion --preset frontier-trio --judge chatgpt --synth chatgpt --scope codex-project
 maestro frontier mode off --scope codex-project
 ```
@@ -186,11 +192,40 @@ projects.
 Use the same active scope for all lifecycle commands:
 
 ```text
+maestro frontier roster
 maestro frontier status --scope codex-project
 maestro frontier mode off --scope codex-project
 maestro frontier mode fusion --preset chatgpt-duo --scope codex-project
+maestro frontier mode fusion --preset budget-trio --scope codex-project
 maestro frontier mode fusion --preset frontier-trio --judge chatgpt --synth chatgpt --scope codex-project
+maestro frontier preset save my-duo --models kimi,gpt-5.5 --judge deepseek --scope codex-project
+maestro frontier preset list --scope codex-project
 ```
+
+The Codex path uses the same eight-adapter Frontier engine as Claude Code:
+Opus 4.8, Fable 5, Sonnet 5, GPT-5.5, Gemini 3.1 Pro, GLM 5.2, Kimi K2.7
+Code, and DeepSeek V4 Pro. GLM/Kimi/DeepSeek ride the `claude` CLI pointed at
+their Anthropic-compatible endpoints; they require `ZAI_API_KEY`,
+`MOONSHOT_API_KEY`, and `DEEPSEEK_API_KEY` respectively. Maestro reads those
+names from the process environment at spawn time, maps them into the child
+`ANTHROPIC_*` auth variables, and never stores key values in state or saved
+presets. Run `maestro frontier roster` to see which binaries and key vars are
+ready without printing any secret value.
+
+For Codex CLI launched from a terminal, exported env vars are usually enough.
+For Codex Desktop or the IDE extension, prefer `~/.codex/.env`:
+
+```text
+export ZAI_API_KEY=
+export MOONSHOT_API_KEY=
+export DEEPSEEK_API_KEY=
+export MAESTRO_CLAUDE_BIN=
+```
+
+`budget-trio` runs Kimi + DeepSeek + GLM and self-judges/synthesizes on
+DeepSeek, so it needs no Anthropic subscription. `east-west` runs DeepSeek +
+GPT-5.5 and keeps the default Opus judge/synth unless you override with
+`--judge` / `--synth`.
 
 ## What differs from Claude Code
 

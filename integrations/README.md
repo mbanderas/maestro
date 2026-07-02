@@ -35,7 +35,9 @@ use `--scope codex-project` from the repo root to target that same active scope:
 ```bash
 maestro frontier status --scope codex-project
 maestro frontier mode fusion --preset chatgpt-duo --scope codex-project
+maestro frontier mode fusion --preset budget-trio --scope codex-project
 maestro frontier mode fusion --preset frontier-trio --judge chatgpt --synth chatgpt --scope codex-project
+maestro frontier preset save my-duo --models kimi,gpt-5.5 --judge deepseek --scope codex-project
 maestro frontier mode off --scope codex-project
 ```
 
@@ -96,6 +98,11 @@ needed per release.
 - **Codex per-repo skill path:** `.agents/skills/<name>/SKILL.md` is the
   repo-scoped option for Codex skills. The global path is
   `~/.agents/skills/<name>/SKILL.md`.
+- **Codex Desktop environment:** Desktop/IDE sessions may not inherit shell
+  env vars. Put Frontier provider keys and binary overrides in `~/.codex/.env`
+  (`ZAI_API_KEY`, `MOONSHOT_API_KEY`, `DEEPSEEK_API_KEY`,
+  `MAESTRO_CLAUDE_BIN`), then restart and open a new thread. `maestro frontier
+  roster` reports readiness without printing secret values.
 - **Maestro Frontier ON indicator (Codex only).** When
   `maestro frontier status --scope codex-project` reports mode != off, the `maestro-frontier` skill
   instructs Codex to lead its reply with `Maestro Frontier ON (<label>)` —

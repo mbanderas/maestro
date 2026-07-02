@@ -22,6 +22,8 @@
     "brandColor": "#5B82D6",
     "defaultPrompt": [
       "Use Maestro Frontier with ChatGPT duo.",
+      "Use Maestro Frontier with budget trio.",
+      "Show Maestro Frontier roster.",
       "Show Maestro Frontier status.",
       "Turn Maestro Frontier off."
     ]

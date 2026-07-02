@@ -76,7 +76,10 @@ action, so run the two commands above in a terminal (`codex`). See the official
 [Codex plugins docs](https://developers.openai.com/codex/plugins).
 
 Start a new Codex thread after installing or changing plugin trust so the
-bundled skills and hooks reload.
+bundled skills and hooks reload. Codex Desktop and IDE sessions may not inherit
+shell environment variables; for GLM/Kimi/DeepSeek, put `ZAI_API_KEY`,
+`MOONSHOT_API_KEY`, `DEEPSEEK_API_KEY`, and any binary override such as
+`MAESTRO_CLAUDE_BIN` in `~/.codex/.env`, then restart the app.
 
 **Portable installs for other CLI / Desktop apps** — run the matching line
 in that tool's terminal, or ask its agent to run it. These integrations are
@@ -132,7 +135,9 @@ disabled in runtimes with trusted hooks.
 
 ```text
 maestro frontier mode fusion --preset chatgpt-duo --scope codex-project
+maestro frontier mode fusion --preset budget-trio --scope codex-project
 maestro frontier mode fusion --preset frontier-trio --judge chatgpt --synth chatgpt --scope codex-project
+maestro frontier roster
 maestro frontier mode off --scope codex-project
 ```
 
@@ -406,7 +411,7 @@ actions also run through the portable scripts noted below.
 | Toggle | Values | What it controls |
 |---|---|---|
 | `terse` | `off`, `lite`, `full`, `ultra` | Output-token reduction. Shows an amber level badge (`ULTRA`) on the status bar. |
-| `frontier` | `off`; `single:` `opus` / `fable` / `sonnet-5` / `gpt-5.5` / `gemini`; `fusion:` `opus-duo` / `opus-gpt` / `chatgpt-duo` / `frontier-trio` / `fable-duo` / `fable-gpt` / `fable-trio` / `sonnet-duo` / `sonnet-gpt` / `sonnet-trio` / `frontier-quad` / `frontier-quint` / `custom`, each with optional `--judge` / `--synth` | The local fusion engine. When armed it auto-runs on every prompt. The blue `f` panel badge means auto-run is on: `fO+C`, `fO+C+G`, `f*3` (`O`=Opus, `F`=Fable 5, `S`=Sonnet 5, `C`=ChatGPT/GPT-5.5, `G`=Gemini). |
+| `frontier` | `off`; `single:` `opus` / `fable` / `sonnet-5` / `gpt-5.5` / `gemini` / `glm` / `kimi` / `deepseek`; `fusion:` `opus-duo` / `opus-gpt` / `chatgpt-duo` / `frontier-trio` / `fable-duo` / `fable-gpt` / `fable-trio` / `sonnet-duo` / `sonnet-gpt` / `sonnet-trio` / `frontier-quad` / `frontier-quint` / `budget-trio` / `east-west` / `custom`, each with optional `--judge` / `--synth` | The local fusion engine. When armed it auto-runs on every prompt. The blue `f` panel badge means auto-run is on: `fO+C`, `fO+C+G`, `fK+D+Z`, `fD+C`, `f*3` (`O`=Opus, `F`=Fable 5, `S`=Sonnet 5, `C`=ChatGPT/GPT-5.5, `G`=Gemini, `K`=Kimi, `D`=DeepSeek, `Z`=GLM/Z.ai). |
 | `context-bar` | `on`, `off` | The status-line context-window progress bar. |
 | `discipline` | `on`, `off` | The enforcement-hook pack (gate-reminder, doctrine-guard, phase-scope, subagent-guard, verify-gate, loop-guard, gate-telemetry, toolbudget). `off` silences every hook for users who want only the Frontier engine. See [Discipline layer toggle](#discipline-layer-toggle) for the one caveat. |
 | `verify` | `off`, `warn`, `block` | The S7.3 verify-gate Stop hook. `warn` (default) injects a non-blocking nudge when a session modified files but ran no checker and stated no honest status token; `block` blocks the Stop once to force a checker run or honest token; `off` disables. `MAESTRO_VERIFY_GATE` overrides per-session. Arm `block` in repos with a real test suite. |

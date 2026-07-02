@@ -1,6 +1,6 @@
 ---
-description: Maestro Frontier local multi-CLI engine: arm a mode (off/single/fusion) so it auto-runs every prompt, pick a model/preset, or run a one-off prompt
-argument-hint: "<off | single <model> | fusion <preset> | status | run <prompt> | adopt>"
+description: Maestro Frontier local multi-CLI engine: arm a mode (off/single/fusion) so it auto-runs every prompt, pick a model/preset, save presets, inspect readiness, or run a one-off prompt
+argument-hint: "<off | single <model> | fusion <preset> | status | run <prompt> | adopt | preset ... | roster>"
 allowed-tools: Bash, Read
 ---
 
@@ -33,21 +33,28 @@ self-contained; do not edit its state file yourself.
    node "${CLAUDE_PLUGIN_ROOT}/bin/maestro.cjs" frontier mode off
    node "${CLAUDE_PLUGIN_ROOT}/bin/maestro.cjs" frontier mode single --model <model>
    node "${CLAUDE_PLUGIN_ROOT}/bin/maestro.cjs" frontier mode fusion --preset <preset>
+   node "${CLAUDE_PLUGIN_ROOT}/bin/maestro.cjs" frontier mode fusion --preset budget-trio
    node "${CLAUDE_PLUGIN_ROOT}/bin/maestro.cjs" frontier mode fusion --preset custom --models <a,b,c>
    node "${CLAUDE_PLUGIN_ROOT}/bin/maestro.cjs" frontier mode fusion --preset <preset> --judge <model> --synth <model>
    ```
 
    Models: `opus` (Claude Opus 4.8), `fable` (Claude Fable 5), `sonnet-5`
-   (Claude Sonnet 5), `gpt-5.5` (Codex), `gemini` (Gemini 3.1 Pro).
+   (Claude Sonnet 5), `gpt-5.5` (Codex), `gemini` (Gemini 3.1 Pro),
+   `glm` (GLM 5.2 via Z.ai), `kimi` (Kimi K2.7 Code via Moonshot), and
+   `deepseek` (DeepSeek V4 Pro). The CN adapters use the same read-only
+   `claude` CLI pointed at each vendor's Anthropic-compatible endpoint.
    Presets: `opus-duo`, `opus-gpt`, `gpt-duo`, `frontier-trio`,
    `fable-duo`, `fable-gpt`, `fable-trio`, `sonnet-duo`, `sonnet-gpt`,
    `sonnet-trio`, `frontier-quad` (fable+opus+gpt+gemini), `frontier-quint`
-   (adds sonnet-5), `custom`. The judge + synthesizer default to Opus, but
-   the family presets self-judge (`gpt-duo` on GPT-5.5, `fable-*` on Fable,
-   `sonnet-*` on Sonnet 5 — each a single-family fusion), and
+   (adds sonnet-5), `budget-trio` (Kimi+DeepSeek+GLM), `east-west`
+   (DeepSeek+GPT-5.5), and `custom`. Friendly aliases are accepted:
+   `chatgpt` -> `gpt-5.5`, and `chatgpt-duo` -> `gpt-duo`.
+   The judge + synthesizer default to Opus, but the family presets
+   self-judge (`gpt-duo` on GPT-5.5, `fable-*` on Fable, `sonnet-*` on
+   Sonnet 5, `budget-trio` on DeepSeek), and
    `--judge`/`--synth` override the model for any preset, so you can mix
    freely (e.g. `--judge opus --synth gpt-5.5`). `frontier-quad`/`-quint`
-   keep the global Opus judge/synth (Fable/Sonnet stay panelists).
+   and `east-west` keep the global Opus judge/synth.
 
 2. Show current mode/preset:
 
@@ -55,7 +62,21 @@ self-contained; do not edit its state file yourself.
    node "${CLAUDE_PLUGIN_ROOT}/bin/maestro.cjs" frontier status
    ```
 
-3. Run a prompt through the current mode (prompt as the argument, or
+3. Inspect adapter readiness and manage saved presets:
+
+   ```bash
+   node "${CLAUDE_PLUGIN_ROOT}/bin/maestro.cjs" frontier roster
+   node "${CLAUDE_PLUGIN_ROOT}/bin/maestro.cjs" frontier preset save my-duo --models kimi,gpt-5.5 --judge deepseek
+   node "${CLAUDE_PLUGIN_ROOT}/bin/maestro.cjs" frontier preset list
+   node "${CLAUDE_PLUGIN_ROOT}/bin/maestro.cjs" frontier preset delete my-duo
+   ```
+
+   `roster` prints each adapter's binary status and required env-var names
+   only. Saved presets persist per scope, store model ids only, and then arm
+   like built-ins with `mode fusion --preset <name>`. Built-in names always
+   win and cannot be shadowed.
+
+4. Run a prompt through the current mode (prompt as the argument, or
    piped on stdin). This is a manual one-off; when the engine is armed
    (`single`/`fusion`) the autorun hook already runs every prompt for
    you, so `run` is mainly for scripting or an explicit re-run:
@@ -75,7 +96,7 @@ self-contained; do not edit its state file yourself.
      draws Usage Credits past that date instead of subscription). It never
      blocks the run — **relay that advisory line to the user** if present.
 
-4. Adopt a previously-armed **global** mode into this workspace
+5. Adopt a previously-armed **global** mode into this workspace
    (per-workspace isolation means a workspace never inherits the old
    global state automatically — this copies it in once, on demand):
 
@@ -91,11 +112,16 @@ self-contained; do not edit its state file yourself.
    there is no legacy state (`missing-legacy`) it does nothing — arm the
    workspace with `mode` instead.
 
-5. Report the result, matched to the action:
+6. Report the result, matched to the action:
    - `run`: report the engine's stdout verbatim.
    - `adopt`: confirm the adopted mode/preset, or relay the
      `ERROR [<reason>]` (e.g. `exists` — suggest `--force`; `missing-legacy`
      — nothing to adopt). Arming now auto-runs on every prompt.
+   - `preset`: confirm save/list/delete results; for save, mention the
+     preset is available in the current scope and can be armed with
+     `fusion <name>`.
+   - `roster`: summarize blocked adapters by missing binary or env var; do
+     not ask for or print secret values.
    - arming a mode (`single`/`fusion`): confirm the mode, then tell the
      user plainly that the engine now **auto-runs on every prompt** —
      they just chat normally and the synthesized answer is relayed.
@@ -130,6 +156,11 @@ Notes:
   The claude-family panelists (`opus`, `fable`, `sonnet-5`) all share the
   one `claude` CLI, so `frontier-quint` can make up to five `claude` calls
   per run on a single subscription — mind the rate limit.
+- **CN provider keys:** `glm`, `kimi`, and `deepseek` require the `claude`
+  CLI plus `ZAI_API_KEY`, `MOONSHOT_API_KEY`, and `DEEPSEEK_API_KEY`
+  respectively. The engine maps those host env vars to the child
+  `ANTHROPIC_*` auth vars at spawn time, never writes key values to
+  Maestro state, and `frontier roster` reports only set/missing status.
 - Headless web access varies per CLI (Codex confirmed; Claude and
   Gemini gated off in this build). The engine sets a per-adapter
   `webTools` flag accordingly; see the risk burndown.
@@ -143,10 +174,10 @@ Notes:
 ## Binary overrides
 
 The engine is zero-dependency CommonJS under `frontier/`. Each CLI is
-resolved from your `PATH`: `claude` (Opus 4.8, Fable 5, Sonnet 5 — one
-CLI, distinct `--model`), `codex` (GPT-5.5), and `gemini` (Gemini 3.1
-Pro). When a binary is not on `PATH`, or you want a specific build, point
-at it with an environment variable:
+resolved from your `PATH`: `claude` (Opus 4.8, Fable 5, Sonnet 5, plus
+GLM/Kimi/DeepSeek through vendor Anthropic-compatible endpoints), `codex`
+(GPT-5.5), and `gemini` (Gemini 3.1 Pro). When a binary is not on `PATH`,
+or you want a specific build, point at it with an environment variable:
 
 - `MAESTRO_CLAUDE_BIN` sets the `claude` binary path (all Claude models).
 - `MAESTRO_CODEX_BIN` sets the `codex` binary path.

@@ -1,6 +1,6 @@
 ---
-description: Maestro Frontier local multi-CLI fusion engine — arm, disarm, inspect, or debug-run the panel
-argument-hint: "<off | single <model> | fusion <preset> | status | run <prompt>>"
+description: Maestro Frontier local multi-CLI fusion engine — arm, disarm, inspect, roster adapters, save presets, configure CN providers, or debug-run the panel
+argument-hint: "<off | single <model> | fusion <preset> | status | run <prompt> | preset ... | roster>"
 ---
 
 Drive the **Maestro Frontier** engine — a zero-dependency local multi-CLI fusion
@@ -25,33 +25,54 @@ the engine's state file by hand.
    maestro frontier mode off --scope codex-project
    maestro frontier mode single --model <model> --scope codex-project
    maestro frontier mode fusion --preset chatgpt-duo --scope codex-project
+   maestro frontier mode fusion --preset budget-trio --scope codex-project
+   maestro frontier mode fusion --preset east-west --scope codex-project
    maestro frontier mode fusion --preset frontier-trio --judge chatgpt --synth chatgpt --scope codex-project
    maestro frontier mode fusion --preset custom --models <a,b,c> --scope codex-project
    ```
 
    Models: `opus` (Claude Opus 4.8), `fable` (Claude Fable 5), `sonnet-5`
    (Claude Sonnet 5) — all need `claude`; `gpt-5.5` (needs `codex`), `gemini`
-   (needs `gemini`). Presets: `opus-duo`, `opus-gpt`, `gpt-duo`, `frontier-trio`,
+   (needs `gemini`); `glm` (GLM 5.2), `kimi` (Kimi K2.7 Code), and `deepseek`
+   (DeepSeek V4 Pro) ride `claude` pointed at each vendor's
+   Anthropic-compatible endpoint. Presets: `opus-duo`, `opus-gpt`, `gpt-duo`, `frontier-trio`,
    `fable-duo`, `fable-gpt`, `fable-trio`, `sonnet-duo`, `sonnet-gpt`,
-   `sonnet-trio`, `frontier-quad`, `frontier-quint`, `custom`. Judge + synth
+   `sonnet-trio`, `frontier-quad`, `frontier-quint`, `budget-trio`,
+   `east-west`, `custom`, plus saved user presets. Judge + synth
    default to Opus; `--judge`/`--synth` override for any preset (e.g. `--judge
    opus --synth gpt-5.5`). The family presets self-judge/synth (`gpt-duo` on
-   GPT-5.5, `fable-*` on Fable, `sonnet-*` on Sonnet 5); `frontier-quad`/`-quint`
-   keep the global Opus judge/synth. Friendly aliases are accepted: `chatgpt` ->
+   GPT-5.5, `fable-*` on Fable, `sonnet-*` on Sonnet 5, `budget-trio` on
+   DeepSeek); `frontier-quad`/`-quint` and `east-west` keep the global Opus
+   judge/synth. Friendly aliases are accepted: `chatgpt` ->
    `gpt-5.5`, and `chatgpt-duo` -> `gpt-duo`. Fable 5 is subscription-covered
    only through 2026-07-07, then draws Usage Credits — a non-blocking
    `[frontier] …` stderr advisory fires past the cutoff; relay it to the user.
 
-2. Show the current mode/preset:
+2. Inspect readiness and saved presets:
+
+   ```bash
+   maestro frontier roster
+   maestro frontier preset save my-duo --models kimi,gpt-5.5 --judge deepseek --scope codex-project
+   maestro frontier preset list --scope codex-project
+   maestro frontier preset delete my-duo --scope codex-project
+   ```
+
+   `roster` prints adapter binary/key readiness without secret values. CN
+   adapters need `ZAI_API_KEY`, `MOONSHOT_API_KEY`, and `DEEPSEEK_API_KEY`.
+   Codex Desktop / IDE sessions may not inherit shell env vars; put required
+   values and binary overrides such as `MAESTRO_CLAUDE_BIN` in
+   `~/.codex/.env`, then restart and open a new thread.
+
+3. Show the current mode/preset:
 
    ```bash
    maestro frontier status --scope codex-project
    ```
 
-3. Normal use after arming: type ordinary Codex prompts. The trusted hook
+4. Normal use after arming: type ordinary Codex prompts. The trusted hook
    auto-runs Frontier and injects the synthesized answer as context.
 
-4. Advanced/debug one-off run:
+5. Advanced/debug one-off run:
 
    ```bash
    maestro frontier run "<prompt>" --scope codex-project
