@@ -31,6 +31,9 @@ const MODEL_LABELS = {
   gemini: 'Gemini 3.1 Pro',
   fable: 'Fable 5',
   'sonnet-5': 'Sonnet 5',
+  glm: 'GLM 5.2 (Z.ai)',
+  kimi: 'Kimi K2.7 Code (Moonshot)',
+  deepseek: 'DeepSeek V4 Pro',
 };
 
 // ---------- directory resolvers ----------

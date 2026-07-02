@@ -479,6 +479,12 @@ const DEFAULTS = {
     // (fable/opus/sonnet-5) share the claude CLI, fanned under concurrency:4.
     'frontier-quad': ['fable', 'opus', 'gpt-5.5', 'gemini'],
     'frontier-quint': ['fable', 'opus', 'sonnet-5', 'gpt-5.5', 'gemini'],
+    // CN diversity presets. budget-trio: three CN providers, no Western-lab
+    // dependency in the panel. east-west: one CN + one Western frontier model
+    // for maximum training-lineage diversity in a duo. A coder-duo joins when
+    // the qwen adapter ships (deferred: read-only flags unverified).
+    'budget-trio': ['kimi', 'deepseek', 'glm'],
+    'east-west': ['deepseek', 'gpt-5.5'],
   },
   // Per-preset judge/synth model overrides. A preset listed here runs its
   // judge + synthesizer on the named model instead of the global default
@@ -497,6 +503,12 @@ const DEFAULTS = {
     'sonnet-duo': { judge: 'sonnet-5', synth: 'sonnet-5' },
     'sonnet-gpt': { judge: 'sonnet-5', synth: 'sonnet-5' },
     'sonnet-trio': { judge: 'sonnet-5', synth: 'sonnet-5' },
+    // budget-trio self-judges/synths on deepseek — the panel's strongest
+    // reasoning member (V4-Pro per the provider's own tiering) — so the
+    // budget fusion runs end-to-end without an Anthropic subscription.
+    // east-west is intentionally omitted: the global opus judge/synth is the
+    // neutral third party between its two members.
+    'budget-trio': { judge: 'deepseek', synth: 'deepseek' },
   },
   judgeModel: 'opus',
   synthModel: 'opus',

@@ -127,8 +127,8 @@ function Get-FrontierBadge {
     if ($item.Length -gt 8192) { return '' }
     try { $st = [IO.File]::ReadAllText($item.FullName) | ConvertFrom-Json } catch { return '' }
     if (-not $st) { return '' }
-    $letters = @{ 'opus' = 'O'; 'gpt-5.5' = 'C'; 'gemini' = 'G' }
-    $presets = @{ 'opus-duo' = 'O+O'; 'opus-gpt' = 'O+C'; 'gpt-duo' = 'C+C'; 'frontier-trio' = 'O+C+G' }
+    $letters = @{ 'opus' = 'O'; 'gpt-5.5' = 'C'; 'gemini' = 'G'; 'kimi' = 'K'; 'deepseek' = 'D'; 'glm' = 'Z' }
+    $presets = @{ 'opus-duo' = 'O+O'; 'opus-gpt' = 'O+C'; 'gpt-duo' = 'C+C'; 'frontier-trio' = 'O+C+G'; 'budget-trio' = 'K+D+Z'; 'east-west' = 'D+C' }
     $panel = ''
     switch ([string]$st.mode) {
         'single' { if ($letters.ContainsKey([string]$st.model)) { $panel = $letters[[string]$st.model] } }

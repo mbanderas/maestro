@@ -270,6 +270,36 @@ async function main() {
     check('global synth default still opus', DEFAULTS.synthModel === 'opus');
   }
 
+  // (q) CN diversity presets: budget-trio (all-CN panel, self-judge/synth on
+  //     deepseek — strongest member, no Anthropic dependency) and east-west
+  //     (CN + Western duo, neutral global opus judge/synth). coder-duo stays
+  //     absent until the qwen adapter ships.
+  {
+    check('budget-trio panel',
+      JSON.stringify(resolvePanel({ preset: 'budget-trio' }, DEFAULTS)) ===
+      JSON.stringify(['kimi', 'deepseek', 'glm']));
+    check('east-west panel',
+      JSON.stringify(resolvePanel({ preset: 'east-west' }, DEFAULTS)) ===
+      JSON.stringify(['deepseek', 'gpt-5.5']));
+    check('budget-trio self-judges on deepseek',
+      resolveJudgeModel({ preset: 'budget-trio' }, DEFAULTS) === 'deepseek');
+    check('budget-trio self-synths on deepseek',
+      resolveSynthModel({ preset: 'budget-trio' }, DEFAULTS) === 'deepseek');
+    check('east-west keeps opus judge (global default)',
+      resolveJudgeModel({ preset: 'east-west' }, DEFAULTS) === 'opus');
+    check('east-west keeps opus synth (global default)',
+      resolveSynthModel({ preset: 'east-west' }, DEFAULTS) === 'opus');
+    check('validatePreset budget-trio true', validatePreset('budget-trio', DEFAULTS) === true);
+    check('validatePreset east-west true', validatePreset('east-west', DEFAULTS) === true);
+    check('coder-duo absent (qwen deferred)',
+      !Object.prototype.hasOwnProperty.call(DEFAULTS.presets, 'coder-duo'));
+    // Every preset member must resolve to a known adapter (drift guard).
+    for (const [pid, members] of Object.entries(DEFAULTS.presets)) {
+      check('preset ' + pid + ' members all resolvable',
+        members.every(m => validateModel(m, DEFAULTS)));
+    }
+  }
+
   // (p) CN provider adapters (glm/kimi/deepseek) ride the read-only claude
   //     CLI against each vendor's Anthropic-compatible endpoint. Auth is an
   //     envFrom passthrough — the value here is a HOST env-var NAME, never a

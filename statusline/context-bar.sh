@@ -105,7 +105,8 @@ frontier_badge() {
   case "$mode" in
     single)
       case "$(jq -r '.model // empty' "$f" 2>/dev/null)" in
-        opus) panel='O' ;; gpt-5.5) panel='C' ;; gemini) panel='G' ;; *) panel='' ;;
+        opus) panel='O' ;; gpt-5.5) panel='C' ;; gemini) panel='G' ;;
+        kimi) panel='K' ;; deepseek) panel='D' ;; glm) panel='Z' ;; *) panel='' ;;
       esac
       ;;
     fusion)
@@ -114,6 +115,8 @@ frontier_badge() {
         opus-gpt) panel='O+C' ;;
         gpt-duo) panel='C+C' ;;
         frontier-trio) panel='O+C+G' ;;
+        budget-trio) panel='K+D+Z' ;;
+        east-west) panel='D+C' ;;
         custom)
           n=$(jq -r '(.models | length) // 0' "$f" 2>/dev/null)
           [[ "$n" =~ ^[0-9]+$ ]] || n=0

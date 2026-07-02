@@ -150,8 +150,11 @@ function frontierBadge(cfgDir, ws) {
   if (!path) return '';
   const st = readGuardedJson(path, 8192);
   if (!st) return '';
-  const letters = { opus: 'O', 'gpt-5.5': 'C', gemini: 'G' };
-  const presets = { 'opus-duo': 'O+O', 'opus-gpt': 'O+C', 'gpt-duo': 'C+C', 'frontier-trio': 'O+C+G' };
+  const letters = { opus: 'O', 'gpt-5.5': 'C', gemini: 'G', kimi: 'K', deepseek: 'D', glm: 'Z' };
+  const presets = {
+    'opus-duo': 'O+O', 'opus-gpt': 'O+C', 'gpt-duo': 'C+C', 'frontier-trio': 'O+C+G',
+    'budget-trio': 'K+D+Z', 'east-west': 'D+C',
+  };
   let panel = '';
   switch (String(st.mode)) {
     case 'single':
