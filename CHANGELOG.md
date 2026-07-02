@@ -6,6 +6,31 @@ All notable changes to Maestro are documented here. The format follows
 
 ## [Unreleased]
 
+## [1.13.0] - 2026-07-03
+
+### Added
+
+- **Frontier now ships the global eight-adapter roster.** GLM 5.2, Kimi K2.7
+  Code, and DeepSeek V4 Pro join Opus 4.8, Fable 5, Sonnet 5, GPT-5.5, and
+  Gemini 3.1 Pro. The CN providers ride the same read-only `claude` CLI pointed
+  at each vendor's Anthropic-compatible endpoint; keys are read from
+  `ZAI_API_KEY`, `MOONSHOT_API_KEY`, and `DEEPSEEK_API_KEY` at spawn time and
+  never stored in Maestro state.
+- **New CN-aware presets and saved user panels.** `budget-trio` runs Kimi +
+  DeepSeek + GLM and self-judges/synthesizes on DeepSeek, so it needs no
+  Anthropic subscription. `east-west` runs DeepSeek + GPT-5.5 with the default
+  Opus judge/synth unless overridden. `maestro frontier preset save/list/delete`
+  persists per-scope custom panels, and built-ins always win on name collisions.
+- **`maestro frontier roster` shows readiness without exposing secrets.** The
+  roster command prints each adapter's binary availability plus set/missing
+  status for required env vars, never key values. Missing provider keys degrade
+  as skipped members before spawn.
+- **Codex CLI/Desktop now gets the same Frontier setup path as Claude Code.**
+  The Codex plugin skill, portable Codex prompt/skill mirrors, README,
+  integration guide, and settings docs now advertise the CN adapters,
+  `budget-trio` / `east-west`, saved presets, `roster`, and `~/.codex/.env`
+  guidance for Desktop/IDE sessions that do not inherit shell env vars.
+
 ## [1.12.0] - 2026-07-02
 
 ### Added
