@@ -50,7 +50,7 @@ check('marketplace install policy is available', entry && entry.policy && entry.
 check('marketplace auth policy is on install', entry && entry.policy && entry.policy.authentication === 'ON_INSTALL');
 check('marketplace category is productivity', entry && entry.category === 'Productivity');
 
-for (const skill of ['maestro-frontier', 'maestro-terse', 'maestro-settings', 'maestro-update']) {
+for (const skill of ['maestro', 'maestro-frontier', 'maestro-terse', 'maestro-settings', 'maestro-update']) {
   check('bundled skill exists: ' + skill, fs.existsSync(path.join(root, manifest.skills, skill, 'SKILL.md')));
   const pluginSkill = fs.readFileSync(path.join(root, manifest.skills, skill, 'SKILL.md'), 'utf8');
   const integrationSkill = fs.readFileSync(path.join(root, 'integrations', 'codex', 'skills', skill, 'SKILL.md'), 'utf8');

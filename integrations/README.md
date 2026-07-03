@@ -11,8 +11,9 @@ prompt. Those ports are shortcuts around the portable `maestro frontier ...`
 CLI, not plugin equivalents.
 
 Portable integrations include `/frontier` and `/update`; Codex also installs
-`maestro-frontier`, `maestro-settings`, `maestro-terse`, and `maestro-update`
-skills. `/frontier` drives the portable engine (`maestro frontier ...`);
+the direct `/maestro` skill hub plus `maestro-frontier`, `maestro-settings`,
+`maestro-terse`, and `maestro-update` skills. `/frontier` drives the portable
+engine (`maestro frontier ...`);
 `/update` refreshes the install. `context-bar` is Claude Code-specific, while
 settings and terse are available through Codex skills or the portable CLI. The
 orchestration doctrine itself needs no command — it lives in `AGENTS.md` and
@@ -23,7 +24,7 @@ loads on demand.
 | Runtime | Source in this repo | Install to | Invoke |
 |---|---|---|---|
 | Cursor | `integrations/cursor/commands/frontier.md` | `.cursor/commands/frontier.md` (per-repo) or `~/.cursor/commands/` (global) | `/frontier` |
-| Codex (CLI + Desktop) | `codex-skills/maestro-frontier/SKILL.md` in the plugin; `integrations/codex/skills/` mirrors the same files for portable installs | bundled by the `maestro@maestro` Codex plugin; portable fallback copies to `.agents/skills/<name>/SKILL.md` | ask for the Maestro skill |
+| Codex (CLI + Desktop) | `codex-skills/maestro/SKILL.md` plus specialized skills in the plugin; `integrations/codex/skills/` mirrors the same files for portable installs | bundled by the `maestro@maestro` Codex plugin; portable fallback copies to `.agents/skills/<name>/SKILL.md` | `/maestro frontier off`, `/maestro settings status`, `/maestro terse ultra` |
 
 After adding a file, restart the tool or open a new chat so it loads.
 
@@ -74,7 +75,7 @@ updates are a single invocation:
 | Runtime | Source in this repo | Install to | Invoke |
 |---|---|---|---|
 | Cursor | `integrations/cursor/commands/update.md` | `.cursor/commands/update.md` (per-repo) or `~/.cursor/commands/` (global) | `/update` |
-| Codex (CLI + Desktop) | `integrations/codex/skills/maestro-update/SKILL.md` | `.agents/skills/maestro-update/SKILL.md` (project/workspace) or `~/.agents/skills/maestro-update/SKILL.md` (global/user) | ask for `maestro-update` |
+| Codex (CLI + Desktop) | `integrations/codex/skills/maestro-update/SKILL.md` and the `/maestro` hub | `.agents/skills/<name>/SKILL.md` (project/workspace) or `~/.agents/skills/<name>/SKILL.md` (global/user) | `/maestro update` or `/maestro-update` |
 
 **Version model:** Maestro pins no version for portable files. Fetching from
 latest `main` always resolves the newest committed code — no manual version bump
@@ -86,15 +87,19 @@ needed per release.
   armed. Cursor, Gemini, Cline, and Windsurf/Devin command ports are manual
   shortcuts unless those runtimes add an equivalent trusted hook surface. Use
   `maestro frontier run "<prompt>" ...` there for one-off panels.
-- **Codex uses plugin-bundled skills, not prompts.** Install the marketplace
-  once with `codex plugin marketplace add mbanderas/maestro`, then install
-  `maestro@maestro` with `codex plugin add maestro@maestro`. The portable
-  fallback `maestro install --target codex` still copies the
-  `maestro-frontier`, `maestro-terse`, `maestro-settings`, and
-  `maestro-update` skills to `.agents/skills/<name>/SKILL.md`
-  (project/workspace) or `~/.agents/skills/<name>/SKILL.md` (global/user).
-  Deprecated `~/.codex/prompts/*.md` prompt files remain compatibility bridges
-  only.
+- **Codex uses plugin-bundled skills for direct slash commands, not prompts.**
+  Install the marketplace once with `codex plugin marketplace add
+  mbanderas/maestro`, then install `maestro@maestro` with `codex plugin add
+  maestro@maestro`. The plugin bundles the direct `/maestro` hub plus
+  `/maestro-frontier`, `/maestro-settings`, `/maestro-terse`, and
+  `/maestro-update` skill entries. Use `/maestro frontier off`,
+  `/maestro frontier fusion budget-trio`, `/maestro settings status`, or
+  `/maestro terse ultra` — no `/prompts:*` prefix. Restart Codex or open a new
+  thread after install/update so the slash list reloads. The portable fallback
+  `maestro install --target codex` still copies those skills to
+  `.agents/skills/<name>/SKILL.md` (project/workspace) or
+  `~/.agents/skills/<name>/SKILL.md` (global/user). Deprecated
+  `~/.codex/prompts/*.md` prompt files remain compatibility bridges only.
 - **Codex per-repo skill path:** `.agents/skills/<name>/SKILL.md` is the
   repo-scoped option for Codex skills. The global path is
   `~/.agents/skills/<name>/SKILL.md`.
@@ -104,8 +109,9 @@ needed per release.
   `MAESTRO_CLAUDE_BIN`), then restart and open a new thread. `maestro frontier
   roster` reports readiness without printing secret values.
 - **Maestro Frontier ON indicator (Codex only).** When
-  `maestro frontier status --scope codex-project` reports mode != off, the `maestro-frontier` skill
-  instructs Codex to lead its reply with `Maestro Frontier ON (<label>)` —
+  `maestro frontier status --scope codex-project` reports mode != off, the
+  `maestro-frontier` skill instructs Codex to lead its reply with
+  `Maestro Frontier ON (<label>)` —
   `single · <model>` or `fusion · <preset>`. When mode is off, no indicator line
   appears. This is Codex-scoped only and has no effect on Claude Code.
 - **Engine location.** Plugin installs run the bundled engine from the

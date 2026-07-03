@@ -229,7 +229,7 @@ function mkTmpTracked() {
 
 // ---- test 9: codex skills install ----
 {
-  const SKILLS = ['maestro-frontier', 'maestro-terse', 'maestro-settings', 'maestro-update'];
+  const SKILLS = ['maestro', 'maestro-frontier', 'maestro-terse', 'maestro-settings', 'maestro-update'];
   const skillPath = (root, name) =>
     path.join(root, '.agents', 'skills', name, 'SKILL.md');
 
@@ -250,10 +250,10 @@ function mkTmpTracked() {
     check(`9c: ${name} SKILL.md is non-empty`, nonEmpty);
   }
 
-  // 9.3 existing codex wrapper + AGENTS.md writes still happen (no regression)
+  // 9.3 Codex installs direct skills, not deprecated prompt wrappers.
   check('9d: codex still installs AGENTS.md', fs.existsSync(path.join(TMP, 'AGENTS.md')));
-  check('9d: codex still installs .codex/prompts/frontier.md wrapper',
-    fs.existsSync(path.join(TMP, '.codex', 'prompts', 'frontier.md')));
+  check('9d: codex does not install deprecated .codex/prompts/frontier.md wrapper',
+    !fs.existsSync(path.join(TMP, '.codex', 'prompts', 'frontier.md')));
   check('9d: codex installs settings CLI used by settings/terse skills',
     fs.existsSync(path.join(TMP, 'settings', 'cli.cjs')));
 
@@ -267,6 +267,9 @@ function mkTmpTracked() {
     frontier.includes('maestro frontier status --scope codex-project'));
   check('9e: frontier SKILL.md states the off contract (no indicator line)',
     frontier.includes('output no indicator line'));
+  const maestro = fs.readFileSync(skillPath(TMP, 'maestro'), 'utf8');
+  check('9e: maestro SKILL.md exposes direct slash command hub',
+    maestro.includes('/maestro frontier off') && maestro.includes('/maestro settings status'));
 
   // 9.5 re-run is no-clobber / idempotent (does not overwrite or error)
   const userEdit = '\nUSER LOCAL EDIT\n';
@@ -305,10 +308,14 @@ function mkTmpTracked() {
 
   const skillPath = (name) => path.join(HOME, '.agents', 'skills', name, 'SKILL.md');
   check('10a: codex --user install returns 0', code === 0);
+  check('10b: codex --user creates direct maestro hub skill',
+    fs.existsSync(skillPath('maestro')));
   check('10b: codex --user creates namespaced frontier skill',
     fs.existsSync(skillPath('maestro-frontier')));
   check('10c: codex --user creates namespaced update skill',
     fs.existsSync(skillPath('maestro-update')));
+  check('10d: codex --user does not create deprecated prompt wrapper',
+    !fs.existsSync(path.join(HOME, '.codex', 'prompts', 'frontier.md')));
 }
 
 // ---- test 11: managed namespaced skills refresh on re-run ----

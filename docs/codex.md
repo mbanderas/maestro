@@ -169,10 +169,10 @@ app is running and the project is on disk.
 Frontier is off until you arm it. For Codex, the normal workflow is:
 
 ```text
-maestro frontier mode fusion --preset chatgpt-duo --scope codex-project
-maestro frontier mode fusion --preset budget-trio --scope codex-project
-maestro frontier mode fusion --preset frontier-trio --judge chatgpt --synth chatgpt --scope codex-project
-maestro frontier mode off --scope codex-project
+/maestro frontier fusion chatgpt-duo
+/maestro frontier fusion budget-trio
+/maestro frontier fusion frontier-trio --judge chatgpt --synth chatgpt
+/maestro frontier off
 ```
 
 Once the Maestro Codex plugin hook is installed, enabled, and trusted,
@@ -192,14 +192,14 @@ projects.
 Use the same active scope for all lifecycle commands:
 
 ```text
-maestro frontier roster
-maestro frontier status --scope codex-project
-maestro frontier mode off --scope codex-project
-maestro frontier mode fusion --preset chatgpt-duo --scope codex-project
-maestro frontier mode fusion --preset budget-trio --scope codex-project
-maestro frontier mode fusion --preset frontier-trio --judge chatgpt --synth chatgpt --scope codex-project
-maestro frontier preset save my-duo --models kimi,gpt-5.5 --judge deepseek --scope codex-project
-maestro frontier preset list --scope codex-project
+/maestro frontier roster
+/maestro frontier status
+/maestro frontier off
+/maestro frontier fusion chatgpt-duo
+/maestro frontier fusion budget-trio
+/maestro frontier fusion frontier-trio --judge chatgpt --synth chatgpt
+/maestro frontier preset save my-duo --models kimi,gpt-5.5 --judge deepseek
+/maestro frontier preset list
 ```
 
 The Codex path uses the same eight-adapter Frontier engine as Claude Code:
@@ -234,15 +234,34 @@ Codex CLI ships a native
 context-usage indicator (`/statusline` picker, or `context` in
 `[tui].status_line` in `~/.codex/config.toml`).
 
-## Skills and the Frontier ON indicator
+## Slash commands, skills, and the Frontier ON indicator
 
 Codex skills can live in personal `$HOME/.agents/skills`, repo
 `.agents/skills`, or installed plugins. The normal Codex path is the Maestro
-plugin, which bundles `maestro-frontier`, `maestro-settings`, `maestro-terse`,
-and `maestro-update` from `./codex-skills/`. The portable
+plugin, which bundles the direct `/maestro` hub plus `maestro-frontier`,
+`maestro-settings`, `maestro-terse`, and `maestro-update` from
+`./codex-skills/`. Enabled Codex skills appear in the slash command list; use
+`/maestro ...` for the command hub, not `/prompts:*`. The portable
 `maestro install --target codex` fallback still installs those same skills to
 `.agents/skills/<name>/SKILL.md` for project installs or
 `~/.agents/skills/<name>/SKILL.md` for global/user installs.
+
+Direct Codex commands:
+
+```text
+/maestro frontier off
+/maestro frontier fusion budget-trio
+/maestro frontier roster
+/maestro settings status
+/maestro settings set verify block
+/maestro terse ultra
+/maestro update
+```
+
+Codex may also show the specialized entries `/maestro-frontier`,
+`/maestro-settings`, `/maestro-terse`, and `/maestro-update`. Restart Codex or
+open a new thread after installing/updating the plugin so the slash list
+reloads.
 
 When `maestro frontier status --scope codex-project` reports mode != off,
 the `maestro-frontier` skill instructs Codex to lead its reply with

@@ -177,5 +177,5 @@ codex plugin add maestro@maestro
 Portable/manual Codex installs can still be refreshed by re-running
 `maestro install --target codex` in the intended scope. The updater refreshes
 Maestro-managed files, preserves user-edited files, and safely migrates older
-unprefixed Codex skills to the current `maestro-frontier`,
+unprefixed Codex skills to the current `maestro`, `maestro-frontier`,
 `maestro-settings`, `maestro-terse`, and `maestro-update` names where possible.

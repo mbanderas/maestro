@@ -91,7 +91,7 @@ const codexManifest = readJson('.codex-plugin/plugin.json');
 check('codex manifest declares a skills path', typeof codexManifest.skills === 'string', String(codexManifest.skills));
 const codexSkillsDir = path.join(root, codexManifest.skills);
 check('codex skills dir exists', fs.existsSync(codexSkillsDir), codexSkillsDir);
-for (const s of ['maestro-frontier', 'maestro-settings', 'maestro-terse', 'maestro-update', 'terse']) {
+for (const s of ['maestro', 'maestro-frontier', 'maestro-settings', 'maestro-terse', 'maestro-update', 'terse']) {
   check('codex resolves skill: ' + s, fs.existsSync(path.join(codexSkillsDir, s, 'SKILL.md')));
 }
 // and those skills sit OUTSIDE Claude Code's default skills/ dir.

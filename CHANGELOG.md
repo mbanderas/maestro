@@ -6,6 +6,24 @@ All notable changes to Maestro are documented here. The format follows
 
 ## [Unreleased]
 
+## [1.14.0] - 2026-07-03
+
+### Added
+
+- **Codex now ships a direct `/maestro` slash hub.** The Codex plugin bundles a
+  `maestro` skill so enabled-skill slash lists can route `/maestro frontier
+  off`, `/maestro frontier fusion budget-trio`, `/maestro settings status`,
+  `/maestro terse ultra`, and `/maestro update` without any `/prompts:*`
+  prefix.
+- **Portable Codex installs copy the same hub.** `maestro install --target
+  codex` now installs `maestro` alongside `maestro-frontier`,
+  `maestro-settings`, `maestro-terse`, and `maestro-update`, while preserving
+  user-edited skills and the existing legacy skill migration behavior.
+- **Codex docs and marketplace prompts now advertise the slash-command path.**
+  README, Codex docs, integration docs, and plugin metadata show direct
+  `/maestro ...` usage plus the specialized `/maestro-frontier`,
+  `/maestro-settings`, `/maestro-terse`, and `/maestro-update` entries.
+
 ## [1.13.0] - 2026-07-03
 
 ### Added

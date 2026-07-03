@@ -23,11 +23,6 @@ const SENTINEL_END = '<!-- maestro:end -->';
 // templateSrc is relative to PKG_ROOT.
 // userDest null means no global install path for this target.
 const WRAPPER_MAP = {
-  codex: {
-    src:  'integrations/codex/prompts/frontier.md',
-    proj: '.codex/prompts/frontier.md',
-    user: () => path.join(homeDir(), '.codex', 'prompts', 'frontier.md'),
-  },
   cursor: {
     src:  'integrations/cursor/commands/frontier.md',
     proj: '.cursor/commands/frontier.md',
@@ -50,11 +45,12 @@ const WRAPPER_MAP = {
   },
 };
 
-// Codex skill templates installed alongside the deprecated codex wrapper.
+// Codex skill templates install the direct slash-list command surface.
 // Codex loads skills from <project>/.agents/skills/<name>/SKILL.md (project)
 // or ~/.agents/skills/<name>/SKILL.md (global). Maestro-owned skills are
 // refreshed when still managed; user-edited copies are preserved.
 const CODEX_SKILLS = [
+  { name: 'maestro', legacy: null },
   { name: 'maestro-frontier', legacy: 'frontier' },
   { name: 'maestro-terse', legacy: 'terse' },
   { name: 'maestro-settings', legacy: 'settings' },
@@ -834,6 +830,11 @@ function installWrapper(target, projectRoot, userGlobal, dryRun, log) {
     return true;
   }
 
+  if (target === 'codex') {
+    log('[codex] No prompt wrapper — skills deliver /maestro commands.');
+    return true;
+  }
+
   const mapping = WRAPPER_MAP[target];
   if (!mapping) {
     log(`ERROR: unknown target: ${target}`);
@@ -858,7 +859,7 @@ function installWrapper(target, projectRoot, userGlobal, dryRun, log) {
 }
 
 /**
- * Install the Codex skill templates alongside the codex wrapper. Maestro-owned
+ * Install the Codex skill templates. Maestro-owned
  * skill files refresh in place; user-edited copies are preserved.
  * Project mode -> <project>/.agents/skills/<name>/SKILL.md; --user/global mode
  * -> ~/.agents/skills/<name>/SKILL.md (mirrors installWrapper's dest logic).
@@ -997,6 +998,8 @@ function installCodexSkills(projectRoot, userGlobal, dryRun, log) {
     const dest = path.join(skillsRoot, skill.name, 'SKILL.md');
     if (!installManagedCodexSkill(src, dest, skill.name, skill.legacy, dryRun, log)) ok = false;
 
+    if (!skill.legacy) continue;
+
     let legacyTemplate = '';
     try { legacyTemplate = fs.readFileSync(src, 'utf8'); } catch {}
     const legacyDest = path.join(skillsRoot, skill.legacy, 'SKILL.md');
@@ -1074,8 +1077,8 @@ function run(argv) {
     if (!installWrapper(target, project, userGlobal, dryRun, log)) anyError = true;
   }
 
-  // 3b. Codex skills — the .agents/skills/<name>/SKILL.md set ships alongside
-  // the deprecated codex prompt wrapper.
+  // 3b. Codex skills — the .agents/skills/<name>/SKILL.md set is the direct
+  // Codex slash-list command surface.
   if (target === 'codex') {
     if (!installCodexSkills(project, userGlobal, dryRun, log)) anyError = true;
   }

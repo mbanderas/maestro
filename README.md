@@ -125,11 +125,13 @@ disabled in runtimes with trusted hooks.
 
 - Claude Code: `/maestro:frontier fusion opus-gpt` (or
   `/maestro:frontier off`).
-- Codex: after installing the plugin and trusting hooks, ask the bundled
-  `maestro-frontier` skill to arm the project scope, for example "Use
-  Maestro Frontier with ChatGPT duo", "Show Maestro Frontier status", or
-  "Turn Maestro Frontier off." The skill runs the plugin-bundled engine; no
-  `npx` or global `maestro` binary is required.
+- Codex: after installing the plugin and trusting hooks, use the direct
+  `/maestro` slash hub (enabled skills appear in Codex's slash list):
+  `/maestro frontier fusion chatgpt-duo`, `/maestro frontier status`,
+  `/maestro frontier roster`, or `/maestro frontier off`. The skill runs the
+  plugin-bundled engine; no `npx`, `/prompts:*`, or global `maestro` binary is
+  required. Restart Codex or open a new thread after installing/updating the
+  plugin so the slash list reloads.
 - Shell/advanced: from a checkout or global install, the equivalent CLI form
   is:
 
@@ -175,9 +177,10 @@ benchmarks are unchanged; the discipline layer is its foundation.
 </p>
 
 It ships with the native plugins. Claude Code drives it with
-`/maestro:frontier`, Codex drives it with the `maestro-frontier` skill, and
-other CLIs can use `maestro frontier ...` or the `node bin/maestro.cjs
-frontier ...` fallback. Three modes, switched at will, **`off` by default**
+`/maestro:frontier`, Codex drives it with `/maestro frontier ...` through the
+bundled skill hub, and other CLIs can use `maestro frontier ...` or the
+`node bin/maestro.cjs frontier ...` fallback. Three modes, switched at will,
+**`off` by default**
 so installing or upgrading changes nothing until you opt in. **Arming it —
 `single` or `fusion` — makes it auto-run on every prompt**: a
 `UserPromptSubmit` hook routes each prompt through the engine and the live
@@ -203,9 +206,20 @@ Claude Code examples:
 /maestro:frontier off                          # disable auto-run; back to normal Maestro
 ```
 
-In Codex, ask the bundled `maestro-frontier` skill for the same status,
-single, fusion, run, or off operation; it resolves the plugin-bundled engine
-when the bare `maestro` command is not on `PATH`.
+Codex examples:
+
+```text
+/maestro frontier status
+/maestro frontier single opus
+/maestro frontier fusion opus-gpt
+/maestro frontier run "your prompt here"
+/maestro frontier off
+```
+
+The direct `/maestro` hub resolves the plugin-bundled engine when the bare
+`maestro` command is not on `PATH`. Codex may also show specialized slash
+entries such as `/maestro-frontier` and `/maestro-settings` because enabled
+skills appear in the slash list.
 
 <p align="center">
   <img src="assets/frontier-presets.svg" width="820" alt="Maestro Frontier fusion presets reference card">
@@ -358,12 +372,13 @@ Maestro separates **portable orchestration doctrine** from **runtime-specific ad
 | [`docs/codex.md`](docs/codex.md) | Codex guide | AGENTS.md precedence and 32 KiB cap, Codex subagent mapping, Automations long-horizon mapping (Codex reads `AGENTS.md` natively) |
 
 Maestro's tools run on **both Claude Code and Codex** — in Claude Code as
-`/maestro:*` slash commands, and in Codex as plugin-bundled skills plus
-trusted hooks. The portable `node settings/cli.cjs` and `maestro frontier ...`
-CLIs also work on any other agent. The Codex skills
-(`maestro-frontier`, `maestro-terse`, `maestro-settings`, `maestro-update`)
-ship from the Maestro plugin; the older `maestro install --target codex` path
-still works for manual project copies. When Frontier mode is on, the
+`/maestro:*` slash commands, and in Codex as the direct `/maestro` skill hub,
+specialized plugin-bundled skills, and trusted hooks. The portable
+`node settings/cli.cjs` and `maestro frontier ...` CLIs also work on any other
+agent. The Codex skills (`maestro`, `maestro-frontier`, `maestro-terse`,
+`maestro-settings`, `maestro-update`) ship from the Maestro plugin; the older
+`maestro install --target codex` path still works for manual project copies.
+When Frontier mode is on, the
 `maestro-frontier` skill leads each Codex reply with `Maestro Frontier ON
 (<label>)` (`single · <model>` or `fusion · <preset>`) — the Codex analog of
 Claude Code's armed Frontier indicator; ask the skill to show status, or run
@@ -393,11 +408,17 @@ Optional Claude Code machinery; full install steps in the linked docs.
 ## Commands & Settings
 
 Every Maestro slash command in Claude Code is namespaced `/maestro:<name>`.
-The same tools run on Codex as plugin-bundled skills; on any CLI the same
-actions also run through the portable scripts noted below.
+The same tools run on Codex as the `/maestro` skill hub plus specialized
+plugin-bundled skills. On any CLI the same actions also run through the
+portable scripts noted below.
 
 | Command | What it does | Usage |
 |---|---|---|
+| `/maestro` (Codex) | Direct Codex command hub for Frontier, settings, terse mode, and updates. | `/maestro frontier off`, `… frontier fusion budget-trio`, `… frontier roster`, `… settings status`, `… settings set verify block`, `… terse ultra`, `… update` |
+| `/maestro-frontier` (Codex) | Specialized Codex Frontier skill entry when you want only the engine commands. | `… off`, `… single opus`, `… fusion opus-gpt`, `… status`, `… roster`, `… run "<prompt>"` |
+| `/maestro-settings` (Codex) | Specialized Codex settings skill entry. | `… status`, `… list`, `… help`, `… set terse off` |
+| `/maestro-terse` (Codex) | Specialized Codex terse-mode skill entry. | `… lite`, `… full`, `… ultra`, `… off` |
+| `/maestro-update` (Codex) | Specialized Codex update skill entry; refreshes the marketplace plugin. | `/maestro-update` |
 | `/maestro:settings` | See or change all toggles. With arguments it runs the change directly; with no arguments it opens a keyboard picker. | `/maestro:settings`, `… status`, `… list`, `… help`, `… set terse off`, `… frontier fusion opus-gpt` |
 | `/maestro:frontier` | Drive the local multi-CLI fusion engine: switch mode, pick a model/preset, or run a prompt through it. | `… off`, `… single opus`, `… fusion opus-gpt`, `… status`, `… run "<prompt>"` |
 | `/maestro:terse` | Switch terse output mode for the session (off by default). | `… lite`, `… full`, `… ultra`, `… off` |

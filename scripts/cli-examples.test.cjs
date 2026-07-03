@@ -67,6 +67,9 @@ function firstToken(raw) {
 }
 
 function scanLine(line, rel, lineNo, violations) {
+  // Codex/Claude slash command examples are not shell invocations.
+  if (/^\s*\/maestro\b/.test(line) || /^\s*\/maestro[-:]/.test(line)) return;
+
   let m;
   SETTINGS_RE.lastIndex = 0;
   while ((m = SETTINGS_RE.exec(line)) !== null) {
