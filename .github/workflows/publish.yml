@@ -27,10 +27,16 @@ jobs:
       - name: Tag matches package.json version
         run: node scripts/check-release-tag.cjs
 
+      - name: Publish plan
+        id: publish-plan
+        run: node scripts/npm-publish-plan.cjs
+
       - name: Tests
+        if: steps.publish-plan.outputs.publish == 'true'
         run: npm test
 
       - name: Publish
+        if: steps.publish-plan.outputs.publish == 'true'
         run: npm publish --access public --provenance
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
