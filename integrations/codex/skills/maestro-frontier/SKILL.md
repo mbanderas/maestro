@@ -1,6 +1,7 @@
 ---
 name: maestro-frontier
 description: Maestro Frontier local multi-CLI fusion engine - arm, disarm, inspect, roster adapters, save presets, configure CN providers, or debug-run the panel
+license: MIT
 ---
 
 Drive the **Maestro Frontier** engine: a zero-dependency local multi-CLI fusion

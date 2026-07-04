@@ -1,6 +1,7 @@
 ---
 name: maestro
 description: Direct Maestro command hub for Codex slash menu: frontier, settings, terse, and update
+license: MIT
 ---
 
 Use this skill when the user invokes `/maestro`, asks for Maestro slash

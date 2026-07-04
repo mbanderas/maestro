@@ -1,6 +1,7 @@
 ---
 name: maestro-update
 description: Update Maestro to the latest marketplace version for Codex
+license: MIT
 ---
 
 Update **Maestro** to the latest Codex marketplace code. This refreshes the

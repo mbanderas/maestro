@@ -1,6 +1,7 @@
 ---
 name: maestro-terse
 description: Toggle Maestro terse output level (lite, full, ultra, off) via the settings CLI
+license: MIT
 ---
 
 Toggle the **Maestro terse** output level for this environment. Terse mode

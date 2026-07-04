@@ -1,6 +1,7 @@
 ---
 name: maestro-settings
 description: View and change Maestro toggles (terse, frontier, context-bar, discipline, verify) via the settings CLI
+license: MIT
 ---
 
 View or change **Maestro settings** for this project. The settings CLI manages

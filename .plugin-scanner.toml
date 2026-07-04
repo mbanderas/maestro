@@ -1,0 +1,7 @@
+# HOL plugin-scanner config.
+# Benchmarks and unit-test files are not part of the shipped plugin bundle.
+# They contain env-var-named fixtures (e.g. *_TOKEN, *_DSN) and format
+# validators (e.g. tk_ token-shape regexes) that the secret detector flags
+# as false positives. Exclude them from the scan.
+[scanner]
+ignore_paths = ["benchmarks/**", "benchmarks/*", "**/*.test.cjs"]
