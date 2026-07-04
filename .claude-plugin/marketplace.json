@@ -2,7 +2,7 @@
   "name": "maestro",
   "description": "Self-hosted marketplace for the Maestro multi-agent orchestration plugin.",
   "owner": {
-    "name": "Mark Banderas",
+    "name": "Mark Laursen",
     "url": "https://github.com/mbanderas"
   },
   "plugins": [

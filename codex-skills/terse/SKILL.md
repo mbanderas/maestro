@@ -6,6 +6,7 @@ description: >
   Use when the user invokes /maestro:terse, says "terse mode",
   "be brief", or asks for less token usage.
 argument-hint: "[lite|full|ultra|off]"
+license: MIT
 ---
 
 <!-- Ported from the Caveman skill (MIT,

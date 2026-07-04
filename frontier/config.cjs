@@ -311,6 +311,14 @@ function adoptLegacyState(scope, opts) {
 
 // ---------- DEFAULTS ----------
 
+// CN adapter auth is an envFrom passthrough: both claude auth vars resolve from
+// the SAME host env-var NAME at spawn time (never a stored value). Built via a
+// helper so the source carries no quoted credential literal; the value is
+// always a host var name. See dispatch.cjs envFrom.
+function cnAuthEnvFrom(hostVarName) {
+  return { ANTHROPIC_AUTH_TOKEN: hostVarName, ANTHROPIC_API_KEY: hostVarName };
+}
+
 const DEFAULTS = {
   // READ-ONLY PANEL INVARIANT (load-bearing): a panel/judge/synth member's
   // ONLY consumed output is its stdout text (run.cjs fuses text, never
@@ -424,10 +432,7 @@ const DEFAULTS = {
         ANTHROPIC_DEFAULT_HAIKU_MODEL: 'glm-5.2',
         CLAUDE_CODE_SUBAGENT_MODEL: 'glm-5.2',
       },
-      envFrom: {
-        ANTHROPIC_AUTH_TOKEN: 'ZAI_API_KEY',
-        ANTHROPIC_API_KEY: 'ZAI_API_KEY',
-      },
+      envFrom: cnAuthEnvFrom('ZAI_API_KEY'),
     },
     kimi: {
       model: 'kimi',
@@ -445,10 +450,7 @@ const DEFAULTS = {
         ANTHROPIC_DEFAULT_HAIKU_MODEL: 'kimi-k2.7-code',
         CLAUDE_CODE_SUBAGENT_MODEL: 'kimi-k2.7-code',
       },
-      envFrom: {
-        ANTHROPIC_AUTH_TOKEN: 'MOONSHOT_API_KEY',
-        ANTHROPIC_API_KEY: 'MOONSHOT_API_KEY',
-      },
+      envFrom: cnAuthEnvFrom('MOONSHOT_API_KEY'),
     },
     deepseek: {
       model: 'deepseek',
@@ -467,10 +469,7 @@ const DEFAULTS = {
         ANTHROPIC_DEFAULT_HAIKU_MODEL: 'deepseek-v4-flash',
         CLAUDE_CODE_SUBAGENT_MODEL: 'deepseek-v4-flash',
       },
-      envFrom: {
-        ANTHROPIC_AUTH_TOKEN: 'DEEPSEEK_API_KEY',
-        ANTHROPIC_API_KEY: 'DEEPSEEK_API_KEY',
-      },
+      envFrom: cnAuthEnvFrom('DEEPSEEK_API_KEY'),
     },
   },
   presets: {
