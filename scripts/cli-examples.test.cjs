@@ -3,7 +3,7 @@
 // real argument grammar of the repo-owned CLIs, so a doc can never ship an
 // invocation that exits 2. Two grammars are enforced:
 //   settings/cli.cjs : status | list | help | set <key> <value>   (no bare-key form)
-//   <maestro> frontier : mode | status | run | adopt | preset | roster
+//   <maestro> frontier : mode | status | run | adopt | preset | roster | catalog | compose
 // Scope: fenced bash/sh code blocks in *.md (where runnable examples live) plus
 // the gemini *.toml command files. Prose mentions outside fences are ignored, and
 // the `...` placeholder is allowed. install.cjs is *.cjs, deliberately NOT scanned:
@@ -26,7 +26,7 @@ function check(name, ok, detail) {
 // ---- collect target files ----
 const SHELL_INFO = new Set(['', 'bash', 'sh', 'shell', 'console', 'zsh']);
 const SETTINGS_SUB = new Set(['status', 'list', 'help', 'set', '--help', '-h']);
-const FRONTIER_SUB = new Set(['mode', 'status', 'run', 'adopt', 'preset', 'roster']);
+const FRONTIER_SUB = new Set(['mode', 'status', 'run', 'adopt', 'preset', 'roster', 'catalog', 'compose']);
 const PLACEHOLDER = new Set(['...', '<...>']);
 
 function walk(dir, acc, exts) {
@@ -84,7 +84,7 @@ function scanLine(line, rel, lineNo, violations) {
   while ((m = FRONTIER_RE.exec(line)) !== null) {
     const tok = firstToken(m[1]);
     if (!PLACEHOLDER.has(tok) && !FRONTIER_SUB.has(tok)) {
-      violations.push(`${rel}:${lineNo} frontier subcommand "${tok}" (valid: mode|status|run|adopt|preset|roster) — ${line.trim()}`);
+      violations.push(`${rel}:${lineNo} frontier subcommand "${tok}" (valid: mode|status|run|adopt|preset|roster|catalog|compose) — ${line.trim()}`);
     }
   }
 }

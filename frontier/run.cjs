@@ -16,37 +16,11 @@ const { classify, toFailedModel } = require('./schema.cjs');
 const dispatch = require('./dispatch.cjs');
 const judge = require('./judge.cjs');
 const synthesize = require('./synthesize.cjs');
-
-const MODEL_ALIASES = {
-  chatgpt: 'gpt-5.5',
-};
-
-const PRESET_ALIASES = {
-  'chatgpt-duo': 'gpt-duo',
-};
-
-/** @param {string} model @returns {string} */
-function canonicalModelId(model) {
-  return MODEL_ALIASES[model] || model;
-}
-
-/** @param {string} preset @returns {string} */
-function canonicalPresetId(preset) {
-  return PRESET_ALIASES[preset] || preset;
-}
-
-/** @param {object} state @returns {object} */
-function normalizeStateAliases(state) {
-  const normalized = { ...state };
-  if (normalized.model) normalized.model = canonicalModelId(normalized.model);
-  if (normalized.preset) normalized.preset = canonicalPresetId(normalized.preset);
-  if (Array.isArray(normalized.models)) {
-    normalized.models = normalized.models.map(canonicalModelId);
-  }
-  if (normalized.judgeModel) normalized.judgeModel = canonicalModelId(normalized.judgeModel);
-  if (normalized.synthModel) normalized.synthModel = canonicalModelId(normalized.synthModel);
-  return normalized;
-}
+const {
+  canonicalModelId,
+  canonicalPresetId,
+  normalizeStateAliases,
+} = require('./catalog.cjs');
 
 /**
  * Clean-slate reframing brief for dead-end escalation: carries ONLY the

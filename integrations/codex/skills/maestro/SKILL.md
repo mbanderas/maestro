@@ -1,12 +1,13 @@
 ---
 name: maestro
-description: Direct Maestro command hub for Codex slash menu: frontier, settings, terse, and update
+description: Direct Maestro command hub for Codex slash menu: compose or choose a Frontier model panel, settings, terse, and update
 license: MIT
 ---
 
 Use this skill when the user invokes `/maestro`, asks for Maestro slash
-commands in Codex, or gives a Maestro command-shaped request such as
-`frontier off`, `terse ultra`, `settings status`, or `update`.
+commands in Codex, asks to compose or choose a Frontier model panel, or gives a
+Maestro command-shaped request such as `frontier off`, `terse ultra`,
+`settings status`, or `update`.
 
 This is the direct Codex command hub. Enabled Codex skills appear in the slash
 command list, so `/maestro ...` should route here instead of requiring
@@ -43,9 +44,11 @@ use `--scope codex-project` unless the user explicitly names another scope.
 /maestro frontier off
 /maestro frontier status
 /maestro frontier roster
+/maestro frontier catalog
 /maestro frontier single <model>
 /maestro frontier fusion <preset>
 /maestro frontier fusion custom --models <a,b,c> [--judge <model>] [--synth <model>]
+/maestro frontier compose --models <model>,<model> [--judge <model>] [--synth <model>] [--save <name>] [--dry-run]
 /maestro frontier preset save <name> --models <a,b,c> [--judge <model>] [--synth <model>]
 /maestro frontier preset list
 /maestro frontier preset delete <name>
@@ -58,24 +61,33 @@ Run:
 node bin/maestro.cjs frontier mode off --scope codex-project
 node bin/maestro.cjs frontier status --scope codex-project
 node bin/maestro.cjs frontier roster
+node bin/maestro.cjs frontier catalog
 node bin/maestro.cjs frontier mode single --model <model> --scope codex-project
 node bin/maestro.cjs frontier mode fusion --preset <preset> --scope codex-project
 node bin/maestro.cjs frontier mode fusion --preset custom --models <a,b,c> --scope codex-project
+node bin/maestro.cjs frontier compose --models <model>,<model> --judge <model> --synth <model> --save <name> --scope codex-project
 node bin/maestro.cjs frontier preset save <name> --models <a,b,c> --scope codex-project
 node bin/maestro.cjs frontier preset list --scope codex-project
 node bin/maestro.cjs frontier preset delete <name> --scope codex-project
 node bin/maestro.cjs frontier run "<prompt>" --scope codex-project
 ```
 
-Presets include `opus-duo`, `opus-gpt`, `gpt-duo`, `chatgpt-duo`,
-`frontier-trio`, `fable-duo`, `fable-gpt`, `fable-trio`, `sonnet-duo`,
-`sonnet-gpt`, `sonnet-trio`, `frontier-quad`, `frontier-quint`,
-`budget-trio`, `east-west`, `custom`, and saved user presets.
+Start composition with `frontier catalog`: it is the source of truth for
+selectable models, presets, aliases, readiness, and required configuration.
+Do not invent IDs. `compose` validates one to eight comma-separated models;
+without `--dry-run`, it saves and arms the resolved custom fusion panel.
 
-Models include `opus`, `fable`, `sonnet-5`, `gpt-5.5`, `gemini`, `glm`,
-`kimi`, and `deepseek`. CN providers use `claude` pointed at each vendor's
-Anthropic-compatible endpoint and read `ZAI_API_KEY`, `MOONSHOT_API_KEY`, and
-`DEEPSEEK_API_KEY` from the environment at spawn time.
+Configure optional Codex aliases only with
+`MAESTRO_FRONTIER_MODEL_TERRA`, `MAESTRO_FRONTIER_MODEL_LUNA`, and
+`MAESTRO_FRONTIER_MODEL_SOL`. Codex Desktop reads them from `~/.codex/.env`;
+restart and open a new thread after changing that file. All panel, judge, and
+synthesizer subprocesses are one-shot and read-only.
+
+Before releasing configured optional Codex aliases, run:
+
+```bash
+node frontier/smoke.cjs
+```
 
 ### Settings
 

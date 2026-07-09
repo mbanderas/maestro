@@ -21,20 +21,80 @@ function safeReadFile(p) {
 }
 
 // Residual cmd.exe hazards for a prompt passed as an ARGUMENT on win32.
-// Win32 npm shims (codex/gemini, extensionless) cannot be spawned with
-// shell:false (Node v18.20+/20.12+/24 throw EINVAL on .cmd/.bat), and
+// Win32 npm shims (codex/gemini, extensionless or explicitly configured as
+// .cmd/.bat) cannot be spawned with shell:false (Node
+// v18.20+/20.12+/24 throw EINVAL on .cmd/.bat), and
 // shell:true concatenates args unescaped (DEP0190). So we wrap them in an
-// explicit `cmd.exe /d /s /c <shim> ...` with shell:false: Node then applies
-// its standard argv quoting to every element, so spaces and &|<>() inside the
-// quoted prompt are literal to cmd and there is no unescaped concat. What
-// Node's C-runtime quoting does NOT reconcile with cmd.exe is the double quote
-// and percent (cmd still expands %VAR% on the /c line). stdin adapters
+// explicit `cmd.exe /d /v:off /s /c <shim> ...` with shell:false. Node argv
+// quoting is not a complete cmd.exe escaping contract for untrusted prose:
+// quotes, variable expansion, command separators, redirection, grouping, and
+// delayed-expansion syntax can all alter the /c command line. stdin adapters
 // (claude, codex) are unaffected; only the promptVia:'arg' shim path (gemini)
-// is, so we refuse a prompt bearing those residual chars there. Plain prose —
-// spaces and most punctuation included — passes.
-const CMD_UNSAFE_RE = new RegExp('["%\\r\\n]');
+// is, so we refuse the full cmd.exe metacharacter class there. Plain prose,
+// spaces, and ordinary punctuation still pass.
+const CMD_UNSAFE_RE = new RegExp('["%&|<>()^!\\r\\n]');
 function unsafeForShellArg(s) {
   return CMD_UNSAFE_RE.test(String(s));
+}
+
+// Base arguments are normally static catalog data, but optional model ids and
+// third-party adapters may supply them. Unlike prose prompts, these values do
+// not need cmd.exe metacharacters; reject them before a Windows shim sees the
+// /c command line. This is defense in depth alongside catalog model-id checks.
+const CMD_UNSAFE_BASE_ARG_RE = CMD_UNSAFE_RE;
+function unsafeForWinShimBaseArg(s) {
+  return CMD_UNSAFE_BASE_ARG_RE.test(String(s));
+}
+
+// Do not copy the host environment wholesale into model children: it can
+// contain unrelated provider credentials, CI tokens, and user secrets. These
+// names are the narrow set needed to resolve binaries and normal per-user CLI
+// configuration across POSIX and Windows. Adapter.env/envFrom add the
+// adapter's declared endpoint and authentication values explicitly.
+const CHILD_ENV_ALLOWLIST = Object.freeze([
+  'PATH', 'PATHEXT', 'ComSpec', 'SystemRoot', 'SystemDrive', 'WINDIR',
+  'HOME', 'USERPROFILE', 'HOMEDRIVE', 'HOMEPATH', 'APPDATA', 'LOCALAPPDATA',
+  'XDG_CONFIG_HOME', 'XDG_CACHE_HOME', 'XDG_DATA_HOME',
+  'TMPDIR', 'TEMP', 'TMP', 'LANG', 'LC_ALL', 'LC_CTYPE', 'TERM',
+]);
+
+function envValue(source, name) {
+  if (!source || typeof source !== 'object') return undefined;
+  if (typeof source[name] === 'string') return source[name];
+  // Windows environment names are case-insensitive, although objects passed
+  // to Node can preserve the original casing (for example Path vs PATH).
+  if (process.platform === 'win32') {
+    const key = Object.keys(source).find(candidate => candidate.toLowerCase() === name.toLowerCase());
+    if (key && typeof source[key] === 'string') return source[key];
+  }
+  return undefined;
+}
+
+function buildChildEnv(adapter, envFrom, fusionDepth, hostEnv) {
+  const env = {};
+  const source = hostEnv || process.env;
+  for (const name of CHILD_ENV_ALLOWLIST) {
+    const value = envValue(source, name);
+    if (value !== undefined) env[name] = value;
+  }
+  if (adapter && adapter.env && typeof adapter.env === 'object') Object.assign(env, adapter.env);
+  if (envFrom && typeof envFrom === 'object') Object.assign(env, envFrom);
+  // The recursion guard is dispatcher-owned; adapters cannot override it.
+  env.FUSION_DEPTH = String(fusionDepth);
+  return env;
+}
+
+function classifyStderr(stderr) {
+  const text = String(stderr || '').trim().toLowerCase();
+  if (!text) return null;
+  if (/(?:auth|unauthori[sz]ed|forbidden|credential|api[ _-]?key|token)/.test(text)) {
+    return 'authentication failure';
+  }
+  if (/(?:rate limit|too many requests|quota)/.test(text)) return 'rate-limited';
+  if (/(?:(?:unknown|not found|unavailable).{0,40}model|model.{0,40}(?:unknown|not found|unavailable))/.test(text)) {
+    return 'model unavailable';
+  }
+  return 'subprocess error';
 }
 
 /**
@@ -60,14 +120,25 @@ function spawnOne(prompt, adapter, opts) {
     }
 
     // ---- build invocation ----
-    // Node scripts (test stubs) run via process.execPath; win32 npm shims go
-    // through an explicit cmd.exe wrapper (see CMD_UNSAFE_RE note); everything
-    // else (claude.exe, POSIX bins) spawns directly. shell is always false.
+    // Node scripts (test stubs) run via process.execPath; win32 npm shims
+    // (extensionless or explicit .cmd/.bat) go through an explicit cmd.exe
+    // wrapper (see CMD_UNSAFE_RE note); everything else (claude.exe, POSIX
+    // bins) spawns directly. shell is always false.
     const isNodeScript = /\.[cm]?js$/i.test(adapter.bin);
-    const isWinShim    = !isNodeScript && process.platform === 'win32' && !path.extname(adapter.bin);
+    const binExt = path.extname(adapter.bin).toLowerCase();
+    const isWinShim = !isNodeScript && process.platform === 'win32' &&
+      (!binExt || binExt === '.cmd' || binExt === '.bat');
 
     // program args: base flags (+ optional output file) (+ optional prompt arg)
-    const progArgs = [...(adapter.baseArgs || [])];
+    const baseArgs = Array.isArray(adapter.baseArgs) ? adapter.baseArgs : [];
+    if (isWinShim && (unsafeForWinShimBaseArg(adapter.bin) || baseArgs.some(unsafeForWinShimBaseArg))) {
+      return resolve({
+        model: adapter.model, content: '', ok: false,
+        durationMs: Date.now() - start, tokensEst: 0,
+        error: 'unsafe command path or base argument for win32 shim adapter (contains a cmd.exe metacharacter)',
+      });
+    }
+    const progArgs = [...baseArgs];
 
     // last-message-file: unique tmp path
     let tmpPath = null;
@@ -80,14 +151,25 @@ function spawnOne(prompt, adapter, opts) {
       progArgs.push('--output-last-message', tmpPath);
     }
 
+    // The output path is generated locally, but TEMP may be configured with
+    // cmd.exe metacharacters. It becomes part of the /c command line for a
+    // Windows shim, so reject it using the same guard as static flags.
+    if (isWinShim && progArgs.some(unsafeForWinShimBaseArg)) {
+      return resolve({
+        model: adapter.model, content: '', ok: false,
+        durationMs: Date.now() - start, tokensEst: 0,
+        error: 'unsafe adapter argument for win32 shim (contains a cmd.exe metacharacter)',
+      });
+    }
+
     // prompt delivery via arg (stdin path is written after spawn)
     if (adapter.promptVia === 'arg') {
       if (isWinShim && unsafeForShellArg(prompt)) {
         return resolve({
           model: adapter.model, content: '', ok: false,
           durationMs: Date.now() - start, tokensEst: 0,
-          error: 'unsafe prompt for win32 arg-path adapter (contains a quote, ' +
-            'percent, or newline); use a stdin-capable model or remove those characters',
+          error: 'unsafe prompt for win32 arg-path adapter (contains a cmd.exe ' +
+            'metacharacter); use a stdin-capable model or remove that character',
         });
       }
       progArgs.push(adapter.promptFlag || '-p', prompt);
@@ -99,18 +181,19 @@ function spawnOne(prompt, adapter, opts) {
       spawnArgs = [adapter.bin, ...progArgs];
     } else if (isWinShim) {
       bin = process.env.ComSpec || 'cmd.exe';
-      spawnArgs = ['/d', '/s', '/c', adapter.bin, ...progArgs];
+      // Explicitly disable delayed expansion even though ! is rejected above:
+      // cmd.exe inherits its mode from the parent otherwise.
+      spawnArgs = ['/d', '/v:off', '/s', '/c', adapter.bin, ...progArgs];
     } else {
       bin = adapter.bin;
       spawnArgs = progArgs;
     }
 
-    // envFrom: auth passthrough read from the HOST env at spawn time — never
-    // stored in config or on disk. Shape { CHILD_VAR: 'HOST_VAR' }; any
-    // missing/empty HOST_VAR fails this member cleanly BEFORE spawn, so a
+    // envFrom: required auth passthrough read from the HOST env at spawn time
+    // — never stored in config or on disk. Shape { CHILD_VAR: 'HOST_VAR' };
+    // any missing/empty HOST_VAR fails this member cleanly BEFORE spawn, so a
     // keyless adapter degrades like any other failed panel member instead of
-    // dialing the endpoint half-authenticated. Spread after adapter.env so
-    // the live key always wins over a static placeholder.
+    // dialing the endpoint half-authenticated.
     const envFrom = {};
     if (adapter.envFrom && typeof adapter.envFrom === 'object') {
       const missing = [];
@@ -129,7 +212,18 @@ function spawnOne(prompt, adapter, opts) {
       }
     }
 
-    const env = { ...process.env, FUSION_DEPTH: String(fusionDepth), ...(adapter.env || {}), ...envFrom };
+    // envPassthrough is catalog-declared optional compatibility forwarding
+    // (for example, Codex API key/session location). Missing values are fine:
+    // the child may instead use a different configured login mechanism.
+    const optionalEnvFrom = {};
+    if (adapter.envPassthrough && typeof adapter.envPassthrough === 'object') {
+      for (const [dst, src] of Object.entries(adapter.envPassthrough)) {
+        const val = envValue(process.env, src);
+        if (val !== undefined && val !== '') optionalEnvFrom[dst] = val;
+      }
+    }
+
+    const env = buildChildEnv(adapter, { ...optionalEnvFrom, ...envFrom }, fusionDepth);
 
     let child;
     try {
@@ -138,7 +232,7 @@ function spawnOne(prompt, adapter, opts) {
       return resolve({
         model: adapter.model, content: '', ok: false,
         durationMs: Date.now() - start, tokensEst: 0,
-        error: 'spawn error: ' + spawnErr.message,
+        error: 'spawn error',
       });
     }
 
@@ -178,7 +272,7 @@ function spawnOne(prompt, adapter, opts) {
       resolve({
         model: adapter.model, content: '', ok: false,
         durationMs: Date.now() - start, tokensEst: 0,
-        error: 'spawn error: ' + err.message,
+        error: 'spawn error',
       });
     });
 
@@ -224,11 +318,12 @@ function spawnOne(prompt, adapter, opts) {
       const ok = (code === 0) && !timedOut && content.length > 0 && !parseError;
       let error;
       if (!ok) {
+        const stderrClass = classifyStderr(stderrBuf);
         error = parseError ||
           (timedOut
             ? 'timeout'
             : ('exit ' + code + (signal ? (' ' + signal) : '') +
-               (stderrBuf ? ': ' + stderrBuf.slice(0, 500) : '')));
+               (stderrClass ? ': ' + stderrClass : '')));
       }
 
       const durationMs = Date.now() - start;
@@ -288,4 +383,11 @@ async function fanOut(prompt, modelIds, cfg, opts) {
   });
 }
 
-module.exports = { spawnOne, fanOut, unsafeForShellArg };
+module.exports = {
+  spawnOne,
+  fanOut,
+  unsafeForShellArg,
+  unsafeForWinShimBaseArg,
+  buildChildEnv,
+  classifyStderr,
+};

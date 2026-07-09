@@ -9,6 +9,7 @@ const { DEFAULTS, loadState, saveState, resolveScope, validateMode, validatePres
 const { loadUserPresets, saveUserPreset, deleteUserPreset, withUserPresets } = require('./presets.cjs');
 const { runFrontier, ensureRunId, canonicalModelId, canonicalPresetId } = require('./run.cjs');
 const runlock = require('./runlock.cjs');
+const { cmdCatalog, cmdCompose } = require('./compose.cjs');
 
 // ---------- arg helpers ----------
 
@@ -51,7 +52,9 @@ function usage() {
     '  frontier adopt [--force] [--scope <name>]\n' +
     '  frontier preset save <name> --models a,b,c [--judge m] [--synth m] [--scope <name>]\n' +
     '  frontier preset list|delete <name> [--scope <name>]\n' +
-    '  frontier roster\n'
+    '  frontier roster\n' +
+    '  frontier catalog [--json]\n' +
+    '  frontier compose --models a,b,c [--judge m] [--synth m] [--save name] [--dry-run] [--scope <name>]\n'
   );
 }
 
@@ -395,6 +398,10 @@ async function main() {
     cmdPreset(argv.slice(1), scope);
   } else if (cmd === 'roster') {
     cmdRoster();
+  } else if (cmd === 'catalog') {
+    cmdCatalog(argv.slice(1));
+  } else if (cmd === 'compose') {
+    cmdCompose(argv.slice(1), scope);
   } else {
     usage();
     process.exit(2);

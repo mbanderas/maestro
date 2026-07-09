@@ -1,96 +1,66 @@
 ---
-description: Maestro Frontier local multi-CLI fusion engine — arm, disarm, inspect, roster adapters, save presets, configure CN providers, or debug-run the panel
-argument-hint: "<off | single <model> | fusion <preset> | status | run <prompt> | preset ... | roster>"
+description: Maestro Frontier local multi-CLI fusion engine — compose or choose a read-only model panel, inspect the catalog, arm, disarm, or run it
+argument-hint: "<off | single <model> | fusion <preset> | compose --models <model>,<model> ... | catalog | status | run <prompt> | preset ... | roster>"
 ---
 
-Drive the **Maestro Frontier** engine — a zero-dependency local multi-CLI fusion
-engine (a parallel panel of local CLIs → a judge model's analysis → a grounded
-synthesis). It is the same engine the Claude Code plugin ships; here it runs
-through the `maestro` CLI, installed into this repo during setup.
+Drive the **Maestro Frontier** engine: a local multi-CLI fusion engine where a
+parallel panel feeds a judge and grounded synthesis. When the user asks to
+compose or choose a model panel, use `compose` after inspecting `catalog`; do
+not guess model or preset IDs.
 
-When the Maestro Codex plugin hook is installed, enabled, and trusted, arming a
-non-`off` mode makes ordinary later Codex prompts auto-run through Frontier
-until disabled. Manual `run` remains available for advanced/debug one-offs.
+When the trusted Maestro Codex plugin hook is installed, a non-`off` mode makes
+ordinary later Codex prompts auto-run through Frontier. `run` remains a manual
+debug one-off. Map `$ARGUMENTS` to one engine CLI call from the repo root. Do
+not edit Frontier state files by hand.
 
-Requested action: `$ARGUMENTS`
+## Catalog and composition
 
-Map it to one engine CLI call and run it from the repo root. Do not edit
-the engine's state file by hand.
+```bash
+maestro frontier catalog
+maestro frontier catalog --json
+maestro frontier compose --models <model>,<model> --dry-run --scope codex-project
+maestro frontier compose --models <model>,<model> --judge <model> --synth <model> --scope codex-project
+maestro frontier compose --models <model>,<model> --save <name> --scope codex-project
+```
 
-1. Switch mode. Project/workspace scope is the default recommendation. Run from
-   the repo root with `--scope codex-project`; the CLI expands it to the same
-   `codex-<8hex>` scope the trusted Codex hook uses:
+`frontier catalog` is the source of truth for models, presets, aliases,
+readiness, and required configuration. `compose` accepts one to eight
+comma-separated models. Judge and synth default to the first panel model.
+`--dry-run` does not change state; a non-dry run saves and arms the resolved
+custom fusion panel.
 
-   ```bash
-   maestro frontier mode off --scope codex-project
-   maestro frontier mode single --model <model> --scope codex-project
-   maestro frontier mode fusion --preset chatgpt-duo --scope codex-project
-   maestro frontier mode fusion --preset budget-trio --scope codex-project
-   maestro frontier mode fusion --preset east-west --scope codex-project
-   maestro frontier mode fusion --preset frontier-trio --judge chatgpt --synth chatgpt --scope codex-project
-   maestro frontier mode fusion --preset custom --models <a,b,c> --scope codex-project
-   ```
+## Modes, inspection, and one-off runs
 
-   Models: `opus` (Claude Opus 4.8), `fable` (Claude Fable 5), `sonnet-5`
-   (Claude Sonnet 5) — all need `claude`; `gpt-5.5` (needs `codex`), `gemini`
-   (needs `gemini`); `glm` (GLM 5.2), `kimi` (Kimi K2.7 Code), and `deepseek`
-   (DeepSeek V4 Pro) ride `claude` pointed at each vendor's
-   Anthropic-compatible endpoint. Presets: `opus-duo`, `opus-gpt`, `gpt-duo`, `frontier-trio`,
-   `fable-duo`, `fable-gpt`, `fable-trio`, `sonnet-duo`, `sonnet-gpt`,
-   `sonnet-trio`, `frontier-quad`, `frontier-quint`, `budget-trio`,
-   `east-west`, `custom`, plus saved user presets. Judge + synth
-   default to Opus; `--judge`/`--synth` override for any preset (e.g. `--judge
-   opus --synth gpt-5.5`). The family presets self-judge/synth (`gpt-duo` on
-   GPT-5.5, `fable-*` on Fable, `sonnet-*` on Sonnet 5, `budget-trio` on
-   DeepSeek); `frontier-quad`/`-quint` and `east-west` keep the global Opus
-   judge/synth. Friendly aliases are accepted: `chatgpt` ->
-   `gpt-5.5`, and `chatgpt-duo` -> `gpt-duo`. Fable 5 is subscription-covered
-   only through 2026-07-07, then draws Usage Credits — a non-blocking
-   `[frontier] …` stderr advisory fires past the cutoff; relay it to the user.
+```bash
+maestro frontier mode off --scope codex-project
+maestro frontier mode single --model <model> --scope codex-project
+maestro frontier mode fusion --preset <preset> --scope codex-project
+maestro frontier mode fusion --preset custom --models <model>,<model> --scope codex-project
+maestro frontier status --scope codex-project
+maestro frontier roster
+maestro frontier preset save <name> --models <model>,<model> --judge <model> --synth <model> --scope codex-project
+maestro frontier preset list --scope codex-project
+maestro frontier preset delete <name> --scope codex-project
+maestro frontier run "<prompt>" --scope codex-project
+```
 
-2. Inspect readiness and saved presets:
+After a non-`off` mode is armed, use ordinary Codex prompts. For `run`, report
+stdout verbatim. On `ERROR [<reason>]: <detail>`, relay the reason.
 
-   ```bash
-   maestro frontier roster
-   maestro frontier preset save my-duo --models kimi,gpt-5.5 --judge deepseek --scope codex-project
-   maestro frontier preset list --scope codex-project
-   maestro frontier preset delete my-duo --scope codex-project
-   ```
+## Configuration and release gate
 
-   `roster` prints adapter binary/key readiness without secret values. CN
-   adapters need `ZAI_API_KEY`, `MOONSHOT_API_KEY`, and `DEEPSEEK_API_KEY`.
-   Codex Desktop / IDE sessions may not inherit shell env vars; put required
-   values and binary overrides such as `MAESTRO_CLAUDE_BIN` in
-   `~/.codex/.env`, then restart and open a new thread.
+Configure optional Codex aliases only with
+`MAESTRO_FRONTIER_MODEL_TERRA`, `MAESTRO_FRONTIER_MODEL_LUNA`, and
+`MAESTRO_FRONTIER_MODEL_SOL`. Codex Desktop / IDE sessions read them from
+`~/.codex/.env`; restart and open a new thread after changing that file.
 
-3. Show the current mode/preset:
+Before releasing configured optional Codex aliases, run:
 
-   ```bash
-   maestro frontier status --scope codex-project
-   ```
+```bash
+node frontier/smoke.cjs
+```
 
-4. Normal use after arming: type ordinary Codex prompts. The trusted hook
-   auto-runs Frontier and injects the synthesized answer as context.
-
-5. Advanced/debug one-off run:
-
-   ```bash
-   maestro frontier run "<prompt>" --scope codex-project
-   ```
-
-   - `off`: prints a notice, spawns nothing.
-   - `single`: dispatches the one selected CLI, prints its answer.
-   - `fusion`: runs the panel in parallel → judge → synthesizer; prints the final
-     answer (a one-line run meta goes to stderr). Report stdout verbatim.
-
-On error the engine prints `ERROR [<reason>]: <detail>` to stderr and exits
-non-zero — relay the reason.
-
-Notes:
-
-- Real `single`/`fusion` runs spawn local CLIs and cost tokens; use small prompts.
-  `off` is free.
-- Each model's CLI must be on `PATH`, or point at a specific build with
-  `MAESTRO_CLAUDE_BIN` / `MAESTRO_CODEX_BIN` / `MAESTRO_GEMINI_BIN`.
-- Requires `maestro` on `PATH` (installed during Maestro setup). If it is missing,
-  install Maestro first.
+The explicit gate invokes only configured optional aliases through the normal
+read-only dispatch path. All panel, judge, and synthesizer subprocesses are
+one-shot and read-only: they return text only and never edit the workspace,
+commit, or run autonomous loops.

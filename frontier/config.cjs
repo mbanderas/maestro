@@ -10,6 +10,12 @@ const crypto = require('crypto');
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
+const {
+  buildRuntimeCatalog,
+  canonicalModelId,
+  canonicalPresetId,
+  normalizeStateAliases,
+} = require('./catalog.cjs');
 
 // ---------- configDir (ported from maestro-terse-mode.cjs) ----------
 
@@ -204,12 +210,12 @@ function loadState(scope) {
   try {
     const p = statePath(scope);
     const result = _readStateFile(p);
-    if (result !== null) return result;
+    if (result !== null) return normalizeStateAliases(result);
 
     // File absent. For non-default, non-workspace scopes attempt migration from legacy file.
     if (scope !== 'default' && !/^(cc|codex)-/.test(scope)) {
       const legacyResult = _readStateFile(legacyStatePath());
-      if (legacyResult !== null) return legacyResult;
+      if (legacyResult !== null) return normalizeStateAliases(legacyResult);
     }
 
     return { mode: 'off' };
@@ -265,7 +271,7 @@ function safeWriteJson(p, obj) {
 function saveState(state, scope) {
   if (scope === undefined) scope = resolveScope([]);
   else scope = resolveScopeAlias(scope);
-  return safeWriteJson(statePath(scope), state);
+  return safeWriteJson(statePath(scope), normalizeStateAliases(state));
 }
 
 /**
@@ -311,213 +317,16 @@ function adoptLegacyState(scope, opts) {
 
 // ---------- DEFAULTS ----------
 
-// CN adapter auth is an envFrom passthrough: both claude auth vars resolve from
-// the SAME host env-var NAME at spawn time (never a stored value). Built via a
-// helper so the source carries no quoted credential literal; the value is
-// always a host var name. See dispatch.cjs envFrom.
-function cnAuthEnvFrom(hostVarName) {
-  return { ANTHROPIC_AUTH_TOKEN: hostVarName, ANTHROPIC_API_KEY: hostVarName };
-}
+const RUNTIME_CATALOG = buildRuntimeCatalog();
 
 const DEFAULTS = {
-  // READ-ONLY PANEL INVARIANT (load-bearing): a panel/judge/synth member's
-  // ONLY consumed output is its stdout text (run.cjs fuses text, never
-  // filesystem changes). So every adapter MUST spawn read-only — any file
-  // write or shell mutation a member makes is unconsumed side-effect that
-  // races the host session. This is the documented contract in
-  // commands/frontier.md "Concurrency" and runlock.cjs; these flags ENFORCE
-  // it. Do NOT restore a write/bypass flag (--dangerously-skip-permissions,
-  // --dangerously-bypass-approvals-and-sandbox, --approval-mode yolo): that
-  // turns each member into a rogue parallel write-loop on an agentic prompt
-  // (the S10-forbidden "loops never spawn loops" state). Each mode below is
-  // the per-CLI read-only-but-non-interactive setting:
-  //   claude  --permission-mode plan        (reads + read-only shell, no edits)
-  //   codex   --sandbox read-only + --ask-for-approval never (default sandbox)
-  //   gemini  --approval-mode plan          (read-only tool mode)
-  adapters: {
-    opus: {
-      model: 'opus',
-      bin: process.env.MAESTRO_CLAUDE_BIN || 'claude',
-      baseArgs: ['-p', '--output-format', 'json', '--permission-mode', 'plan'],
-      promptVia: 'stdin',
-      webTools: false,
-      output: 'stdout',
-      parse: 'claude-json',
-    },
-    'gpt-5.5': {
-      model: 'gpt-5.5',
-      bin: process.env.MAESTRO_CODEX_BIN || 'codex',
-      baseArgs: [
-        'exec',
-        '--skip-git-repo-check',
-        '--sandbox', 'read-only',
-        '--ask-for-approval', 'never',
-        '-m', 'gpt-5.5',
-        '--color', 'never',
-      ],
-      promptVia: 'stdin',
-      webTools: true,
-      output: 'last-message-file',
-      parse: 'text',
-    },
-    gemini: {
-      model: 'gemini',
-      bin: process.env.MAESTRO_GEMINI_BIN || 'gemini',
-      baseArgs: [
-        '--output-format', 'json',
-        '--approval-mode', 'plan',
-        '--model', 'gemini-3.1-pro-preview',
-      ],
-      promptVia: 'arg',
-      promptFlag: '-p',
-      webTools: false,
-      output: 'stdout',
-      parse: 'gemini-json',
-    },
-    // Fable 5 and Sonnet 5 ride the same read-only `claude` CLI as opus, so
-    // they MUST pin --model explicitly — otherwise all three claude adapters
-    // resolve to the bare-`claude` default (verified Opus-class 2026-07-02) and
-    // panel diversity silently collapses. Full model IDs are the durable form
-    // (the CLI also accepts short aliases). Reuse parse:'claude-json'.
-    fable: {
-      model: 'fable',
-      bin: process.env.MAESTRO_CLAUDE_BIN || 'claude',
-      baseArgs: ['-p', '--output-format', 'json', '--permission-mode', 'plan', '--model', 'claude-fable-5'],
-      promptVia: 'stdin',
-      webTools: false,
-      output: 'stdout',
-      parse: 'claude-json',
-      // Soft cost metadata (no pricing table / hard gate — see costAdvisory).
-      // Subscription covers Fable 5 (<=50% weekly limit) only through freeUntil;
-      // on/after that date it draws Usage Credits and burns usage faster than
-      // Opus 4.8. Surfaced as a non-blocking run-time advisory, never enforced.
-      costTier: 'subscription-until',
-      freeUntil: '2026-07-07',
-    },
-    'sonnet-5': {
-      model: 'sonnet-5',
-      bin: process.env.MAESTRO_CLAUDE_BIN || 'claude',
-      baseArgs: ['-p', '--output-format', 'json', '--permission-mode', 'plan', '--model', 'claude-sonnet-5'],
-      promptVia: 'stdin',
-      webTools: false,
-      output: 'stdout',
-      parse: 'claude-json',
-    },
-    // CN providers (GLM / Kimi / DeepSeek) ride the same read-only `claude`
-    // CLI pointed at each vendor's Anthropic-compatible endpoint via
-    // adapter.env; the API key is an envFrom passthrough read from the HOST
-    // env at spawn time (dispatch.cjs) — a var NAME here, never a value, so
-    // no token is ever stored. Both ANTHROPIC_AUTH_TOKEN and
-    // ANTHROPIC_API_KEY map to the provider key (claude CLI versions read
-    // either; this also keeps a host Anthropic key from reaching a CN
-    // endpoint). Model routing rides ANTHROPIC_MODEL + the tier pins from
-    // each vendor's official Claude Code recipe — these backends resolve
-    // Anthropic tier aliases server-side, so --model is not used. A missing
-    // host key fails the member cleanly pre-spawn (see dispatch envFrom).
-    // Qwen is deferred: its CLI's read-only/plan and one-shot flags are
-    // unverified, so it cannot honor the read-only panel invariant yet.
-    glm: {
-      model: 'glm',
-      bin: process.env.MAESTRO_CLAUDE_BIN || 'claude',
-      baseArgs: ['-p', '--output-format', 'json', '--permission-mode', 'plan'],
-      promptVia: 'stdin',
-      webTools: false,
-      output: 'stdout',
-      parse: 'claude-json',
-      env: {
-        ANTHROPIC_BASE_URL: 'https://api.z.ai/api/anthropic',
-        ANTHROPIC_MODEL: 'glm-5.2',
-        ANTHROPIC_DEFAULT_OPUS_MODEL: 'glm-5.2',
-        ANTHROPIC_DEFAULT_SONNET_MODEL: 'glm-5.2',
-        ANTHROPIC_DEFAULT_HAIKU_MODEL: 'glm-5.2',
-        CLAUDE_CODE_SUBAGENT_MODEL: 'glm-5.2',
-      },
-      envFrom: cnAuthEnvFrom('ZAI_API_KEY'),
-    },
-    kimi: {
-      model: 'kimi',
-      bin: process.env.MAESTRO_CLAUDE_BIN || 'claude',
-      baseArgs: ['-p', '--output-format', 'json', '--permission-mode', 'plan'],
-      promptVia: 'stdin',
-      webTools: false,
-      output: 'stdout',
-      parse: 'claude-json',
-      env: {
-        ANTHROPIC_BASE_URL: 'https://api.moonshot.ai/anthropic',
-        ANTHROPIC_MODEL: 'kimi-k2.7-code',
-        ANTHROPIC_DEFAULT_OPUS_MODEL: 'kimi-k2.7-code',
-        ANTHROPIC_DEFAULT_SONNET_MODEL: 'kimi-k2.7-code',
-        ANTHROPIC_DEFAULT_HAIKU_MODEL: 'kimi-k2.7-code',
-        CLAUDE_CODE_SUBAGENT_MODEL: 'kimi-k2.7-code',
-      },
-      envFrom: cnAuthEnvFrom('MOONSHOT_API_KEY'),
-    },
-    deepseek: {
-      model: 'deepseek',
-      bin: process.env.MAESTRO_CLAUDE_BIN || 'claude',
-      baseArgs: ['-p', '--output-format', 'json', '--permission-mode', 'plan'],
-      promptVia: 'stdin',
-      webTools: false,
-      output: 'stdout',
-      parse: 'claude-json',
-      env: {
-        // Exact base URL per DeepSeek's checklist — no trailing slash, no /v1.
-        ANTHROPIC_BASE_URL: 'https://api.deepseek.com/anthropic',
-        ANTHROPIC_MODEL: 'deepseek-v4-pro',
-        ANTHROPIC_DEFAULT_OPUS_MODEL: 'deepseek-v4-pro',
-        ANTHROPIC_DEFAULT_SONNET_MODEL: 'deepseek-v4-pro',
-        ANTHROPIC_DEFAULT_HAIKU_MODEL: 'deepseek-v4-flash',
-        CLAUDE_CODE_SUBAGENT_MODEL: 'deepseek-v4-flash',
-      },
-      envFrom: cnAuthEnvFrom('DEEPSEEK_API_KEY'),
-    },
-  },
-  presets: {
-    'opus-duo': ['opus', 'opus'],
-    'opus-gpt': ['opus', 'gpt-5.5'],
-    'gpt-duo': ['gpt-5.5', 'gpt-5.5'],
-    'frontier-trio': ['opus', 'gpt-5.5', 'gemini'],
-    'fable-duo': ['fable', 'fable'],
-    'fable-gpt': ['fable', 'gpt-5.5'],
-    'fable-trio': ['fable', 'gpt-5.5', 'gemini'],
-    'sonnet-duo': ['sonnet-5', 'sonnet-5'],
-    'sonnet-gpt': ['sonnet-5', 'gpt-5.5'],
-    'sonnet-trio': ['sonnet-5', 'gpt-5.5', 'gemini'],
-    // frontier-quint (5 members) <= the 8-model resolvePanel cap; 3 members
-    // (fable/opus/sonnet-5) share the claude CLI, fanned under concurrency:4.
-    'frontier-quad': ['fable', 'opus', 'gpt-5.5', 'gemini'],
-    'frontier-quint': ['fable', 'opus', 'sonnet-5', 'gpt-5.5', 'gemini'],
-    // CN diversity presets. budget-trio: three CN providers, no Western-lab
-    // dependency in the panel. east-west: one CN + one Western frontier model
-    // for maximum training-lineage diversity in a duo. A coder-duo joins when
-    // the qwen adapter ships (deferred: read-only flags unverified).
-    'budget-trio': ['kimi', 'deepseek', 'glm'],
-    'east-west': ['deepseek', 'gpt-5.5'],
-  },
-  // Per-preset judge/synth model overrides. A preset listed here runs its
-  // judge + synthesizer on the named model instead of the global default
-  // below; this is what lets gpt-duo run end-to-end on Codex alone (no
-  // claude). Presets NOT listed use judgeModel/synthModel. An explicit
-  // --judge/--synth flag (state.judgeModel/synthModel) overrides both.
-  presetStages: {
-    'gpt-duo': { judge: 'gpt-5.5', synth: 'gpt-5.5' },
-    // Family presets self-judge/synth (mirrors gpt-duo): fable-* on Fable,
-    // sonnet-* on Sonnet 5 — keeps each family's fusion runnable end-to-end
-    // on its own model. frontier-quad/quint are intentionally omitted so they
-    // fall through to the global opus judge/synth (Fable/Sonnet stay panelists).
-    'fable-duo': { judge: 'fable', synth: 'fable' },
-    'fable-gpt': { judge: 'fable', synth: 'fable' },
-    'fable-trio': { judge: 'fable', synth: 'fable' },
-    'sonnet-duo': { judge: 'sonnet-5', synth: 'sonnet-5' },
-    'sonnet-gpt': { judge: 'sonnet-5', synth: 'sonnet-5' },
-    'sonnet-trio': { judge: 'sonnet-5', synth: 'sonnet-5' },
-    // budget-trio self-judges/synths on deepseek — the panel's strongest
-    // reasoning member (V4-Pro per the provider's own tiering) — so the
-    // budget fusion runs end-to-end without an Anthropic subscription.
-    // east-west is intentionally omitted: the global opus judge/synth is the
-    // neutral third party between its two members.
-    'budget-trio': { judge: 'deepseek', synth: 'deepseek' },
-  },
+  // Model metadata, spawn adapters, and built-in stage/preset maps are all
+  // catalog-owned. `models` is display-safe; adapters are launch-ready only
+  // for configured optional Codex model ids.
+  models: RUNTIME_CATALOG.models,
+  adapters: RUNTIME_CATALOG.adapters,
+  presets: RUNTIME_CATALOG.presets,
+  presetStages: RUNTIME_CATALOG.presetStages,
   judgeModel: 'opus',
   synthModel: 'opus',
   // Opt-in (default OFF = fixed synthesizer). When true, the synth stage may be
@@ -560,8 +369,9 @@ const DEFAULTS = {
  * @returns {string[]}
  */
 function resolvePanel(state, cfg) {
-  if (state.preset === 'custom') {
-    const models = state.models;
+  const preset = canonicalPresetId(state.preset);
+  if (preset === 'custom') {
+    const models = Array.isArray(state.models) ? state.models.map(canonicalModelId) : state.models;
     if (!Array.isArray(models) || models.length === 0) {
       throw new Error('resolvePanel: custom preset requires a non-empty models array');
     }
@@ -574,9 +384,9 @@ function resolvePanel(state, cfg) {
     }
     return models;
   }
-  const resolved = cfg.presets[state.preset];
+  const resolved = cfg.presets[preset];
   if (!resolved) {
-    throw new Error('resolvePanel: unknown preset: ' + state.preset);
+    throw new Error('resolvePanel: unknown preset: ' + preset);
   }
   return resolved;
 }
@@ -594,9 +404,9 @@ function resolvePanel(state, cfg) {
  * @returns {string}
  */
 function resolveStageModel(stage, state, cfg, analysis) {
-  const explicit = stage === 'judge' ? state.judgeModel : state.synthModel;
+  const explicit = canonicalModelId(stage === 'judge' ? state.judgeModel : state.synthModel);
   if (explicit) return explicit;
-  const ps = cfg.presetStages && cfg.presetStages[state.preset];
+  const ps = cfg.presetStages && cfg.presetStages[canonicalPresetId(state.preset)];
   if (ps && ps[stage]) return ps[stage];
   if (stage === 'synth' && cfg.analysisSynthSelect && analysis &&
       typeof analysis.synth_hint === 'string' &&
@@ -635,7 +445,8 @@ function validateMode(m) {
  */
 function validatePreset(p, cfg) {
   const c = cfg || DEFAULTS;
-  return p === 'custom' || Object.prototype.hasOwnProperty.call(c.presets, p);
+  const preset = canonicalPresetId(p);
+  return preset === 'custom' || Object.prototype.hasOwnProperty.call(c.presets, preset);
 }
 
 /**
@@ -645,7 +456,7 @@ function validatePreset(p, cfg) {
  */
 function validateModel(m, cfg) {
   const c = cfg || DEFAULTS;
-  return Object.prototype.hasOwnProperty.call(c.adapters, m);
+  return Object.prototype.hasOwnProperty.call(c.adapters, canonicalModelId(m));
 }
 
 /**
@@ -659,7 +470,7 @@ function validateModel(m, cfg) {
  */
 function resolveRunModels(state, cfg) {
   if (!state) return [];
-  if (state.mode === 'single') return state.model ? [state.model] : [];
+  if (state.mode === 'single') return state.model ? [canonicalModelId(state.model)] : [];
   if (state.mode === 'fusion') {
     try {
       return [

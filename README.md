@@ -25,16 +25,12 @@
   <sub>17 fixture tasks &middot; 147 valid A/B runs &middot; 11 voids excluded &amp; re-run &middot; 6 hooks, all tested &middot; ~10 KB always-on kernel &middot; plugin + portable installs</sub>
 </p>
 
-> **UPDATED — the panel goes global.** Frontier now ships **eight adapters**:
-> **GLM 5.2**, **Kimi K2.7 Code**, and **DeepSeek V4** join Opus 4.8, Fable 5,
-> Sonnet 5, GPT-5.5, and Gemini 3.1 Pro. The newcomers ride the `claude` CLI
-> you already have, pointed at each vendor's Anthropic-compatible endpoint —
-> API keys are read from your environment at spawn time and never stored.
-> Fuse them with the new **`budget-trio`** preset (Kimi + DeepSeek + GLM, no
-> Anthropic subscription needed) or **`east-west`** (DeepSeek + GPT-5.5), save
-> your own panels with `maestro frontier preset save`, and see what's ready to
-> run with `maestro frontier roster`. Full walkthrough in
-> [The Frontier Engine](#the-frontier-engine).
+> **UPDATED — catalog-first Frontier.** Run `maestro frontier catalog` to see
+> the locally selectable models, named presets (including legacy presets),
+> aliases, and readiness requirements. Compose a panel from ready models with
+> `maestro frontier compose --models ...`; the catalog never prints configured
+> model IDs or secret values. Full walkthrough in [The Frontier
+> Engine](#the-frontier-engine).
 
 ---
 
@@ -123,12 +119,13 @@ installs.
 Frontier stays **off** until you arm it, then normal prompts auto-route until
 disabled in runtimes with trusted hooks.
 
-- Claude Code: `/maestro:frontier fusion opus-gpt` (or
-  `/maestro:frontier off`).
+- Claude Code: `/maestro:frontier catalog`,
+  `/maestro:frontier compose --models <model-a>,<model-b>`, or
+  `/maestro:frontier off`.
 - Codex: after installing the plugin and trusting hooks, use the direct
   `/maestro` slash hub (enabled skills appear in Codex's slash list):
-  `/maestro frontier fusion chatgpt-duo`, `/maestro frontier status`,
-  `/maestro frontier roster`, or `/maestro frontier off`. The skill runs the
+  `/maestro frontier catalog`, `/maestro frontier compose --models <model-a>,<model-b>`,
+  `/maestro frontier status`, or `/maestro frontier off`. The skill runs the
   plugin-bundled engine; no `npx`, `/prompts:*`, or global `maestro` binary is
   required. Restart Codex or open a new thread after installing/updating the
   plugin so the slash list reloads.
@@ -136,10 +133,10 @@ disabled in runtimes with trusted hooks.
   is:
 
 ```text
-maestro frontier mode fusion --preset chatgpt-duo --scope codex-project
-maestro frontier mode fusion --preset budget-trio --scope codex-project
-maestro frontier mode fusion --preset frontier-trio --judge chatgpt --synth chatgpt --scope codex-project
-maestro frontier roster
+maestro frontier catalog
+maestro frontier compose --models <model-a>,<model-b> --scope codex-project
+maestro frontier compose --models <model-a>,<model-b> --judge <model> --synth <model> --save my-panel --scope codex-project
+maestro frontier compose --models <model-a>,<model-b> --dry-run --scope codex-project
 maestro frontier mode off --scope codex-project
 ```
 
@@ -202,6 +199,8 @@ Claude Code examples:
 /maestro:frontier status                       # show current mode
 /maestro:frontier single opus                  # arm one-CLI auto-run
 /maestro:frontier fusion opus-gpt              # arm panel auto-run (Opus + GPT-5.5)
+/maestro:frontier catalog                      # models, presets, aliases, readiness
+/maestro:frontier compose --models <model-a>,<model-b> --dry-run
 /maestro:frontier run "your prompt here"       # manual one-off (armed modes also auto-run)
 /maestro:frontier off                          # disable auto-run; back to normal Maestro
 ```
@@ -212,6 +211,8 @@ Codex examples:
 /maestro frontier status
 /maestro frontier single opus
 /maestro frontier fusion opus-gpt
+/maestro frontier catalog
+/maestro frontier compose --models <model-a>,<model-b> --dry-run
 /maestro frontier run "your prompt here"
 /maestro frontier off
 ```
@@ -225,59 +226,38 @@ skills appear in the slash list.
   <img src="assets/frontier-presets.svg" width="820" alt="Maestro Frontier fusion presets reference card">
 </p>
 
-Presets define the panel; the judge and synthesizer default to Opus 4.8
-(`claude -p`), and you override either with `--judge` / `--synth`:
+`frontier catalog` is the source of truth for the current model and preset
+set, aliases, and local readiness; it avoids a static documentation inventory
+because configured providers differ by machine. Existing named presets remain
+supported, and custom saved presets still arm and run as before. Use the
+composer when you want a ready, explicit panel:
 
-- **`opus-duo`**: two independent Opus runs, isolating the synthesis lift.
-- **`opus-gpt`**: Opus + GPT-5.5 (via `codex exec`); the recommended default for bounded spend.
-- **`chatgpt-duo`** (`gpt-duo` alias): two ChatGPT/Codex runs whose judge and synthesizer also run on ChatGPT/Codex: a Codex-only fusion that needs no `claude`.
-- **`frontier-trio`**: Opus + GPT-5.5 + Gemini 3.1 Pro (via `gemini -p`).
-- **`fable-duo` / `fable-gpt` / `fable-trio`**: Fable 5 panels that self-judge and self-synth on Fable (trio adds GPT-5.5 + Gemini).
-- **`sonnet-duo` / `sonnet-gpt` / `sonnet-trio`**: Sonnet 5 panels that self-judge and self-synth on Sonnet 5 (trio adds GPT-5.5 + Gemini).
-- **`frontier-quad`**: Fable 5 + Opus + GPT-5.5 + Gemini, judged/synthesized on Opus.
-- **`frontier-quint`**: adds Sonnet 5 to the quad — the full five-model panel.
-- **`budget-trio`**: Kimi + DeepSeek + GLM, judged/synthesized on DeepSeek — an all-CN fusion that needs no Anthropic subscription.
-- **`east-west`**: DeepSeek + GPT-5.5 for maximum training-lineage diversity in a duo, judged/synthesized on Opus.
-- **`custom`**: 1-8 of the known models.
+```text
+maestro frontier compose --models <model-a>,<model-b> [--judge <model>] [--synth <model>] [--save <name>] [--dry-run] [--scope <name>]
+```
 
-You can also save your own named presets, which then arm and run like
-built-ins (built-in names always win on a collision):
-`maestro frontier preset save my-duo --models kimi,gpt-5.5 --judge deepseek`,
-then `/maestro:frontier fusion my-duo`; `preset list` and
-`preset delete <name>` manage them per scope.
+`--dry-run` validates the composition without changing state or presets;
+`--save` both saves the named preset and arms the resolved custom panel. Without
+those flags, compose arms the resolved custom panel in the chosen scope.
+`terra`, `luna`, and `sol` are optional aliases, not canonical model IDs: they
+become selectable only when `MAESTRO_FRONTIER_MODEL_TERRA`,
+`MAESTRO_FRONTIER_MODEL_LUNA`, or `MAESTRO_FRONTIER_MODEL_SOL` is set in the
+environment or `~/.codex/.env`. The catalog reports the requirement but never
+the configured value.
 
-Eight model CLIs ship as adapters today: Opus 4.8, Fable 5, and Sonnet 5
-(all via `claude` with a distinct `--model`), GPT-5.5 (`codex`),
-Gemini 3.1 Pro (`gemini`), and GLM 5.2, Kimi K2.7 Code, and DeepSeek V4
-(all via `claude` pointed at each vendor's Anthropic-compatible endpoint).
-The CN adapters read their keys from your environment at spawn time —
-`ZAI_API_KEY`, `MOONSHOT_API_KEY`, `DEEPSEEK_API_KEY` — and never store
-them; `maestro frontier roster` shows each adapter's binary and key
-availability at a glance. A Qwen adapter follows once its CLI's read-only
-mode can be verified. Fable 5 is subscription-covered only through
-2026-07-07; after that it draws Usage Credits, and the engine prints a
-non-blocking `[frontier] …` cost advisory when a Fable panel runs past
-the cutoff.
-
-Pass `--judge <model>` / `--synth <model>` to run those stages on any
-model for any preset (e.g. `--judge opus --synth gpt-5.5`), so you can mix
-the panel and the judge/synth freely. Degradation is graceful: a partial
+Every panel, judge, and synthesizer subprocess runs in the provider CLI's
+read-only/planning mode. Degradation is graceful: a partial
 panel failure still returns a synthesis plus `failed_models`; a judge
 failure synthesizes from the raw responses; a hard failure returns a typed
 `failure_reason`. A `FUSION_DEPTH` guard bounds recursion to one level.
 
 Honest scope, measured rather than implied: the **engine is built,
 unit-tested (degradation, recursion, budget, anti-majority all covered),
-and verified end-to-end on real runs of `single` mode and the
-`opus-gpt`, `opus-duo`, and `frontier-trio` presets**. The `chatgpt-duo`,
-`fable-*`, `sonnet-*`, `frontier-quad`, and `frontier-quint` presets and
-`--judge`/`--synth` selection share that same code path and are
-unit-tested (Fable/Sonnet `--model` acceptance smoke-tested against the
-live CLI), but not yet live-run end-to-end. The GLM, Kimi, and DeepSeek
-adapters and the `budget-trio` / `east-west` presets are unit-tested at
-the spawn boundary (args, endpoint env, key passthrough, clean failure
-without a key) but have not been live-run against the vendor endpoints
-from this build. The quality *lift* of local fusion
+and verified end-to-end on selected local configurations**. Other catalog
+entries are validated at their supported boundaries, but readiness and provider
+availability remain machine-specific; run `node frontier/smoke.cjs` as the
+release verification for the local catalog and read-only dispatch contracts.
+The quality *lift* of local fusion
 is **measured, not asserted**: on a 100-task suite (93 scored) every
 fusion panel outscored its own member models, with the strongest fusion
 leading the field. That fusion-vs-solo result is a separate axis from the
@@ -380,8 +360,9 @@ agent. The Codex skills (`maestro`, `maestro-frontier`, `maestro-terse`,
 `maestro install --target codex` path still works for manual project copies.
 When Frontier mode is on, the
 `maestro-frontier` skill leads each Codex reply with `Maestro Frontier ON
-(<label>)` (`single · <model>` or `fusion · <preset>`) — the Codex analog of
-Claude Code's armed Frontier indicator; ask the skill to show status, or run
+(<label>)` (`single - <model>`, `fusion - <preset>`, or
+`fusion - custom (<model1>, <model2>, ...)`) — the Codex analog of Claude
+Code's armed Frontier indicator; ask the skill to show status, or run
 `maestro frontier status --scope codex-project` from a shell when using the
 CLI directly.
 
@@ -432,7 +413,7 @@ portable scripts noted below.
 | Toggle | Values | What it controls |
 |---|---|---|
 | `terse` | `off`, `lite`, `full`, `ultra` | Output-token reduction. Shows an amber level badge (`ULTRA`) on the status bar. |
-| `frontier` | `off`; `single:` `opus` / `fable` / `sonnet-5` / `gpt-5.5` / `gemini` / `glm` / `kimi` / `deepseek`; `fusion:` `opus-duo` / `opus-gpt` / `chatgpt-duo` / `frontier-trio` / `fable-duo` / `fable-gpt` / `fable-trio` / `sonnet-duo` / `sonnet-gpt` / `sonnet-trio` / `frontier-quad` / `frontier-quint` / `budget-trio` / `east-west` / `custom`, each with optional `--judge` / `--synth` | The local fusion engine. When armed it auto-runs on every prompt. The blue `f` panel badge means auto-run is on: `fO+C`, `fO+C+G`, `fK+D+Z`, `fD+C`, `f*3` (`O`=Opus, `F`=Fable 5, `S`=Sonnet 5, `C`=ChatGPT/GPT-5.5, `G`=Gemini, `K`=Kimi, `D`=DeepSeek, `Z`=GLM/Z.ai). |
+| `frontier` | `off`; `single - <catalog model>`; `fusion - <catalog preset>`; or `fusion - custom (<models>)`, with optional `--judge` / `--synth` | The local fusion engine. Run `maestro frontier catalog` for current models, named presets, aliases, and local readiness; do not treat a documentation example or alias as a canonical provider ID. When armed it auto-runs on every prompt, and the blue `f` panel badge reflects the active selection. |
 | `context-bar` | `on`, `off` | The status-line context-window progress bar. |
 | `discipline` | `on`, `off` | The enforcement-hook pack (gate-reminder, doctrine-guard, phase-scope, subagent-guard, verify-gate, loop-guard, gate-telemetry, toolbudget). `off` silences every hook for users who want only the Frontier engine. See [Discipline layer toggle](#discipline-layer-toggle) for the one caveat. |
 | `verify` | `off`, `warn`, `block` | The S7.3 verify-gate Stop hook. `warn` (default) injects a non-blocking nudge when a session modified files but ran no checker and stated no honest status token; `block` blocks the Stop once to force a checker run or honest token; `off` disables. `MAESTRO_VERIFY_GATE` overrides per-session. Arm `block` in repos with a real test suite. |

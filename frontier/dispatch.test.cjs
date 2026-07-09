@@ -2,8 +2,9 @@
 // Tests for frontier/dispatch.cjs. Zero dependencies.
 // Run: node frontier/dispatch.test.cjs
 // All CLI adapters are stubbed as .cjs node scripts — no real claude/codex/gemini.
-// Cases (h)/(i) additionally exercise the win32 cmd.exe-wrap shim path with a
-// real .cmd stub (win32 only) and the promptVia:'arg' metachar guard.
+// Cases (h)/(i) additionally exercise the win32 cmd.exe-wrap shim path with
+// explicit .cmd/.bat and extensionless stubs (win32 only), plus the
+// promptVia:'arg' metachar guard.
 
 'use strict';
 
@@ -11,7 +12,8 @@ const fs   = require('fs');
 const os   = require('os');
 const path = require('path');
 
-const { spawnOne, fanOut, unsafeForShellArg } = require(path.join(__dirname, 'dispatch.cjs'));
+const { spawnOne, fanOut, unsafeForShellArg, unsafeForWinShimBaseArg } = require(path.join(__dirname, 'dispatch.cjs'));
+const { OPTIONAL_CODEX_MODEL_ENV, buildRuntimeCatalog } = require(path.join(__dirname, 'catalog.cjs'));
 
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'frontier-dispatch-test-'));
 
@@ -61,19 +63,20 @@ check('(a) durationMs is number',        typeof a.durationMs === 'number');
 check('(a) no error field',              a.error === undefined);
 
 // ------------------------------------------------------------------ //
-// (b) failure: exit 1, stderr 'boom' — use parse:'text' so stdout
-// emptiness doesn't trigger a json-parse-fail error first; the exit-
-// code + stderr path then applies as specified.
+// (b) failure: stderr is classified but never returned verbatim. Use
+// parse:'text' so stdout emptiness does not trigger a json-parse-fail error
+// first; the exit-code + redacted-stderr path then applies.
 // ------------------------------------------------------------------ //
 const stubB = stub('b-fail', `
-process.stderr.write('boom');
+process.stderr.write('unauthorized token=sekret-stderr');
 process.exit(1);
 `);
 
 const b = await spawnOne('prompt', adapter(stubB, { parse: 'text', output: 'stdout' }));
 check('(b) fail ok=false',              b.ok === false);
 check('(b) error includes exit 1',      b.error && b.error.includes('exit 1'));
-check('(b) error includes boom',        b.error && b.error.includes('boom'));
+check('(b) stderr is classified',       b.error && b.error.includes('authentication failure'));
+check('(b) stderr secret is redacted',  b.error && !b.error.includes('sekret-stderr'));
 
 // ------------------------------------------------------------------ //
 // (c) FUSION_DEPTH injection
@@ -189,6 +192,74 @@ check('(f2) claude child depth',           f2Results[1].content === 'claude:2');
 check('(f2) gemini child depth',           f2Results[2].content === 'gemini:2');
 
 // ------------------------------------------------------------------ //
+// (f2a) configured optional Codex aliases dispatch their declared canonical
+//       model ids through the same read-only argv shape as GPT-5.5. The
+//       MAESTRO_CODEX_BIN override is a local Node stub, so no real Codex is
+//       launched; the child records the exact argv and recursion depth it got.
+// ------------------------------------------------------------------ //
+const codexProbe = stub('f2a-codex-probe', `
+const fs = require('fs');
+const args = process.argv.slice(2);
+const outputIndex = args.indexOf('--output-last-message');
+fs.writeFileSync(args[outputIndex + 1], JSON.stringify({
+  args,
+  fusionDepth: process.env.FUSION_DEPTH,
+  apiKey: process.env.OPENAI_API_KEY || 'absent',
+  codexHome: process.env.CODEX_HOME || 'absent',
+  unrelated: process.env.FRONTIER_UNRELATED_SECRET || 'absent',
+}));
+`);
+const configuredCodexIds = {
+  terra: 'provider/terra@2026-07',
+  luna: 'provider/luna@2026-07',
+  sol: 'provider/sol@2026-07',
+};
+const configuredCodexCatalog = buildRuntimeCatalog({
+  env: {
+    PATH: '',
+    MAESTRO_CODEX_BIN: codexProbe,
+    [OPTIONAL_CODEX_MODEL_ENV.terra]: configuredCodexIds.terra,
+    [OPTIONAL_CODEX_MODEL_ENV.luna]: configuredCodexIds.luna,
+    [OPTIONAL_CODEX_MODEL_ENV.sol]: configuredCodexIds.sol,
+  },
+  codexEnvPath: path.join(tmp, 'no-codex.env'),
+});
+const codexForwardedEnv = {
+  OPENAI_API_KEY: 'frontier-test-codex-auth',
+  CODEX_HOME: path.join(tmp, 'codex-home'),
+  FRONTIER_UNRELATED_SECRET: 'must-not-reach-codex',
+};
+const originalCodexEnv = Object.fromEntries(
+  Object.keys(codexForwardedEnv).map(name => [name, process.env[name]])
+);
+Object.assign(process.env, codexForwardedEnv);
+try {
+  for (const id of ['terra', 'luna', 'sol', 'gpt-5.5']) {
+    const expectedModel = id === 'gpt-5.5' ? 'gpt-5.5' : configuredCodexIds[id];
+    const response = await spawnOne('probe', configuredCodexCatalog.adapters[id], { fusionDepth: 7 });
+    let received = null;
+    try { received = JSON.parse(response.content); } catch {}
+    const expectedArgs = [
+      'exec', '--skip-git-repo-check', '--sandbox', 'read-only', '--ask-for-approval', 'never',
+      '-m', expectedModel, '--color', 'never',
+    ];
+    check('(f2a) ' + id + ' dispatch is read-only Codex exec',
+      response.ok === true && received &&
+      JSON.stringify(received.args.slice(0, expectedArgs.length)) === JSON.stringify(expectedArgs));
+    check('(f2a) ' + id + ' dispatch preserves FUSION_DEPTH',
+      received && received.fusionDepth === '7');
+    check('(f2a) ' + id + ' forwards declared Codex auth/home only',
+      received && received.apiKey === codexForwardedEnv.OPENAI_API_KEY &&
+      received.codexHome === codexForwardedEnv.CODEX_HOME && received.unrelated === 'absent');
+  }
+} finally {
+  for (const [name, value] of Object.entries(originalCodexEnv)) {
+    if (value === undefined) delete process.env[name];
+    else process.env[name] = value;
+  }
+}
+
+// ------------------------------------------------------------------ //
 // (g) fanOut with unknown adapter id -> failed PanelResponse, no throw
 // ------------------------------------------------------------------ //
 const cfgG = {
@@ -260,36 +331,72 @@ check('(f4) no spurious progress events',              f4Events.length === 0);
 // (h) unsafeForShellArg: pure-function metachar guard (cross-platform)
 // ------------------------------------------------------------------ //
 check('(h) plain prose is safe',          unsafeForShellArg('list three benefits of code review') === false);
-check('(h) ampersand is safe (quoted)',   unsafeForShellArg('cats & dogs') === false);
+check('(h) ordinary punctuation is safe', unsafeForShellArg('cats, dogs, and birds.') === false);
 check('(h) double-quote is unsafe',       unsafeForShellArg('say "hi"') === true);
 check('(h) percent is unsafe',            unsafeForShellArg('100% sure') === true);
 check('(h) newline is unsafe',            unsafeForShellArg('line1\nline2') === true);
+for (const metachar of ['&', '|', '<', '>', '^', '(', ')', '!']) {
+  check('(h) no-whitespace cmd metachar is unsafe: ' + metachar,
+    unsafeForShellArg('x' + metachar + 'whoami') === true);
+}
+check('(h) static base arg is safe',      unsafeForWinShimBaseArg('--model') === false);
+check('(h) cmd metachar in base arg is unsafe', unsafeForWinShimBaseArg('model&calc') === true);
+check('(h) quote in base arg is unsafe',  unsafeForWinShimBaseArg('model"quote') === true);
 
 // ------------------------------------------------------------------ //
-// (i) win32 cmd.exe-wrap shim path: real .cmd stub round-trips a
-//     multi-word arg prompt; an unsafe prompt is refused before spawn.
-//     win32-only (the cmd-wrap branch does not exist off win32).
+// (i) win32 cmd.exe-wrap shim path: explicit .cmd/.bat and extensionless
+//     stubs round-trip a multi-word arg prompt; unsafe values are refused
+//     before spawn. win32-only (the cmd-wrap branch does not exist off win32).
 // ------------------------------------------------------------------ //
 if (process.platform === 'win32') {
+  const spawnMarker = path.join(tmp, 'i-shim-spawned');
   const echo = stub('i-echo', `
+const fs = require('fs');
+if (process.env.FRONTIER_TEST_SPAWN_MARKER) fs.writeFileSync(process.env.FRONTIER_TEST_SPAWN_MARKER, 'spawned');
 process.stdout.write(JSON.stringify({is_error:false, result: process.argv.slice(2).join('|')}));
-`);
+  `);
   const shimCmd = path.join(tmp, 'i-shim.cmd');
+  const shimBat = path.join(tmp, 'i-shim.bat');
   fs.writeFileSync(shimCmd, '@node "' + echo + '" %*\r\n');
-  const shimEnv = { PATH: tmp + path.delimiter + (process.env.PATH || '') };
+  fs.writeFileSync(shimBat, '@node "' + echo + '" %*\r\n');
+  const shimEnv = {
+    PATH: tmp + path.delimiter + (process.env.PATH || ''),
+    FRONTIER_TEST_SPAWN_MARKER: spawnMarker,
+  };
   const shimAdapter = {
     model: 'shim', bin: 'i-shim', baseArgs: ['--x'],
     promptVia: 'arg', promptFlag: '-p', output: 'stdout', parse: 'claude-json',
     env: shimEnv,
   };
 
-  const iOk = await spawnOne('two words', shimAdapter);
-  check('(i) cmd-wrap shim ok=true',            iOk.ok === true);
-  check('(i) cmd-wrap multi-word arg survives', iOk.content.includes('two words'));
+  const iExtensionless = await spawnOne('two words', shimAdapter);
+  check('(i) extensionless cmd-wrap shim ok=true', iExtensionless.ok === true);
+  check('(i) extensionless multi-word arg survives', iExtensionless.content.includes('two words'));
 
-  const iUnsafe = await spawnOne('say "hi"', shimAdapter);
-  check('(i) unsafe arg refused (ok=false)',    iUnsafe.ok === false);
-  check('(i) unsafe arg error mentions unsafe', iUnsafe.error && iUnsafe.error.includes('unsafe'));
+  for (const [ext, bin] of [['.cmd', shimCmd], ['.bat', shimBat]]) {
+    const explicit = await spawnOne('two words', { ...shimAdapter, bin });
+    check('(i) explicit ' + ext + ' cmd-wrap shim ok=true', explicit.ok === true);
+    check('(i) explicit ' + ext + ' multi-word arg survives', explicit.content.includes('two words'));
+  }
+
+  fs.rmSync(spawnMarker, { force: true });
+  const iUnsafe = await spawnOne('x&whoami', shimAdapter);
+  check('(i) no-whitespace command separator refused (ok=false)', iUnsafe.ok === false);
+  check('(i) command separator error mentions unsafe', iUnsafe.error && iUnsafe.error.includes('unsafe'));
+  check('(i) command separator is refused before shim spawn', !fs.existsSync(spawnMarker));
+
+  const iUnsafeBase = await spawnOne('safe prompt', {
+    ...shimAdapter,
+    baseArgs: ['--model', 'bad&calc'],
+  });
+  check('(i) unsafe base arg refused (ok=false)', iUnsafeBase.ok === false);
+  check('(i) unsafe base arg error mentions unsafe', iUnsafeBase.error && iUnsafeBase.error.includes('unsafe'));
+
+  const unsafeShimCmd = path.join(tmp, 'i-shim&unsafe.cmd');
+  fs.writeFileSync(unsafeShimCmd, '@node "' + echo + '" %*\r\n');
+  const iUnsafeBin = await spawnOne('safe prompt', { ...shimAdapter, bin: unsafeShimCmd });
+  check('(i) unsafe command path refused (ok=false)', iUnsafeBin.ok === false);
+  check('(i) unsafe command path error mentions unsafe', iUnsafeBin.error && iUnsafeBin.error.includes('unsafe'));
 } else {
   console.log('  skip  (i) win32-only cmd-wrap shim path');
 }
@@ -302,16 +409,22 @@ process.stdout.write(JSON.stringify({is_error:false, result: process.argv.slice(
 // ------------------------------------------------------------------ //
 const stubJ = stub('j-envfrom', `
 process.stdout.write(JSON.stringify({is_error:false,
-  result: [process.env.CHILD_TOKEN, process.env.STATIC_V].join('|')}));
+  result: [process.env.CHILD_TOKEN, process.env.STATIC_V,
+    process.env.FRONTIER_UNRELATED_SECRET || 'absent'].join('|')}));
 `);
 
 process.env.FRONTIER_TEST_SRC_KEY = 'sekret-value';
+process.env.FRONTIER_UNRELATED_SECRET = 'must-not-reach-child';
 const jOk = await spawnOne('prompt', adapter(stubJ, {
   env: { STATIC_V: 'static', CHILD_TOKEN: 'placeholder-loses' },
   envFrom: { CHILD_TOKEN: 'FRONTIER_TEST_SRC_KEY' },
 }));
-check('(j) envFrom injects host value into child',  jOk.ok === true && jOk.content === 'sekret-value|static');
+check('(j) envFrom injects declared host auth into child',
+  jOk.ok === true && jOk.content === 'sekret-value|static|absent');
+check('(j) unrelated host secret is not inherited',
+  jOk.ok === true && !jOk.content.includes('must-not-reach-child'));
 delete process.env.FRONTIER_TEST_SRC_KEY;
+delete process.env.FRONTIER_UNRELATED_SECRET;
 
 const jMissing = await spawnOne('prompt', adapter(stubJ, {
   envFrom: { CHILD_TOKEN: 'FRONTIER_TEST_SRC_KEY' },

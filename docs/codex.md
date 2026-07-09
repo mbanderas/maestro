@@ -169,9 +169,8 @@ app is running and the project is on disk.
 Frontier is off until you arm it. For Codex, the normal workflow is:
 
 ```text
-/maestro frontier fusion chatgpt-duo
-/maestro frontier fusion budget-trio
-/maestro frontier fusion frontier-trio --judge chatgpt --synth chatgpt
+/maestro frontier catalog
+/maestro frontier compose --models <model-a>,<model-b> --dry-run
 /maestro frontier off
 ```
 
@@ -192,25 +191,28 @@ projects.
 Use the same active scope for all lifecycle commands:
 
 ```text
-/maestro frontier roster
+/maestro frontier catalog
 /maestro frontier status
 /maestro frontier off
-/maestro frontier fusion chatgpt-duo
-/maestro frontier fusion budget-trio
-/maestro frontier fusion frontier-trio --judge chatgpt --synth chatgpt
-/maestro frontier preset save my-duo --models kimi,gpt-5.5 --judge deepseek
+/maestro frontier compose --models <model-a>,<model-b>
+/maestro frontier compose --models <model-a>,<model-b> --judge <model> --synth <model> --save my-panel
+/maestro frontier compose --models <model-a>,<model-b> --dry-run
 /maestro frontier preset list
 ```
 
-The Codex path uses the same eight-adapter Frontier engine as Claude Code:
-Opus 4.8, Fable 5, Sonnet 5, GPT-5.5, Gemini 3.1 Pro, GLM 5.2, Kimi K2.7
-Code, and DeepSeek V4 Pro. GLM/Kimi/DeepSeek ride the `claude` CLI pointed at
-their Anthropic-compatible endpoints; they require `ZAI_API_KEY`,
-`MOONSHOT_API_KEY`, and `DEEPSEEK_API_KEY` respectively. Maestro reads those
-names from the process environment at spawn time, maps them into the child
-`ANTHROPIC_*` auth variables, and never stores key values in state or saved
-presets. Run `maestro frontier roster` to see which binaries and key vars are
-ready without printing any secret value.
+`maestro frontier catalog` is the source of truth for the models, named presets
+(including existing legacy presets), aliases, and readiness on this machine.
+It reports requirements rather than assuming a provider is available, and never
+prints configured model IDs or secret values. `frontier compose` selects ready
+models and arms a custom panel; its portable CLI grammar is:
+
+```text
+maestro frontier compose --models a,b,c [--judge m] [--synth m] [--save name] [--dry-run] [--scope <name>]
+```
+
+`--dry-run` validates without changing Frontier state or saved presets; `--save`
+saves the resolved panel and arms it. Every panel, judge, and synthesizer
+subprocess uses a read-only/planning provider mode.
 
 For Codex CLI launched from a terminal, exported env vars are usually enough.
 For Codex Desktop or the IDE extension, prefer `~/.codex/.env`:
@@ -220,12 +222,17 @@ export ZAI_API_KEY=
 export MOONSHOT_API_KEY=
 export DEEPSEEK_API_KEY=
 export MAESTRO_CLAUDE_BIN=
+export MAESTRO_FRONTIER_MODEL_TERRA=
+export MAESTRO_FRONTIER_MODEL_LUNA=
+export MAESTRO_FRONTIER_MODEL_SOL=
 ```
 
-`budget-trio` runs Kimi + DeepSeek + GLM and self-judges/synthesizes on
-DeepSeek, so it needs no Anthropic subscription. `east-west` runs DeepSeek +
-GPT-5.5 and keeps the default Opus judge/synth unless you override with
-`--judge` / `--synth`.
+`terra`, `luna`, and `sol` are optional aliases only: each becomes selectable
+when its matching `MAESTRO_FRONTIER_MODEL_*` variable supplies the local model
+ID. Put the same named variables in `~/.codex/.env` for Codex Desktop or the
+IDE extension. Do not assume any canonical ID for those aliases; consult
+`maestro frontier catalog` after configuring them. Run `node frontier/smoke.cjs`
+from the installed engine root for release verification.
 
 ## What differs from Claude Code
 
@@ -250,8 +257,8 @@ Direct Codex commands:
 
 ```text
 /maestro frontier off
-/maestro frontier fusion budget-trio
-/maestro frontier roster
+/maestro frontier catalog
+/maestro frontier compose --models <model-a>,<model-b> --dry-run
 /maestro settings status
 /maestro settings set verify block
 /maestro terse ultra
@@ -265,5 +272,6 @@ reloads.
 
 When `maestro frontier status --scope codex-project` reports mode != off,
 the `maestro-frontier` skill instructs Codex to lead its reply with
-`Maestro Frontier ON (<label>)` — `single · <model>` or `fusion · <preset>`. When
-mode is off, no indicator line appears.
+`Maestro Frontier ON (<label>)` — `single - <model>`, `fusion - <preset>`, or
+`fusion - custom (<model1>, <model2>, ...)`. When mode is off, no indicator
+line appears.

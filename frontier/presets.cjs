@@ -15,6 +15,7 @@ const {
   DEFAULTS, configDir, resolveScope, resolveScopeAlias, safeWriteJson,
   validateModel,
 } = require('./config.cjs');
+const { canonicalModelId, canonicalPresetId } = require('./catalog.cjs');
 
 /**
  * Scope-aware saved-presets path (same naming scheme as statePath).
@@ -40,7 +41,8 @@ function validateUserPresetName(name, cfg) {
   if (typeof name !== 'string' || !/^[a-z0-9][a-z0-9-]{0,63}$/.test(name)) {
     return { ok: false, error: 'invalid preset name (1-64 chars of a-z, 0-9, -)' };
   }
-  if (name === 'custom' || Object.prototype.hasOwnProperty.call(c.presets, name)) {
+  const preset = canonicalPresetId(name);
+  if (preset === 'custom' || Object.prototype.hasOwnProperty.call(c.presets, preset)) {
     return { ok: false, error: 'name shadows a built-in preset (built-ins always win): ' + name };
   }
   return { ok: true };
@@ -69,13 +71,16 @@ function loadUserPresets(scope, cfg) {
     if (!validateUserPresetName(name, c).ok) continue;
     if (!def || typeof def !== 'object') continue;
     if (!Array.isArray(def.models) || def.models.length < 1 || def.models.length > 8) continue;
-    if (!def.models.every(m => validateModel(m, c))) continue;
-    if (def.judge !== undefined && !validateModel(def.judge, c)) continue;
-    if (def.synth !== undefined && !validateModel(def.synth, c)) continue;
+    const models = def.models.map(canonicalModelId);
+    const judge = canonicalModelId(def.judge);
+    const synth = canonicalModelId(def.synth);
+    if (!models.every(m => validateModel(m, c))) continue;
+    if (def.judge !== undefined && !validateModel(judge, c)) continue;
+    if (def.synth !== undefined && !validateModel(synth, c)) continue;
     out[name] = {
-      models: def.models.slice(),
-      ...(def.judge ? { judge: def.judge } : {}),
-      ...(def.synth ? { synth: def.synth } : {}),
+      models,
+      ...(def.judge ? { judge } : {}),
+      ...(def.synth ? { synth } : {}),
     };
   }
   return out;
@@ -98,19 +103,24 @@ function saveUserPreset(name, def, scope, cfg) {
     return { ok: false, error: 'preset requires a non-empty models list (--models a,b,c)' };
   }
   if (def.models.length > 8) return { ok: false, error: 'preset exceeds the 8-model limit' };
-  const unknown = def.models.filter(m => !validateModel(m, c));
+  const normalized = {
+    models: def.models.map(canonicalModelId),
+    ...(def.judge !== undefined ? { judge: canonicalModelId(def.judge) } : {}),
+    ...(def.synth !== undefined ? { synth: canonicalModelId(def.synth) } : {}),
+  };
+  const unknown = normalized.models.filter(m => !validateModel(m, c));
   if (unknown.length > 0) return { ok: false, error: 'unknown model(s): ' + unknown.join(', ') };
-  if (def.judge !== undefined && !validateModel(def.judge, c)) {
+  if (normalized.judge !== undefined && !validateModel(normalized.judge, c)) {
     return { ok: false, error: 'unknown judge model: ' + def.judge };
   }
-  if (def.synth !== undefined && !validateModel(def.synth, c)) {
+  if (normalized.synth !== undefined && !validateModel(normalized.synth, c)) {
     return { ok: false, error: 'unknown synth model: ' + def.synth };
   }
   const all = loadUserPresets(scope, c);
   all[name] = {
-    models: def.models.slice(),
-    ...(def.judge ? { judge: def.judge } : {}),
-    ...(def.synth ? { synth: def.synth } : {}),
+    models: normalized.models,
+    ...(normalized.judge ? { judge: normalized.judge } : {}),
+    ...(normalized.synth ? { synth: normalized.synth } : {}),
   };
   const p = userPresetsPath(scope);
   return safeWriteJson(p, all)
