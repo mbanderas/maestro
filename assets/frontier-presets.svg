@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 820 474" role="img" aria-labelledby="t d">
   <title id="t">Maestro Frontier fusion presets</title>
-  <desc id="d">A dark reference card listing the thirteen Maestro Frontier fusion presets: opus-duo, opus-gpt, chatgpt-duo (amber-highlighted as the Codex-only option), frontier-trio, the Fable 5 family (fable-duo, fable-gpt, fable-trio), the Sonnet 5 family (sonnet-duo, sonnet-gpt, sonnet-trio), frontier-quad, frontier-quint, and custom. Each row shows the preset name, panel composition, and judge plus synthesis model.</desc>
+  <desc id="d">A dark reference card listing the thirteen Maestro Frontier fusion presets: opus-duo, opus-gpt, chatgpt-duo (amber-highlighted as the Codex-only option), frontier-trio, the Fable 5 family (fable-duo, fable-gpt, fable-trio), the Sonnet 5 family (sonnet-duo, sonnet-gpt, sonnet-trio), frontier-quad, frontier-quint, and custom. The custom row includes optional GPT-5.6 Sol, Terra, and Luna models. Each row shows the preset name, panel composition, and judge plus synthesis model.</desc>
   <style>
     .bg    { fill: #0a0a0c; }
     .lbl   { font: 600 13px ui-monospace, SFMono-Regular, Consolas, monospace; fill: #f0f0f4; }
@@ -118,6 +118,6 @@
 
   <!-- ROW 13: custom  band 422..454 -->
   <text class="name" x="36" y="438" dominant-baseline="middle">custom</text>
-  <text class="cell" x="222" y="438" dominant-baseline="middle">1–8 of any models</text>
+  <text class="cell" x="222" y="438" dominant-baseline="middle">1–8; GPT-5.6 Sol / Terra / Luna</text>
   <text class="cell" x="602" y="438" dominant-baseline="middle">any  (--judge / --synth)</text>
 </svg>
