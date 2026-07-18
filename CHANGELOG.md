@@ -6,6 +6,17 @@ All notable changes to Maestro are documented here. The format follows
 
 ## [Unreleased]
 
+## [1.14.1] - 2026-07-18
+
+### Fixed
+
+- **Terse mode now compresses agent narration without flattening requested
+  artifacts.** Session-start rules and every-turn reminders preserve the voice,
+  genre, rhetoric, formatting, and necessary length of marketing copy, emails,
+  articles, reports, scripts, prompts, legal text, and user-supplied prose unless
+  the user explicitly asks for terse artifact copy. Existing code, commit, PR,
+  security, and irreversible-action boundaries remain intact.
+
 ## [1.14.0] - 2026-07-03
 
 ### Added

@@ -100,9 +100,10 @@ changes your output style.
   one-line reminder each turn, per-turn reinforcement survives
   context compaction, where one-shot instructions drift.
 - Quality guardrails ship with it: code, commits, and PRs are always
-  written normal, and Auto-Clarity drops terseness for security
-  warnings, irreversible-action confirmations, and multi-step
-  sequences.
+  written normal. Requested artifacts keep their voice, genre, rhetoric,
+  formatting, and necessary length unless the user explicitly asks for terse
+  artifact copy. Auto-Clarity drops terseness for security warnings,
+  irreversible-action confirmations, and multi-step sequences.
 - The context bar shows the level as a small amber badge (`ULTRA`,
   `FULL`, `LITE`) while active, alongside the frontier badge when that
   engine is on (see **Maestro badges** above). The flag file is read

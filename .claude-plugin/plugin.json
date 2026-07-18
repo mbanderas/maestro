@@ -1,6 +1,6 @@
 {
   "name": "maestro",
-  "version": "1.14.0",
+  "version": "1.14.1",
   "displayName": "Maestro",
   "description": "Maestro Frontier is an opt-in, zero-dependency local multi-CLI fusion engine for AI coding agents. Use /maestro:frontier catalog to inspect the portable catalog, then /maestro:frontier compose --models ... to choose and arm a panel. Panel, judge, and synthesizer subprocesses are one-shot and read-only. Off, single, and fusion modes also switch via /maestro:frontier. Built on Maestro orchestration discipline: decision-gated routing, verified done-claims, surgical scope, and structural enforcement hooks.",
   "author": {

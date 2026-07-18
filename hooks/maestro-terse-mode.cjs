@@ -131,9 +131,11 @@ function sessionStart() {
       })
       .join('\n');
   } catch {
-    body = 'Respond terse. All technical substance stay. Only fluff die.\n' +
+    body = 'Keep agent narration terse. Keep requested artifacts faithful.\n' +
       'Drop articles/filler/pleasantries/hedging. Fragments OK. ' +
-      'Code/commits/PRs: write normal. Off: "stop terse" / "normal mode".';
+      'Do not compress requested artifacts unless the user explicitly asks. ' +
+      'Artifacts/code/commits/PRs: write normal. Preserve full clarity for security and irreversible actions. ' +
+      'Off: "stop terse" / "normal mode".';
   }
 
   process.stdout.write(JSON.stringify({
@@ -173,8 +175,8 @@ function promptSubmit(data) {
       hookSpecificOutput: {
         hookEventName: 'UserPromptSubmit',
         additionalContext: 'MAESTRO TERSE ACTIVE (' + active + '). ' +
-          'Drop articles/filler/pleasantries/hedging. Fragments OK. ' +
-          'Code/commits/security: write normal.'
+          'Keep agent narration terse. Preserve requested artifact voice, genre, rhetoric, formatting, and necessary length unless the user explicitly requests terse artifact copy. ' +
+          'Code/commits/PRs: write normal. Preserve full clarity for security and irreversible actions.'
       }
     }));
   }
