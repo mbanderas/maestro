@@ -68,7 +68,7 @@ check('(a) no error field',              a.error === undefined);
 // first; the exit-code + redacted-stderr path then applies.
 // ------------------------------------------------------------------ //
 const stubB = stub('b-fail', `
-process.stderr.write('unauthorized token=sekret-stderr');
+process.stderr.write('unauthorized token=example-redacted-value');
 process.exit(1);
 `);
 
@@ -76,7 +76,7 @@ const b = await spawnOne('prompt', adapter(stubB, { parse: 'text', output: 'stdo
 check('(b) fail ok=false',              b.ok === false);
 check('(b) error includes exit 1',      b.error && b.error.includes('exit 1'));
 check('(b) stderr is classified',       b.error && b.error.includes('authentication failure'));
-check('(b) stderr secret is redacted',  b.error && !b.error.includes('sekret-stderr'));
+check('(b) stderr secret is redacted',  b.error && !b.error.includes('example-redacted-value'));
 
 // ------------------------------------------------------------------ //
 // (c) FUSION_DEPTH injection
@@ -225,9 +225,9 @@ const configuredCodexCatalog = buildRuntimeCatalog({
   codexEnvPath: path.join(tmp, 'no-codex.env'),
 });
 const codexForwardedEnv = {
-  OPENAI_API_KEY: 'frontier-test-codex-auth',
+  OPENAI_API_KEY: 'demo-codex-auth',
   CODEX_HOME: path.join(tmp, 'codex-home'),
-  FRONTIER_UNRELATED_SECRET: 'must-not-reach-codex',
+  FRONTIER_UNRELATED_SECRET: 'demo-unrelated-secret',
 };
 const originalCodexEnv = Object.fromEntries(
   Object.keys(codexForwardedEnv).map(name => [name, process.env[name]])
@@ -413,33 +413,33 @@ process.stdout.write(JSON.stringify({is_error:false,
     process.env.FRONTIER_UNRELATED_SECRET || 'absent'].join('|')}));
 `);
 
-process.env.FRONTIER_TEST_SRC_KEY = 'sekret-value';
-process.env.FRONTIER_UNRELATED_SECRET = 'must-not-reach-child';
+process.env.YOUR_SOURCE = 'secret-value';
+process.env.FRONTIER_UNRELATED_SECRET = 'demo-unrelated-secret';
 const jOk = await spawnOne('prompt', adapter(stubJ, {
-  env: { STATIC_V: 'static', CHILD_TOKEN: 'placeholder-loses' },
-  envFrom: { CHILD_TOKEN: 'FRONTIER_TEST_SRC_KEY' },
+  env: { STATIC_V: 'static', CHILD_TOKEN: 'set-at-runtime' },
+  envFrom: { CHILD_TOKEN: 'YOUR_SOURCE' },
 }));
 check('(j) envFrom injects declared host auth into child',
-  jOk.ok === true && jOk.content === 'sekret-value|static|absent');
+  jOk.ok === true && jOk.content === 'secret-value|static|absent');
 check('(j) unrelated host secret is not inherited',
-  jOk.ok === true && !jOk.content.includes('must-not-reach-child'));
-delete process.env.FRONTIER_TEST_SRC_KEY;
+  jOk.ok === true && !jOk.content.includes('demo-unrelated-secret'));
+delete process.env.YOUR_SOURCE;
 delete process.env.FRONTIER_UNRELATED_SECRET;
 
 const jMissing = await spawnOne('prompt', adapter(stubJ, {
-  envFrom: { CHILD_TOKEN: 'FRONTIER_TEST_SRC_KEY' },
+  envFrom: { CHILD_TOKEN: 'YOUR_SOURCE' },
 }));
 check('(j) missing host var -> ok=false',            jMissing.ok === false);
 check('(j) missing host var -> empty content (no spawn)', jMissing.content === '');
-check('(j) error names the missing var',             jMissing.error && jMissing.error.includes('FRONTIER_TEST_SRC_KEY'));
-check('(j) error carries no secret material',        jMissing.error && !jMissing.error.includes('sekret-value'));
+check('(j) error names the missing var',             jMissing.error && jMissing.error.includes('YOUR_SOURCE'));
+check('(j) error carries no secret material',        jMissing.error && !jMissing.error.includes('secret-value'));
 
-process.env.FRONTIER_TEST_SRC_KEY = '';
+process.env.YOUR_SOURCE = '';
 const jEmpty = await spawnOne('prompt', adapter(stubJ, {
-  envFrom: { CHILD_TOKEN: 'FRONTIER_TEST_SRC_KEY' },
+  envFrom: { CHILD_TOKEN: 'YOUR_SOURCE' },
 }));
-check('(j) empty host var counts as missing',        jEmpty.ok === false && jEmpty.error.includes('FRONTIER_TEST_SRC_KEY'));
-delete process.env.FRONTIER_TEST_SRC_KEY;
+check('(j) empty host var counts as missing',        jEmpty.ok === false && jEmpty.error.includes('YOUR_SOURCE'));
+delete process.env.YOUR_SOURCE;
 
 // ------------------------------------------------------------------ //
 // cleanup + exit
