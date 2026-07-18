@@ -19,6 +19,7 @@ function readJson(rel) {
 const manifest = readJson('.codex-plugin/plugin.json');
 const marketplace = readJson('.agents/plugins/marketplace.json');
 const pkg = readJson('package.json');
+const defaultPrompts = manifest.interface && manifest.interface.defaultPrompt;
 
 console.log('plugin marketplace tests');
 
@@ -35,6 +36,16 @@ check('manifest exposes bundled Codex skills', manifest.skills === './codex-skil
 check('manifest skills path exists', fs.existsSync(path.join(root, manifest.skills)));
 check('manifest hooks path exists', fs.existsSync(path.join(root, manifest.hooks || './hooks/hooks.json')));
 check('manifest has install-surface metadata', !!manifest.interface && manifest.interface.displayName === 'Maestro');
+check(
+  'manifest exposes exactly three supported default prompts',
+  Array.isArray(defaultPrompts) && defaultPrompts.length === 3,
+);
+check(
+  'every default prompt activates Maestro and fits the client limit',
+  Array.isArray(defaultPrompts) && defaultPrompts.every(
+    (prompt) => typeof prompt === 'string' && prompt.length <= 128 && prompt.startsWith('/maestro '),
+  ),
+);
 
 const entry = Array.isArray(marketplace.plugins)
   ? marketplace.plugins.find((plugin) => plugin.name === 'maestro')

@@ -6,6 +6,14 @@ All notable changes to Maestro are documented here. The format follows
 
 ## [Unreleased]
 
+## [1.14.2] - 2026-07-18
+
+### Fixed
+
+- **Codex plugin prompts now stay within the supported client limit.** The
+  manifest features three direct Maestro entry points, so Codex loads the
+  plugin metadata without discarding the default prompt list.
+
 ## [1.14.1] - 2026-07-18
 
 ### Fixed
