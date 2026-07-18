@@ -1,5 +1,5 @@
 ---
-description: Switch Maestro terse output mode (lite|full|ultra|off)
+description: Switch Maestro terse narration mode (lite|full|ultra|off)
 argument-hint: "[lite|full|ultra|off]"
 ---
 
@@ -18,6 +18,9 @@ Steps:
    (`/maestro:terse off`, "stop terse", "normal mode"), and that the
    statusline badge shows `[TERSE:<LEVEL>]` next session refresh.
 
-Boundaries (always): code/commits/PRs written normal; Auto-Clarity
-escape for security warnings, irreversible-action confirmations, and
-multi-step sequences.
+Boundaries (always): terse mode changes agent narration only. Preserve the
+requested voice, genre, rhetoric, formatting, and necessary length of marketing
+copy, emails, articles, reports, scripts, prompts, legal text, and user-supplied
+prose unless the user explicitly asks for terse artifact copy. Keep
+code/commits/PRs normal; use Auto-Clarity for security warnings,
+irreversible-action confirmations, and multi-step sequences.

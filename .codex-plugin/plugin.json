@@ -1,6 +1,6 @@
 {
   "name": "maestro",
-  "version": "1.14.0+codex.20260709190950",
+  "version": "1.14.1",
   "description": "Maestro Frontier orchestration, catalog-first model-panel composition, Codex skills, and lifecycle hooks.",
   "author": {
     "name": "Mark Laursen",

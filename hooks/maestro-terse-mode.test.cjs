@@ -70,6 +70,17 @@ check('ruleset announces level', out.includes('MAESTRO TERSE ACTIVE') && out.inc
 check('ruleset keeps active level row only', out.includes('**ultra**') && !out.includes('**lite**'));
 check('Auto-Clarity escape present', out.includes('Auto-Clarity'));
 check('code-normal boundary present', out.includes('write normal') || out.includes('Code/commits/PRs: write normal'));
+check('full ruleset protects requested artifacts',
+  out.includes('Do not compress, fragment, abbreviate, or restyle an artifact') &&
+  out.includes('marketing copy, emails, articles, reports, scripts, prompts, legal text') &&
+  out.includes('user-supplied prose'));
+check('full ruleset requires explicit terse artifact request',
+  out.includes('A terse-mode setting alone is not such a request'));
+check('full ruleset scopes terse style to agent narration',
+  out.includes('Apply terse style only to agent narration, status updates, explanations, and handoff prose'));
+check('full ruleset preserves code, PR, security, and irreversible boundaries',
+  out.includes('Artifacts/code/commits/PRs: write normal') &&
+  out.includes('security and irreversible-action clarity boundaries'));
 
 // 3. Env beats config.
 setConfig('ultra');
@@ -90,6 +101,12 @@ check('reminder is UserPromptSubmit JSON', (() => {
   try { return JSON.parse(out).hookSpecificOutput.hookEventName === 'UserPromptSubmit'; }
   catch { return false; }
 })());
+check('one-line reminder protects artifact form',
+  out.includes('Preserve requested artifact voice, genre, rhetoric, formatting, and necessary length') &&
+  out.includes('explicitly requests terse artifact copy'));
+check('one-line reminder preserves code, PR, security, and irreversible boundaries',
+  out.includes('Code/commits/PRs: write normal') &&
+  out.includes('Preserve full clarity for security and irreversible actions'));
 
 // 6. UserPromptSubmit without flag: silent.
 clearFlag();
