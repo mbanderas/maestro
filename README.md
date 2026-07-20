@@ -533,9 +533,10 @@ Contributions are welcome. Before opening a PR:
 
 If you have benchmarks, case studies, or research that challenges or extends the current architecture, open an issue. The design should evolve with evidence.
 
-## Related Project
+## Related Projects
 
 - **[Govyn](https://govynai.com)**: Open-source AI agent governance proxy. Maestro orchestrates your agents; Govyn ensures they never hold real API keys, stay within budget, and follow policy. They are designed to work together.
+- **[CiteSurge](https://CiteSurge.com)**: Applies Maestro's evidence-first discipline to enterprise GEO: measure what answer engines say, turn findings into prioritized action, and document what changed.
 
 ## Community
 
