@@ -1,6 +1,6 @@
 {
   "name": "maestro",
-  "version": "1.14.2",
+  "version": "1.15.0",
   "displayName": "Maestro",
   "description": "Maestro Frontier is an opt-in, zero-dependency local multi-CLI fusion engine for AI coding agents. Use /maestro:frontier catalog to inspect Opus 5 and current Codex models, then compose a panel with validated effort. Panel, judge, and synthesizer subprocesses are one-shot and read-only. Optional policy hooks are independent and off by default.",
   "author": {

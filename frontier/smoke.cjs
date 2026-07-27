@@ -1,27 +1,33 @@
 #!/usr/bin/env node
-// Maestro Frontier — current Codex release smoke gate.
+// Maestro Frontier — first-party Codex release smoke gate.
 //
 // This is intentionally an explicit command rather than startup behavior:
 // it can spend tokens, so ordinary catalog/dispatch use stays offline. Only
-// Sol, Terra, and Luna are invoked. A successful read-only Codex exec is the
-// sole condition that marks one of those selectors available here.
+// declared first-party Codex selectors are invoked. A successful read-only
+// Codex exec is the sole condition that marks a selector available here.
 
 'use strict';
 
-const { buildRuntimeCatalog, OPTIONAL_CODEX_MODEL_ENV } = require('./catalog.cjs');
+const {
+  buildRuntimeCatalog,
+  FIRST_PARTY_CODEX_MODEL_IDS,
+  OPTIONAL_CODEX_MODEL_ENV,
+} = require('./catalog.cjs');
 const { spawnOne: defaultSpawnOne } = require('./dispatch.cjs');
 
-const OPTIONAL_CODEX_MODEL_IDS = Object.freeze(Object.keys(OPTIONAL_CODEX_MODEL_ENV));
+const SMOKE_CODEX_MODEL_IDS = FIRST_PARTY_CODEX_MODEL_IDS;
+// Backward-compatible export for callers of the original Terra/Luna/Sol gate.
+const OPTIONAL_CODEX_MODEL_IDS = SMOKE_CODEX_MODEL_IDS;
 const SMOKE_PROMPT = 'Reply with exactly: OK';
 const SMOKE_SUCCESS = 'OK';
 
-function supportedOptionalCodexAdapter(model, adapter) {
+function supportedCodexAdapter(model, adapter) {
   return !!(model && adapter && model.backend === 'codex' && model.selectable &&
     model.smoke && model.smoke.supported === true && model.smoke.plan === 'codex-read-only');
 }
 
 /**
- * Smoke each current Terra/Luna/SOL adapter through the normal dispatcher.
+ * Smoke each current first-party Codex adapter through the normal dispatcher.
  * The `spawnOne` dependency is injectable, so the normal test suite never
  * launches Codex. Results intentionally contain alias/status only: configured
  * provider model ids and environment values must not surface in release logs.
@@ -30,28 +36,24 @@ function supportedOptionalCodexAdapter(model, adapter) {
  * @param {{ spawnOne?: Function, fusionDepth?: number }} [opts]
  * @returns {Promise<{releaseReady: boolean, configuredCount: number, models: object[]}>}
  */
-async function smokeConfiguredOptionalCodexModels(catalog, opts) {
+async function smokeCurrentCodexModels(catalog, opts) {
   const c = catalog || buildRuntimeCatalog();
   const invoke = (opts && opts.spawnOne) || defaultSpawnOne;
   const fusionDepth = (opts && opts.fusionDepth != null) ? opts.fusionDepth : 1;
-  const models = [];
-
-  for (const id of OPTIONAL_CODEX_MODEL_IDS) {
+  const models = await Promise.all(SMOKE_CODEX_MODEL_IDS.map(async id => {
     const model = c.models && c.models[id];
     const adapter = c.adapters && c.adapters[id];
     const configured = !!(model && model.configured);
 
     if (!configured) {
-      models.push({ id, configured: false, attempted: false, available: false, reason: 'configuration-required' });
-      continue;
+      return { id, configured: false, attempted: false, available: false, reason: 'configuration-required' };
     }
 
     // A current selector must have a declared read-only smoke plan
     // and a launch-ready adapter. Treat a catalog regression as a failed gate,
     // never as an excuse to skip a configured alias.
-    if (!supportedOptionalCodexAdapter(model, adapter)) {
-      models.push({ id, configured: true, attempted: false, available: false, reason: 'smoke-not-supported' });
-      continue;
+    if (!supportedCodexAdapter(model, adapter)) {
+      return { id, configured: true, attempted: false, available: false, reason: 'smoke-not-supported' };
     }
 
     let response;
@@ -60,7 +62,7 @@ async function smokeConfiguredOptionalCodexModels(catalog, opts) {
     } catch {
       response = null;
     }
-    models.push({
+    return {
       id,
       configured: true,
       attempted: true,
@@ -69,8 +71,8 @@ async function smokeConfiguredOptionalCodexModels(catalog, opts) {
       // request into a false availability signal.
       available: !!(response && response.ok && response.content === SMOKE_SUCCESS),
       reason: response && response.ok && response.content === SMOKE_SUCCESS ? null : 'smoke-failed',
-    });
-  }
+    };
+  }));
 
   const configuredModels = models.filter(model => model.configured);
   return {
@@ -100,7 +102,7 @@ function formatSmokeReport(report) {
 }
 
 async function main() {
-  const report = await smokeConfiguredOptionalCodexModels();
+  const report = await smokeCurrentCodexModels();
   process.stdout.write(formatSmokeReport(report));
   process.exitCode = report.releaseReady ? 0 : 1;
 }
@@ -113,9 +115,11 @@ if (require.main === module) {
 }
 
 module.exports = {
+  SMOKE_CODEX_MODEL_IDS,
   OPTIONAL_CODEX_MODEL_IDS,
   SMOKE_PROMPT,
   SMOKE_SUCCESS,
-  smokeConfiguredOptionalCodexModels,
+  smokeCurrentCodexModels,
+  smokeConfiguredOptionalCodexModels: smokeCurrentCodexModels,
   formatSmokeReport,
 };

@@ -74,7 +74,7 @@ Use `frontier catalog` for exact aliases and supported effort levels.
 / IDE sessions read those overrides from `~/.codex/.env`; restart the app and
 open a new thread after changing it.
 
-Before releasing Sol, Terra, or Luna changes, run:
+Before releasing Codex catalog changes, probe every first-party Codex selector:
 
 ```bash
 node frontier/smoke.cjs

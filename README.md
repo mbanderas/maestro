@@ -251,7 +251,7 @@ maestro frontier compose --models <model-a>,<model-b> [--judge <model>] [--synth
 `--save` both saves the named preset and arms the resolved custom panel. Without
 those flags, compose arms the resolved custom panel in the chosen scope.
 
-Current first-party selectors:
+Current Opus and Codex selectors:
 
 | Selector | CLI model ID | Supported effort |
 |---|---|---|
@@ -286,8 +286,9 @@ Honest scope, measured rather than implied: the **engine is built,
 unit-tested (degradation, recursion, budget, anti-majority all covered),
 and verified end-to-end on selected local configurations**. Other catalog
 entries are validated at their supported boundaries, but readiness and provider
-availability remain machine-specific; run `node frontier/smoke.cjs` as the
-release verification for the local catalog and read-only dispatch contracts.
+availability remain machine-specific; run `node frontier/smoke.cjs` to probe
+every first-party Codex selector through its read-only dispatch contract before
+a release.
 The quality *lift* of local fusion
 is **measured, not asserted**: on a 100-task suite (93 scored) every
 fusion panel outscored its own member models, with the strongest fusion

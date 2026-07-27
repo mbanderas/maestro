@@ -33,6 +33,16 @@ const OPTIONAL_CODEX_MODEL_ENV = Object.freeze({
 
 const EFFORT_LEVELS = Object.freeze(['low', 'medium', 'high', 'xhigh', 'max', 'ultra']);
 const CLAUDE_EFFORTS = Object.freeze(['low', 'medium', 'high', 'xhigh', 'max']);
+const FIRST_PARTY_CODEX_MODEL_IDS = Object.freeze([
+  'sol',
+  'terra',
+  'luna',
+  'auto-review',
+  'gpt-5.5',
+  'gpt-5.4',
+  'gpt-5.4-mini',
+  'spark',
+]);
 const CODEX_EFFORTS = Object.freeze({
   sol: Object.freeze(['low', 'medium', 'high', 'xhigh', 'max', 'ultra']),
   terra: Object.freeze(['low', 'medium', 'high', 'xhigh', 'max', 'ultra']),
@@ -43,6 +53,7 @@ const CODEX_EFFORTS = Object.freeze({
   'gpt-5.4-mini': Object.freeze(['low', 'medium', 'high', 'xhigh']),
   spark: Object.freeze(['low', 'medium', 'high', 'xhigh']),
 });
+const CODEX_SMOKE = Object.freeze({ supported: true, plan: 'codex-read-only' });
 
 // Optional model ids become argv values for a local Codex invocation. Keep
 // this deliberately narrow: common provider forms (namespace/model@version,
@@ -79,10 +90,10 @@ function isSafeModelId(value) {
 
 function codexArgs(modelId) {
   return [
+    '--ask-for-approval', 'never',
     'exec',
     '--skip-git-repo-check',
     '--sandbox', 'read-only',
-    '--ask-for-approval', 'never',
     '-m', modelId,
     '--color', 'never',
   ];
@@ -123,6 +134,7 @@ const MODEL_SPECS = Object.freeze([
     id: 'gpt-5.5', label: 'GPT-5.5', backend: 'codex', binEnv: 'MAESTRO_CODEX_BIN', binDefault: 'codex',
     baseArgs: () => codexArgs('gpt-5.5'), promptVia: 'stdin', webTools: true, output: 'last-message-file', parse: 'text',
     envPassthrough: CODEX_ENV_PASSTHROUGH, efforts: CODEX_EFFORTS['gpt-5.5'],
+    smoke: CODEX_SMOKE,
   },
   {
     id: 'gemini', label: 'Gemini 3.1 Pro', backend: 'gemini', binEnv: 'MAESTRO_GEMINI_BIN', binDefault: 'gemini',
@@ -184,7 +196,7 @@ const MODEL_SPECS = Object.freeze([
     modelDefault: 'gpt-5.6-terra',
     baseArgs: modelId => codexArgs(modelId), promptVia: 'stdin', webTools: true, output: 'last-message-file', parse: 'text',
     envPassthrough: CODEX_ENV_PASSTHROUGH, efforts: CODEX_EFFORTS.terra,
-    smoke: { supported: true, plan: 'codex-read-only' },
+    smoke: CODEX_SMOKE,
   },
   {
     id: 'luna', label: 'GPT-5.6 Luna', backend: 'codex', binEnv: 'MAESTRO_CODEX_BIN', binDefault: 'codex',
@@ -192,7 +204,7 @@ const MODEL_SPECS = Object.freeze([
     modelDefault: 'gpt-5.6-luna',
     baseArgs: modelId => codexArgs(modelId), promptVia: 'stdin', webTools: true, output: 'last-message-file', parse: 'text',
     envPassthrough: CODEX_ENV_PASSTHROUGH, efforts: CODEX_EFFORTS.luna,
-    smoke: { supported: true, plan: 'codex-read-only' },
+    smoke: CODEX_SMOKE,
   },
   {
     id: 'sol', label: 'GPT-5.6 Sol', backend: 'codex', binEnv: 'MAESTRO_CODEX_BIN', binDefault: 'codex',
@@ -200,27 +212,31 @@ const MODEL_SPECS = Object.freeze([
     modelDefault: 'gpt-5.6-sol',
     baseArgs: modelId => codexArgs(modelId), promptVia: 'stdin', webTools: true, output: 'last-message-file', parse: 'text',
     envPassthrough: CODEX_ENV_PASSTHROUGH, efforts: CODEX_EFFORTS.sol,
-    smoke: { supported: true, plan: 'codex-read-only' },
+    smoke: CODEX_SMOKE,
   },
   {
     id: 'auto-review', label: 'Codex Auto Review', backend: 'codex', binEnv: 'MAESTRO_CODEX_BIN', binDefault: 'codex',
     baseArgs: () => codexArgs('codex-auto-review'), promptVia: 'stdin', webTools: true, output: 'last-message-file', parse: 'text',
     envPassthrough: CODEX_ENV_PASSTHROUGH, efforts: CODEX_EFFORTS['auto-review'],
+    smoke: CODEX_SMOKE,
   },
   {
     id: 'gpt-5.4', label: 'GPT-5.4', backend: 'codex', binEnv: 'MAESTRO_CODEX_BIN', binDefault: 'codex',
     baseArgs: () => codexArgs('gpt-5.4'), promptVia: 'stdin', webTools: true, output: 'last-message-file', parse: 'text',
     envPassthrough: CODEX_ENV_PASSTHROUGH, efforts: CODEX_EFFORTS['gpt-5.4'],
+    smoke: CODEX_SMOKE,
   },
   {
     id: 'gpt-5.4-mini', label: 'GPT-5.4 Mini', backend: 'codex', binEnv: 'MAESTRO_CODEX_BIN', binDefault: 'codex',
     baseArgs: () => codexArgs('gpt-5.4-mini'), promptVia: 'stdin', webTools: true, output: 'last-message-file', parse: 'text',
     envPassthrough: CODEX_ENV_PASSTHROUGH, efforts: CODEX_EFFORTS['gpt-5.4-mini'],
+    smoke: CODEX_SMOKE,
   },
   {
     id: 'spark', label: 'GPT-5.3 Codex Spark', backend: 'codex', binEnv: 'MAESTRO_CODEX_BIN', binDefault: 'codex',
     baseArgs: () => codexArgs('gpt-5.3-codex-spark'), promptVia: 'stdin', webTools: true, output: 'last-message-file', parse: 'text',
     envPassthrough: CODEX_ENV_PASSTHROUGH, efforts: CODEX_EFFORTS.spark,
+    smoke: CODEX_SMOKE,
   },
 ]);
 
@@ -595,6 +611,7 @@ module.exports = {
   PRESET_ALIASES,
   OPTIONAL_CODEX_MODEL_ENV,
   EFFORT_LEVELS,
+  FIRST_PARTY_CODEX_MODEL_IDS,
   isSafeModelId,
   BUILTIN_PRESETS,
   canonicalModelId,

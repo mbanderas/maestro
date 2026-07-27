@@ -10,9 +10,11 @@ const path = require('path');
 
 const { OPTIONAL_CODEX_MODEL_ENV, buildRuntimeCatalog } = require('./catalog.cjs');
 const {
+  SMOKE_CODEX_MODEL_IDS,
   OPTIONAL_CODEX_MODEL_IDS,
   SMOKE_PROMPT,
   SMOKE_SUCCESS,
+  smokeCurrentCodexModels,
   smokeConfiguredOptionalCodexModels,
   formatSmokeReport,
 } = require('./smoke.cjs');
@@ -34,12 +36,12 @@ const missingEnvFile = path.join(tmp, 'missing.env');
   try {
     const none = buildRuntimeCatalog({ env: { PATH: '' }, codexEnvPath: missingEnvFile });
     let noneCalls = 0;
-    const noneReport = await smokeConfiguredOptionalCodexModels(none, {
+    const noneReport = await smokeCurrentCodexModels(none, {
       spawnOne: async () => { noneCalls++; return { ok: true, content: SMOKE_SUCCESS }; },
     });
-    check('current aliases are smoked through the injected dispatcher', noneCalls === 3);
+    check('all current Codex selectors are smoked through the injected dispatcher', noneCalls === 8);
     check('current aliases pass when every exact response is OK',
-      noneReport.releaseReady === true && noneReport.configuredCount === 3 &&
+      noneReport.releaseReady === true && noneReport.configuredCount === 8 &&
       noneReport.models.every(model => model.configured && model.attempted && model.available));
     const noneText = formatSmokeReport(noneReport);
     check('current report needs no model-id configuration remediation',
@@ -51,35 +53,37 @@ const missingEnvFile = path.join(tmp, 'missing.env');
       codexEnvPath: missingEnvFile,
     });
     const calls = [];
-    const oneReport = await smokeConfiguredOptionalCodexModels(one, {
+    const oneReport = await smokeCurrentCodexModels(one, {
       fusionDepth: 3,
       spawnOne: async (prompt, adapter, opts) => {
         calls.push({ prompt, adapter, opts });
         return { ok: true, content: SMOKE_SUCCESS };
       },
     });
-    check('current smoke invokes Terra, Luna, and Sol',
-      calls.length === 3 && calls.map(call => call.adapter.model).join(',') === 'terra,luna,sol');
+    check('current smoke invokes every declared Codex selector',
+      calls.length === 8 &&
+      calls.map(call => call.adapter.model).join(',') === SMOKE_CODEX_MODEL_IDS.join(','));
     check('configured smoke uses the minimal smoke prompt and guarded depth',
-      calls.length === 3 && calls.every(call => call.prompt === SMOKE_PROMPT && call.opts.fusionDepth === 3));
+      calls.length === 8 && calls.every(call => call.prompt === SMOKE_PROMPT && call.opts.fusionDepth === 3));
+    const terraCall = calls.find(call => call.adapter.model === 'terra');
     check('configured smoke retains the exact configured Codex model argv',
-      calls.length === 3 && calls[0].adapter.baseArgs.join('\u0000') === [
-        'exec', '--skip-git-repo-check', '--sandbox', 'read-only', '--ask-for-approval', 'never',
+      terraCall && terraCall.adapter.baseArgs.join('\u0000') === [
+        '--ask-for-approval', 'never', 'exec', '--skip-git-repo-check', '--sandbox', 'read-only',
         '-m', configuredId, '--color', 'never',
       ].join('\u0000'));
-    check('successful current smoke qualifies all three selectors as available',
-      oneReport.releaseReady === true && oneReport.configuredCount === 3 &&
+    check('successful current smoke qualifies all selectors as available',
+      oneReport.releaseReady === true && oneReport.configuredCount === 8 &&
       oneReport.models.find(model => model.id === 'terra').available === true &&
       oneReport.models.every(model => model.attempted && model.available));
 
-    const wrongSuccess = await smokeConfiguredOptionalCodexModels(one, {
+    const wrongSuccess = await smokeCurrentCodexModels(one, {
       spawnOne: async () => ({ ok: true, content: 'NOT_OK' }),
     });
     check('successful but non-OK smoke response fails the release gate',
       wrongSuccess.releaseReady === false &&
       wrongSuccess.models.find(model => model.id === 'terra').reason === 'smoke-failed');
 
-    const failed = await smokeConfiguredOptionalCodexModels(one, {
+    const failed = await smokeCurrentCodexModels(one, {
       spawnOne: async () => ({ ok: false, error: 'provider model id: ' + configuredId }),
     });
     const failedTerra = failed.models.find(model => model.id === 'terra');
@@ -89,8 +93,12 @@ const missingEnvFile = path.join(tmp, 'missing.env');
     check('smoke report never prints configured ids or injected error text',
       !formatSmokeReport(failed).includes(configuredId) && !JSON.stringify(failed).includes(configuredId) &&
       !noneText.includes(configuredId));
-    check('smoked selectors are a fixed declared set',
-      OPTIONAL_CODEX_MODEL_IDS.join(',') === 'terra,luna,sol');
+    check('smoked selectors are the fixed first-party Codex set',
+      SMOKE_CODEX_MODEL_IDS.join(',') ===
+      'sol,terra,luna,auto-review,gpt-5.5,gpt-5.4,gpt-5.4-mini,spark');
+    check('legacy smoke exports remain compatible',
+      OPTIONAL_CODEX_MODEL_IDS === SMOKE_CODEX_MODEL_IDS &&
+      smokeConfiguredOptionalCodexModels === smokeCurrentCodexModels);
   } finally {
     fs.rmSync(tmp, { recursive: true, force: true });
   }

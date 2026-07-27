@@ -6,6 +6,8 @@ All notable changes to Maestro are documented here. The format follows
 
 ## [Unreleased]
 
+## [1.15.0] - 2026-07-27
+
 ### Changed
 
 - **Frontier now pins Claude Opus 5 and exposes the current Codex model
@@ -30,6 +32,17 @@ All notable changes to Maestro are documented here. The format follows
 - **`maestro install --remove-discipline`.** Removes marker-owned policy
   blocks and recognized standalone Maestro doctrine while preserving
   surrounding project instructions and the Frontier engine.
+
+### Fixed
+
+- **Release packages now include every configured hook dependency and the
+  Codex plugin icon.** Package tests verify hook targets, manifest assets, and
+  local CommonJS dependency closure before publication.
+- **The release smoke gate now covers the complete first-party Codex catalog**
+  instead of only Sol, Terra, and Luna.
+- **Codex approval policy is now placed before the `exec` subcommand.** This
+  matches current Codex CLI parsing while preserving `never` approval and the
+  read-only sandbox; the live eight-model release gate passes.
 
 ## [1.14.2] - 2026-07-18
 

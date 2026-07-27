@@ -237,8 +237,8 @@ Mini, GPT-5.3 Codex Spark, and Codex Auto Review are built-in selectors. Put
 optional `MAESTRO_FRONTIER_MODEL_*` overrides in `~/.codex/.env` for Codex
 Desktop or the IDE extension. Consult `maestro frontier catalog` for exact
 aliases, supported effort levels, and local readiness. Run
-`node frontier/smoke.cjs` from the installed engine root for Sol/Terra/Luna
-release verification.
+`node frontier/smoke.cjs` from the installed engine root to probe every
+first-party Codex selector before release.
 
 ## What differs from Claude Code
 

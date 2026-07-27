@@ -1,6 +1,6 @@
 {
   "name": "maestro",
-  "version": "1.14.2",
+  "version": "1.15.0",
   "description": "Maestro Frontier model-panel fusion with Opus 5, current Codex models, validated effort control, Codex skills, and optional lifecycle hooks.",
   "author": {
     "name": "Mark Laursen",

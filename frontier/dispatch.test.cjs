@@ -267,7 +267,7 @@ try {
     let received = null;
     try { received = JSON.parse(response.content); } catch {}
     const expectedArgs = [
-      'exec', '--skip-git-repo-check', '--sandbox', 'read-only', '--ask-for-approval', 'never',
+      '--ask-for-approval', 'never', 'exec', '--skip-git-repo-check', '--sandbox', 'read-only',
       '-m', expectedModel, '--color', 'never',
     ];
     check('(f2a) ' + id + ' dispatch is read-only Codex exec',

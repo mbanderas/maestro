@@ -59,7 +59,7 @@ Mini, GPT-5.3 Codex Spark, and Codex Auto Review are built-in selectors.
 / IDE sessions read overrides from `~/.codex/.env`; restart and open a new
 thread after changing that file.
 
-Before releasing Sol, Terra, or Luna changes, run:
+Before releasing Codex catalog changes, probe every first-party Codex selector:
 
 ```bash
 node frontier/smoke.cjs

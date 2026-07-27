@@ -90,7 +90,7 @@ Desktop reads overrides from `~/.codex/.env`; restart and open a new thread
 after changing that file. All panel, judge, and synthesizer subprocesses are
 one-shot and read-only.
 
-Before releasing Sol, Terra, or Luna changes, run:
+Before releasing Codex catalog changes, probe every first-party Codex selector:
 
 ```bash
 node frontier/smoke.cjs

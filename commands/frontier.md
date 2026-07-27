@@ -78,7 +78,8 @@ Use `frontier catalog` for exact aliases and supported effort levels.
 Desktop, place overrides in `~/.codex/.env` and restart/open a new thread.
 The catalog never reveals override values.
 
-Before releasing Sol, Terra, or Luna changes, run the explicit smoke gate:
+Before releasing Codex catalog changes, run the explicit smoke gate. It probes
+every first-party Codex selector:
 
 ```bash
 node "${CLAUDE_PLUGIN_ROOT}/frontier/smoke.cjs"
