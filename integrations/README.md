@@ -37,8 +37,9 @@ use `--scope codex-project` from the repo root to target that same active scope:
 maestro frontier catalog
 maestro frontier status --scope codex-project
 maestro frontier compose --models <model-a>,<model-b> --scope codex-project
-maestro frontier compose --models <model-a>,<model-b> --judge <model> --synth <model> --save my-panel --scope codex-project
+maestro frontier compose --models <model-a>,<model-b> --judge <model> --synth <model> --effort <level> --save my-panel --scope codex-project
 maestro frontier compose --models <model-a>,<model-b> --dry-run --scope codex-project
+maestro frontier effort <auto|low|medium|high|xhigh|max|ultra> --scope codex-project
 maestro frontier mode off --scope codex-project
 ```
 
@@ -47,7 +48,8 @@ and named presets, including legacy presets. Do not copy a static inventory into
 an integration: the catalog reports whether a model is selectable and what it
 needs, without exposing configured model IDs or secrets. The portable composer
 grammar is `maestro frontier compose --models a,b,c [--judge m] [--synth m]
-[--save name] [--dry-run] [--scope <name>]`; `--dry-run` changes nothing, and
+[--effort level] [--save name] [--dry-run] [--scope <name>]`; `--dry-run`
+changes nothing, and
 `--save` saves the composition before arming it.
 
 Global/user scope is optional and should be intentional. Cursor uses
@@ -115,12 +117,13 @@ installed engine root to verify the catalog and read-only dispatch contract.
 - **Codex Desktop environment:** Desktop/IDE sessions may not inherit shell
   env vars. Put Frontier provider keys and binary overrides in `~/.codex/.env`
   (`ZAI_API_KEY`, `MOONSHOT_API_KEY`, `DEEPSEEK_API_KEY`,
-  `MAESTRO_CLAUDE_BIN`) and restart/open a new thread. The optional aliases
-  `terra`, `luna`, and `sol` become selectable only when their matching named
-  variables — `MAESTRO_FRONTIER_MODEL_TERRA`,
-  `MAESTRO_FRONTIER_MODEL_LUNA`, or `MAESTRO_FRONTIER_MODEL_SOL` — are set in
-  the environment or `~/.codex/.env`; they have no assumed canonical ID. Run
-  `maestro frontier catalog` to see readiness without printing secret values.
+  `MAESTRO_CLAUDE_BIN`) and restart/open a new thread. Sol, Terra, and Luna are
+  current built-in Codex selectors. Their named variables —
+  `MAESTRO_FRONTIER_MODEL_TERRA`, `MAESTRO_FRONTIER_MODEL_LUNA`, and
+  `MAESTRO_FRONTIER_MODEL_SOL` — remain optional model-ID overrides in the
+  environment or `~/.codex/.env`. Run `maestro frontier catalog` to see exact
+  aliases, supported effort levels, and readiness without printing secrets or
+  override values.
 - **Maestro Frontier ON indicator (Codex only).** When
   `maestro frontier status --scope codex-project` reports mode != off, the
   `maestro-frontier` skill instructs Codex to lead its reply with

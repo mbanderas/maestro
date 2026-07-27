@@ -1,10 +1,10 @@
 #!/usr/bin/env node
-// Maestro Frontier — configured optional-Codex release smoke gate.
+// Maestro Frontier — current Codex release smoke gate.
 //
 // This is intentionally an explicit command rather than startup behavior:
 // it can spend tokens, so ordinary catalog/dispatch use stays offline. Only
-// configured optional aliases are invoked. A successful read-only Codex exec
-// is the sole condition that marks one of those aliases available here.
+// Sol, Terra, and Luna are invoked. A successful read-only Codex exec is the
+// sole condition that marks one of those selectors available here.
 
 'use strict';
 
@@ -21,7 +21,7 @@ function supportedOptionalCodexAdapter(model, adapter) {
 }
 
 /**
- * Smoke each configured Terra/Luna/SOL adapter through the normal dispatcher.
+ * Smoke each current Terra/Luna/SOL adapter through the normal dispatcher.
  * The `spawnOne` dependency is injectable, so the normal test suite never
  * launches Codex. Results intentionally contain alias/status only: configured
  * provider model ids and environment values must not surface in release logs.
@@ -46,7 +46,7 @@ async function smokeConfiguredOptionalCodexModels(catalog, opts) {
       continue;
     }
 
-    // A configured optional alias must have a declared read-only smoke plan
+    // A current selector must have a declared read-only smoke plan
     // and a launch-ready adapter. Treat a catalog regression as a failed gate,
     // never as an excuse to skip a configured alias.
     if (!supportedOptionalCodexAdapter(model, adapter)) {
@@ -74,8 +74,8 @@ async function smokeConfiguredOptionalCodexModels(catalog, opts) {
 
   const configuredModels = models.filter(model => model.configured);
   return {
-    // No configured optional aliases means nothing is advertised as available;
-    // it is not a release failure and no external command was launched.
+    // A custom catalog may still omit these selectors; that is not a release
+    // failure and no external command is launched for an omitted selector.
     releaseReady: configuredModels.every(model => model.available),
     configuredCount: configuredModels.length,
     models,
@@ -83,19 +83,19 @@ async function smokeConfiguredOptionalCodexModels(catalog, opts) {
 }
 
 function formatSmokeReport(report) {
-  const lines = ['Frontier optional Codex smoke'];
+  const lines = ['Frontier current Codex smoke'];
   for (const model of report.models) {
     const status = model.available ? 'available' : 'blocked';
     let line = '  ' + model.id + ' configured=' + (model.configured ? 'yes' : 'no') + ' -> ' + status;
-    // An unconfigured optional alias is actionable without revealing a model
-    // selector: print only its declared setting NAME, never its value.
+    // A custom catalog can still require an override. Print only its declared
+    // setting name, never its value.
     if (!model.configured && OPTIONAL_CODEX_MODEL_ENV[model.id]) {
       line += '; remediation: set ' + OPTIONAL_CODEX_MODEL_ENV[model.id] + ' to its supported model id';
     }
     lines.push(line);
   }
   lines.push('release gate: ' + (report.releaseReady ? 'passed' : 'failed') +
-    ' (' + report.configuredCount + ' configured optional alias' + (report.configuredCount === 1 ? '' : 'es') + ')');
+    ' (' + report.configuredCount + ' current selector' + (report.configuredCount === 1 ? '' : 's') + ')');
   return lines.join('\n') + '\n';
 }
 
@@ -107,7 +107,7 @@ async function main() {
 
 if (require.main === module) {
   main().catch(() => {
-    process.stderr.write('Frontier optional Codex smoke failed.\n');
+    process.stderr.write('Frontier current Codex smoke failed.\n');
     process.exitCode = 1;
   });
 }

@@ -32,8 +32,9 @@ resolved custom panel unless `--dry-run` is supplied:
 ```bash
 maestro frontier catalog
 maestro frontier compose --models <model-a>,<model-b> --scope cline
-maestro frontier compose --models <model-a>,<model-b> --judge <model> --synth <model> --save my-panel --scope cline
+maestro frontier compose --models <model-a>,<model-b> --judge <model> --synth <model> --effort <level> --save my-panel --scope cline
 maestro frontier compose --models <model-a>,<model-b> --dry-run --scope cline
+maestro frontier effort <auto|low|medium|high|xhigh|max|ultra> --scope cline
 ```
 
 ## 2. Switch mode
@@ -46,8 +47,8 @@ Cursor, and Gemini on the same machine:
 
 ```bash
 maestro frontier mode off --scope cline
-maestro frontier mode single --model <model> --scope cline
-maestro frontier mode fusion --preset <preset> --scope cline
+maestro frontier mode single --model <model> --effort <level> --scope cline
+maestro frontier mode fusion --preset <preset> --effort <level> --scope cline
 maestro frontier mode fusion --preset custom --models <a,b,c> --scope cline
 maestro frontier mode fusion --preset <preset> --judge <model> --synth <model> --scope cline
 ```
@@ -86,10 +87,11 @@ non-zero — relay the reason.
   provider CLI's read-only/planning mode.
 - Each model's CLI must be on `PATH`, or point at a specific build with
   `MAESTRO_CLAUDE_BIN` / `MAESTRO_CODEX_BIN` / `MAESTRO_GEMINI_BIN`.
-- `terra`, `luna`, and `sol` have no assumed canonical model ID. They become
-  selectable only when their matching `MAESTRO_FRONTIER_MODEL_TERRA`,
-  `MAESTRO_FRONTIER_MODEL_LUNA`, or `MAESTRO_FRONTIER_MODEL_SOL` variable is
-  configured in the environment or `~/.codex/.env`; confirm with `frontier catalog`.
+- `opus` pins Claude Opus 5. Sol, Terra, Luna, GPT-5.5, GPT-5.4, GPT-5.4
+  Mini, GPT-5.3 Codex Spark, and Codex Auto Review are built-in selectors.
+  Confirm exact aliases and supported effort levels with `frontier catalog`.
+- `MAESTRO_FRONTIER_MODEL_TERRA`, `MAESTRO_FRONTIER_MODEL_LUNA`, and
+  `MAESTRO_FRONTIER_MODEL_SOL` remain optional model-ID overrides.
 - Run `node frontier/smoke.cjs` from the installed engine root for release
   verification.
 - Requires `maestro` on `PATH` (installed during Maestro setup). If it is missing,

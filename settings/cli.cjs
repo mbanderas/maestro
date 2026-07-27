@@ -117,8 +117,8 @@ function usageText() {
     '    terse        <off|lite|full|ultra>\n' +
     '    frontier     <off | single:<model> | fusion:<preset>>\n' +
     '    context-bar  <on|off>\n' +
-    '    discipline   <on|off>   (on/off the enforcement-hook pack; doctrine text stays loaded)\n' +
-    '    verify       <off|warn|block>   (S7.3 verify-gate Stop hook: warn=nudge (default), block=enforce, off=disable)\n' +
+    '    discipline   <on|off>   (optional enforcement-hook pack; off by default)\n' +
+    '    verify       <off|warn|block>   (optional verify-gate Stop hook: off by default, warn=nudge, block=enforce)\n' +
     '  --scope targets a frontier state; use codex-project/codex-workspace for Codex repo scope, or an explicit name such as codex-global for shared state\n'
   );
 }

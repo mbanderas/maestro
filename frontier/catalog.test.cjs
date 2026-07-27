@@ -33,7 +33,6 @@ const tmpBase = fs.mkdtempSync(path.join(os.tmpdir(), 'frontier-catalog-test-'))
 const missingEnvFile = path.join(tmpBase, 'missing.env');
 const emptyEnv = { PATH: '' };
 const available = () => true;
-const catalogSource = fs.readFileSync(path.join(__dirname, 'catalog.cjs'), 'utf8');
 const packageManifest = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'package.json'), 'utf8'));
 
 try {
@@ -47,30 +46,39 @@ try {
     check('unsafe model id rejected: ' + JSON.stringify(unsafeId), isSafeModelId(unsafeId) === false);
   }
 
-  // The unconfigured catalog remains inspectable, but must never invent a
-  // Terra/Luna/SOL model id or make it spawnable.
+  // Current first-party model ids are catalog defaults, while the existing
+  // MAESTRO_FRONTIER_MODEL_* settings remain safe optional overrides.
   const blocked = buildRuntimeCatalog({ env: emptyEnv, codexEnvPath: missingEnvFile });
-  check('unconfigured catalog validates', validateCatalog(blocked).ok === true);
-  for (const id of ['terra', 'luna', 'sol']) {
+  check('default catalog validates', validateCatalog(blocked).ok === true);
+  const currentCodex = {
+    sol: 'gpt-5.6-sol',
+    terra: 'gpt-5.6-terra',
+    luna: 'gpt-5.6-luna',
+    'auto-review': 'codex-auto-review',
+    'gpt-5.5': 'gpt-5.5',
+    'gpt-5.4': 'gpt-5.4',
+    'gpt-5.4-mini': 'gpt-5.4-mini',
+    spark: 'gpt-5.3-codex-spark',
+  };
+  for (const [id, modelId] of Object.entries(currentCodex)) {
     const meta = blocked.models[id];
+    const adapter = blocked.adapters[id];
     const readiness = modelReadiness(id, blocked, { env: emptyEnv, findBin: available });
     check(id + ' display metadata exists', !!meta && meta.readOnly === true);
-    check(id + ' is not selectable without its explicit id', meta && meta.selectable === false);
-    check(id + ' has no adapter without its explicit id', !blocked.adapters[id]);
-    check(id + ' is safely blocked when unconfigured',
-      readiness.ready === false && readiness.reasons.includes('model-id-not-configured') &&
-      readiness.reasons.includes('configuration-required'));
+    check(id + ' is selectable without a custom model id', meta && meta.selectable === true);
+    check(id + ' has a read-only adapter', !!adapter && isReadOnlyAdapter(adapter));
+    check(id + ' uses the current Codex model id',
+      adapter && adapter.baseArgs.includes('-m') && adapter.baseArgs.includes(modelId));
+    check(id + ' is ready when its binary resolves', readiness.ready === true);
   }
-  for (const id of ['terra', 'luna', 'sol']) {
-    const nextId = id === 'terra' ? 'luna' : id === 'luna' ? 'sol' : null;
-    const start = catalogSource.indexOf("id: '" + id + "'");
-    const end = nextId ? catalogSource.indexOf("id: '" + nextId + "'", start) : catalogSource.indexOf('\n  },\n]);', start);
-    const spec = catalogSource.slice(start, end);
-    check(id + ' has no hard-coded model id',
-      spec.includes('modelEnv: OPTIONAL_CODEX_MODEL_ENV.' + id) &&
-      spec.includes('baseArgs: modelId => codexArgs(modelId)') &&
-      !/codexArgs\(['"][^'"]+['"]\)/.test(spec));
-  }
+  check('Opus selector pins Claude Opus 5',
+    blocked.models.opus.label === 'Opus 5' &&
+    blocked.adapters.opus.baseArgs.includes('claude-opus-5'));
+  check('catalog declares supported effort levels',
+    JSON.stringify(blocked.models.opus.efforts) === JSON.stringify(['low', 'medium', 'high', 'xhigh', 'max']) &&
+    blocked.models.sol.efforts.includes('ultra') &&
+    !blocked.models.luna.efforts.includes('ultra') &&
+    blocked.models.spark.efforts.includes('xhigh'));
 
   // Aliases belong to the catalog and normalize every persisted state field.
   check('chatgpt canonicalizes to GPT-5.5', canonicalModelId('chatgpt') === 'gpt-5.5');
@@ -84,7 +92,7 @@ try {
     judgeModel: 'gpt-5.5', synthModel: 'gpt-5.5',
   }));
 
-  // Exact IDs come only from the declared MAESTRO_FRONTIER_MODEL_* settings.
+  // Existing settings override the first-party ids without leaking values.
   const configuredEnv = {
     PATH: '',
     [OPTIONAL_CODEX_MODEL_ENV.terra]: 'provider-terra-id',
@@ -95,7 +103,7 @@ try {
   for (const [id, value] of [['terra', 'provider-terra-id'], ['luna', 'provider-luna-id'], ['sol', 'provider-sol-id']]) {
     const adapter = configured.adapters[id];
     const readiness = modelReadiness(id, configured, { env: configuredEnv, findBin: available });
-    check(id + ' becomes selectable only when configured', configured.models[id].selectable === true);
+    check(id + ' remains selectable when overridden', configured.models[id].selectable === true);
     check(id + ' passes exactly its configured id to Codex',
       !!adapter && adapter.baseArgs.includes('-m') && adapter.baseArgs.includes(value));
     check(id + ' adapter remains read-only', isReadOnlyAdapter(adapter));
@@ -179,32 +187,36 @@ try {
       unsafeCmdReadiness.reasons.includes('binary-not-found'));
   }
 
-  // Direct environment values are rejected before becoming a Codex -m argv
-  // value; malformed values leave optional models in the safe blocked state.
+  // Unsafe override values are rejected before becoming Codex argv; the safe
+  // built-in model id remains active.
   const unsafeDirect = buildRuntimeCatalog({
     env: { PATH: '', [OPTIONAL_CODEX_MODEL_ENV.terra]: 'bad&calc' },
     codexEnvPath: missingEnvFile,
   });
-  check('unsafe direct model id yields no optional adapter',
-    unsafeDirect.models.terra.selectable === false && !unsafeDirect.adapters.terra);
+  check('unsafe direct model id falls back to the declared default',
+    unsafeDirect.models.terra.selectable === true &&
+    unsafeDirect.adapters.terra.baseArgs.includes('gpt-5.6-terra') &&
+    !unsafeDirect.adapters.terra.baseArgs.includes('bad&calc'));
 
-  // The sole fallback is the user's ~/.codex/.env analogue, and it is still
-  // subject to the same explicit setting name.
+  // ~/.codex/.env can override a current first-party id and is still subject
+  // to the same explicit setting name and value validation.
   const homeDir = path.join(tmpBase, 'home');
   const codexDir = path.join(homeDir, '.codex');
   fs.mkdirSync(codexDir, { recursive: true });
   fs.writeFileSync(path.join(codexDir, '.env'),
     OPTIONAL_CODEX_MODEL_ENV.terra + '=desktop-terra-id\nUNRELATED=value\n', 'utf8');
   const desktop = buildRuntimeCatalog({ env: emptyEnv, homeDir });
-  check('~/.codex/.env supplies the explicit Terra id',
+  check('~/.codex/.env overrides the Terra id',
     desktop.models.terra.selectable === true && desktop.adapters.terra.baseArgs.includes('desktop-terra-id'));
-  check('~/.codex/.env does not configure Luna or SOL by accident',
-    desktop.models.luna.selectable === false && desktop.models.sol.selectable === false);
+  check('~/.codex/.env leaves Luna and SOL on their declared defaults',
+    desktop.adapters.luna.baseArgs.includes('gpt-5.6-luna') &&
+    desktop.adapters.sol.baseArgs.includes('gpt-5.6-sol'));
   fs.writeFileSync(path.join(codexDir, '.env'),
     OPTIONAL_CODEX_MODEL_ENV.luna + '=bad%EXPANSION%\n', 'utf8');
   const unsafeDesktop = buildRuntimeCatalog({ env: emptyEnv, homeDir });
-  check('unsafe ~/.codex/.env model id yields no optional adapter',
-    unsafeDesktop.models.luna.selectable === false && !unsafeDesktop.adapters.luna);
+  check('unsafe ~/.codex/.env model id falls back to the declared default',
+    unsafeDesktop.models.luna.selectable === true &&
+    unsafeDesktop.adapters.luna.baseArgs.includes('gpt-5.6-luna'));
 
   // Validation defends the read-only subprocess invariant, including any
   // future catalog entry that accidentally adds a write grant.
@@ -215,6 +227,17 @@ try {
   const invalid = validateCatalog(configured);
   check('catalog rejects a write-capable adapter',
     invalid.ok === false && invalid.errors.some(error => error.includes('not read-only: gpt-5.5')));
+
+  const invalidEffort = buildRuntimeCatalog({ env: configuredEnv, codexEnvPath: missingEnvFile });
+  invalidEffort.adapters.sol = {
+    ...invalidEffort.adapters.sol,
+    efforts: ['high', 'impossible'],
+  };
+  const invalidEffortResult = validateCatalog(invalidEffort);
+  check('catalog rejects unknown and desynchronized effort metadata',
+    invalidEffortResult.ok === false &&
+    invalidEffortResult.errors.some(error => error.includes('unknown effort: sol/impossible')) &&
+    invalidEffortResult.errors.some(error => error.includes('differs from model: sol')));
 
   // Auth-bearing catalog entries have a distinct readiness failure, even
   // though their static adapter metadata is valid and read-only.

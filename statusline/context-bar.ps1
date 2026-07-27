@@ -127,7 +127,7 @@ function Get-FrontierBadge {
     if ($item.Length -gt 8192) { return '' }
     try { $st = [IO.File]::ReadAllText($item.FullName) | ConvertFrom-Json } catch { return '' }
     if (-not $st) { return '' }
-    $letters = @{ 'opus' = 'O'; 'gpt-5.5' = 'C'; 'gemini' = 'G'; 'kimi' = 'K'; 'deepseek' = 'D'; 'glm' = 'Z' }
+    $letters = @{ 'opus' = 'O'; 'sol' = 'S'; 'terra' = 'T'; 'luna' = 'L'; 'auto-review' = 'A'; 'gpt-5.5' = 'C'; 'gpt-5.4' = '5'; 'gpt-5.4-mini' = 'M'; 'spark' = 'R'; 'gemini' = 'G'; 'kimi' = 'K'; 'deepseek' = 'D'; 'glm' = 'Z' }
     $presets = @{ 'opus-duo' = 'O+O'; 'opus-gpt' = 'O+C'; 'gpt-duo' = 'C+C'; 'frontier-trio' = 'O+C+G'; 'budget-trio' = 'K+D+Z'; 'east-west' = 'D+C' }
     $panel = ''
     switch ([string]$st.mode) {
@@ -156,7 +156,7 @@ function Get-Cap($id) {
     $s = $id.ToLower()
     if ($s -match '1m' -or $s -match '\[1m\]') { return 1000000 }
     if ($s -match 'fable' -or $s -match 'mythos') { return 1000000 }
-    if ($s -match 'opus-4-[678]') { return 1000000 }
+    if ($s -match 'opus-(4-[678]|5)') { return 1000000 }
     if ($s -match 'sonnet-4-6') { return 200000 }
     if ($s -match 'sonnet')     { return 200000 }
     if ($s -match 'haiku')      { return 200000 }

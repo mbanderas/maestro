@@ -13,7 +13,7 @@ function runHook(payload, env) {
   return execFileSync(process.execPath, [HOOK], {
     input: typeof payload === 'string' ? payload : JSON.stringify(payload),
     encoding: 'utf8',
-    env: { ...process.env, ...env }
+    env: { ...process.env, MAESTRO_DISCIPLINE: 'on', ...env }
   });
 }
 

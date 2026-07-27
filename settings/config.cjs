@@ -26,8 +26,15 @@ const MAX_CONFIG_BYTES = 1 << 16; // 64 KB cap for config.json / settings.json
 // sourced from frontier DEFAULTS.adapters so there is one source of truth;
 // an id with no label here falls back to the id itself.
 const MODEL_LABELS = {
-  opus: 'Opus 4.8',
+  opus: 'Opus 5',
+  sol: 'GPT-5.6 Sol (Codex)',
+  terra: 'GPT-5.6 Terra (Codex)',
+  luna: 'GPT-5.6 Luna (Codex)',
+  'auto-review': 'Codex Auto Review',
   'gpt-5.5': 'GPT-5.5 (Codex)',
+  'gpt-5.4': 'GPT-5.4 (Codex)',
+  'gpt-5.4-mini': 'GPT-5.4 Mini (Codex)',
+  spark: 'GPT-5.3 Codex Spark',
   gemini: 'Gemini 3.1 Pro',
   fable: 'Fable 5',
   'sonnet-5': 'Sonnet 5',
@@ -207,7 +214,7 @@ function setContextBar(enabled) {
 
 // The discipline enforcement-hook pack reads this at runtime; `off` makes
 // every hook no-op (see hooks/maestro-discipline-gate.cjs). Stored in
-// config.json `discipline` (default ON => key absent). MAESTRO_DISCIPLINE
+// config.json `discipline` (default OFF => key absent). MAESTRO_DISCIPLINE
 // overrides the file, mirroring the terse env-override pattern.
 function readDiscipline() {
   const env = String(process.env.MAESTRO_DISCIPLINE || '').toLowerCase();
@@ -221,7 +228,7 @@ function readDiscipline() {
       if (c && c.discipline === true) return { enabled: true, source: 'config' };
     } catch {}
   }
-  return { enabled: true, source: 'default' };
+  return { enabled: false, source: 'default' };
 }
 
 function setDiscipline(value) {
@@ -241,9 +248,9 @@ function setDiscipline(value) {
       return { ok: false, error: 'config.json exists but is not valid JSON; refusing to overwrite it' };
     }
   }
-  // ON is the default => drop the key so config.json stays minimal; OFF is
+  // OFF is the default => drop the key so config.json stays minimal; ON is
   // explicit.
-  if (on) delete cfg.discipline; else cfg.discipline = false;
+  if (on) cfg.discipline = true; else delete cfg.discipline;
   if (!safeWrite(configJsonPath(), JSON.stringify(cfg, null, 2))) {
     return { ok: false, error: 'failed to write config.json' };
   }
@@ -257,8 +264,8 @@ function setDiscipline(value) {
 // ---------- verify-gate ----------
 
 // The verify-gate Stop hook (hooks/maestro-verify-gate.cjs) reads this at
-// runtime: `warn` (default) nudges, `block` blocks the Stop once, `off`
-// disables. Stored in config.json `verifyGate` (default warn => key absent).
+// runtime: `warn` nudges, `block` blocks the Stop once, `off` (default)
+// disables. Stored in config.json `verifyGate` (default off => key absent).
 // MAESTRO_VERIFY_GATE overrides the file, mirroring the terse/discipline
 // env-override pattern; the env value `0` is accepted as an alias for `off`.
 function normalizeVerify(v) {
@@ -279,7 +286,7 @@ function readVerify() {
       if (v) return { mode: v, source: 'config' };
     } catch {}
   }
-  return { mode: 'warn', source: 'default' };
+  return { mode: 'off', source: 'default' };
 }
 
 function setVerify(mode) {
@@ -296,9 +303,9 @@ function setVerify(mode) {
       return { ok: false, error: 'config.json exists but is not valid JSON; refusing to overwrite it' };
     }
   }
-  // warn is the default => drop the key so config.json stays minimal;
-  // off/block are explicit.
-  if (m === 'warn') delete cfg.verifyGate; else cfg.verifyGate = m;
+  // off is the default => drop the key so config.json stays minimal;
+  // warn/block are explicit.
+  if (m === 'off') delete cfg.verifyGate; else cfg.verifyGate = m;
   if (!safeWrite(configJsonPath(), JSON.stringify(cfg, null, 2))) {
     return { ok: false, error: 'failed to write config.json' };
   }

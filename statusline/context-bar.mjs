@@ -150,7 +150,11 @@ function frontierBadge(cfgDir, ws) {
   if (!path) return '';
   const st = readGuardedJson(path, 8192);
   if (!st) return '';
-  const letters = { opus: 'O', 'gpt-5.5': 'C', gemini: 'G', kimi: 'K', deepseek: 'D', glm: 'Z' };
+  const letters = {
+    opus: 'O', sol: 'S', terra: 'T', luna: 'L', 'auto-review': 'A',
+    'gpt-5.5': 'C', 'gpt-5.4': '5', 'gpt-5.4-mini': 'M', spark: 'R',
+    gemini: 'G', kimi: 'K', deepseek: 'D', glm: 'Z',
+  };
   const presets = {
     'opus-duo': 'O+O', 'opus-gpt': 'O+C', 'gpt-duo': 'C+C', 'frontier-trio': 'O+C+G',
     'budget-trio': 'K+D+Z', 'east-west': 'D+C',
@@ -184,7 +188,7 @@ function capForModel(id) {
   const s = String(id).toLowerCase();
   if (s.includes('1m') || s.includes('[1m]')) return 1000000;
   if (s.includes('fable') || s.includes('mythos')) return 1000000;
-  if (/opus-4-[678]/.test(s)) return 1000000;
+  if (/opus-(?:4-[678]|5)/.test(s)) return 1000000;
   return 200000;
 }
 

@@ -25,6 +25,7 @@ function runHook(payload, env) {
     encoding: 'utf8',
     env: {
       ...process.env,
+      MAESTRO_DISCIPLINE: 'on',
       MAESTRO_TOOLBUDGET_LOG: LOG,
       MAESTRO_TOOLBUDGET_MARKERDIR: MARKERS,
       MAESTRO_TOOLBUDGET_THRESHOLD: '3',

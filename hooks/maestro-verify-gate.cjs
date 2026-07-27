@@ -1,34 +1,29 @@
 #!/usr/bin/env node
-// Maestro Stop-event verify gate. Enforces AGENTS.md S7.3 structurally.
+// Maestro Stop-event verify gate. Optional AGENTS.md S7.3 support.
 //
 // S7.3 forbids reporting complete until the smallest relevant repo
-// checker passes, OR an honest status token names the gap. The prose
-// alone decays in long sessions, so this hook makes the floor
+// checker passes, OR a plain validation receipt names the gap. The prose
+// alone can decay in long sessions, so this optional hook makes the floor
 // structural: when THIS session modified files but ran no checker AND
-// stated no honest status token, the Stop is blocked once with an
-// actionable reason. The model then runs the checker (and reports
-// VERIFIED) or states UNVERIFIED / PENDING_REVIEW / FAIL with the gap.
-//
-// VERIFIED is deliberately NOT an honest-token escape: a VERIFIED claim
-// is only legitimate when a checker actually ran (which is a separate
-// allow path). "VERIFIED" with no checker run is exactly the dishonesty
-// S7.3 names ("No checker ran -> the token is UNVERIFIED, never
-// VERIFIED") -- so it still blocks.
+// stated no validation gap, the Stop is blocked once with an actionable
+// reason. The model then runs the checker or states
+// `Validation: not run (<gap>)` / `Validation: failed (<check>)`.
 //
 // Mode resolves env > config.json `verifyGate` > default (settings/config.cjs
 // readVerify; MAESTRO_VERIFY_GATE / `settings set verify <mode>`):
-// - "warn" (default): emit a non-blocking additionalContext nudge when
+// - "off" (default): disabled.
+// - "warn": emit a non-blocking additionalContext nudge when
 //   the gate condition holds -- ~free, never forces a continuation turn,
 //   safe at global scope where many repos have no checker.
 // - "block": block the Stop once when the gate condition holds. Arm this
 //   per-repo (e.g. repos with a real test suite) for hard enforcement.
-// - "0" / "off": disabled.
+// - "0": alias for "off".
 //
 // Never traps the user: blocks at most ONCE per session (marker file),
 // respects `discipline off`, exempts coordinated Frontier subprocesses
 // and stop-hook re-entry, requires a stable marker key before it will
 // block, and fails open on any error. Allows whenever no files were
-// modified, a checker ran, or an honest token is present.
+// modified, a checker ran, or a validation-gap receipt is present.
 //
 // Feedback channel: {"decision":"block","reason":...} is the Stop output
 // the harness honors for blocking; warn mode uses
@@ -44,7 +39,7 @@
 // codex-telemetry line reader (rollouts reach hundreds of MB -- never slurp).
 // The three signals come out the same: modified = an apply_patch tool-call or
 // a shell command (exec_command `.cmd`) matching the mutation pattern;
-// checkerRan = a shell command matching the checker pattern; honestToken = an
+// checkerRan = a shell command matching the checker pattern; gapReceipt = an
 // assistant turn's text. Codex's Stop hook does NOT guarantee stop_hook_active,
 // so the block-once marker (keyed by transcript_path/session_id) is the
 // re-entry guard there; Codex Stop honors decision:"block" identically. Codex
@@ -92,9 +87,8 @@ function isCodexRollout(first) {
     && CODEX_ROLLOUT_TYPES.has(first.type) && 'payload' in first;
 }
 
-// Fail-safe to 'warn' (surfaces without trapping) if the setting cannot
-// be read -- a safety hook must not silently vanish on a config error.
-let mode = 'warn';
+// Fail-open to 'off' if the optional setting cannot be read.
+let mode = 'off';
 try { mode = require('../settings/config.cjs').readVerify().mode; } catch {}
 if (mode === 'off') process.exit(0);
 
@@ -130,7 +124,7 @@ const tp = data.transcript_path;
 if (!tp || !fs.existsSync(tp)) process.exit(0); // nothing to assess -> allow
 
 // Detect, per the parsed tool calls only (never raw prose), whether this
-// session: modified files, ran a checker, and/or stated an honest token.
+// session: modified files, ran a checker, and/or stated a validation gap.
 // Bash mutation patterns mirror maestro-subagent-guard.cjs.
 // A redirect to /dev/null writes nothing -- `2>/dev/null`, `>/dev/null`,
 // `&>/dev/null` are read-only idioms, so the lookahead excludes them; a
@@ -141,9 +135,9 @@ const bashMutRe = /(?<![-=<>])>{1,2}\s*(?!\/dev\/null)[^\s&|<>]|(^|[\s;&|(])(sed
 // Broad on purpose: a looser checker match means more allows -- the
 // conservative direction for a gate that must never trap.
 const checkerRe = /(tsc\s+--noEmit|eslint|pytest|jest|vitest|\bgo\s+test\b|\bcargo\s+test\b|npm\s+(?:run\s+)?test|pnpm\s+test|yarn\s+test|ruff\s+check|mypy|prettier\s+--check|biome\s+check|run-hook-tests|node\s+--test|\.test\.(?:c|m)?js\b)/i;
-const honestRe = /\b(UNVERIFIED|PENDING_REVIEW|FAIL)\b/; // case-sensitive: doctrine tokens are uppercase
+const gapReceiptRe = /\b(?:UNVERIFIED|FAIL)\b|Validation\s*:\s*(?:not run|failed)\b/i;
 
-let modified = false, checkerRan = false, honestToken = false;
+let modified = false, checkerRan = false, gapReceipt = false;
 
 // Format is detected by CONTENT, not path: a Codex Stop hook hands us the
 // rollout file, whose first line is {timestamp,type,payload}. Anything else
@@ -185,11 +179,11 @@ if (isCodexRollout(first)) {
           if (checkerRe.test(cmd)) checkerRan = true;
         }
       } else if (p.role === 'assistant') {
-        // Honest status tokens are the MODEL's own claims -- assistant turns.
+        // Validation receipts are the MODEL's own claims -- assistant turns.
         const parts = Array.isArray(p.content) ? p.content : [];
         for (const c of parts) {
           const t = c && (c.text || c.output_text);
-          if (typeof t === 'string' && honestRe.test(t)) honestToken = true;
+          if (typeof t === 'string' && gapReceiptRe.test(t)) gapReceipt = true;
         }
       }
     });
@@ -215,20 +209,20 @@ if (isCodexRollout(first)) {
           if (checkerRe.test(c.input.command)) checkerRan = true;
         }
       } else if (c.type === 'text' && typeof c.text === 'string') {
-        if (honestRe.test(c.text)) honestToken = true;
+        if (gapReceiptRe.test(c.text)) gapReceipt = true;
       }
     }
   }
 }
 
-// Allow unless: files modified AND no checker ran AND no honest token.
-if (!(modified && !checkerRan && !honestToken)) process.exit(0);
+// Allow unless: files modified AND no checker ran AND no gap receipt.
+if (!(modified && !checkerRan && !gapReceipt)) process.exit(0);
 
 const reason = 'Maestro verify-gate (S7.3): this session modified files '
-  + 'but ran no type-check/lint/test and stated no honest status token. '
-  + 'Run the smallest repo checker (e.g. `npm test`) and report VERIFIED, '
-  + 'or if you cannot, state exactly one of UNVERIFIED / PENDING_REVIEW / '
-  + 'FAIL with the named gap. Then restate your final report. '
+  + 'but ran no type-check/lint/test and stated no validation gap. '
+  + 'Run the smallest repo checker (e.g. `npm test`), or state '
+  + '`Validation: not run (<exact gap>)` / '
+  + '`Validation: failed (<check>)`. Then restate your final report. '
   + '(Disable: MAESTRO_VERIFY_GATE=0.)';
 
 if (mode === 'warn') {

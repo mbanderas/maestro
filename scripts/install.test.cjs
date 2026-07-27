@@ -74,21 +74,21 @@ function mkTmpTracked() {
   check('1: dry-run writes zero files', listFiles(TMP).length === before);
 }
 
-// ---- test 2: real run creates expected files ----
+// ---- test 2: default run is Frontier-only ----
 {
   const TMP = mkTmpTracked();
 
   const code = run(['--target', 'gemini', '--project', TMP]);
 
   check('2: real run returns 0', code === 0);
-  check('2: creates AGENTS.md', fs.existsSync(path.join(TMP, 'AGENTS.md')));
+  check('2: does not create AGENTS.md', !fs.existsSync(path.join(TMP, 'AGENTS.md')));
   check('2: creates frontier/cli.cjs', fs.existsSync(path.join(TMP, 'frontier', 'cli.cjs')));
   check('2: creates settings/cli.cjs', fs.existsSync(path.join(TMP, 'settings', 'cli.cjs')));
   check('2: creates settings/config.cjs', fs.existsSync(path.join(TMP, 'settings', 'config.cjs')));
   check('2: creates bin/maestro.cjs', fs.existsSync(path.join(TMP, 'bin', 'maestro.cjs')));
   check('2: creates .gemini/commands/frontier.toml', fs.existsSync(path.join(TMP, '.gemini', 'commands', 'frontier.toml')));
-  check('2: creates docs/orchestration.md', fs.existsSync(path.join(TMP, 'docs', 'orchestration.md')));
-  check('2: creates GEMINI.md adapter (gemini target)', fs.existsSync(path.join(TMP, 'GEMINI.md')));
+  check('2: does not create docs/orchestration.md', !fs.existsSync(path.join(TMP, 'docs', 'orchestration.md')));
+  check('2: does not create GEMINI.md adapter', !fs.existsSync(path.join(TMP, 'GEMINI.md')));
 }
 
 // ---- test 3: idempotent ----
@@ -96,7 +96,7 @@ function mkTmpTracked() {
   const TMP = mkTmpTracked();
 
   // First run
-  run(['--target', 'gemini', '--project', TMP]);
+  run(['--target', 'gemini', '--project', TMP, '--with-discipline']);
 
   const agentsAfterFirst = fs.readFileSync(path.join(TMP, 'AGENTS.md'), 'utf8');
   const sentinelCountFirst = (agentsAfterFirst.match(/<!-- maestro:begin -->/g) || []).length;
@@ -107,7 +107,7 @@ function mkTmpTracked() {
   const captured = [];
   process.stdout.write = (s) => { captured.push(s); origWrite(s); return true; };
 
-  run(['--target', 'gemini', '--project', TMP]);
+  run(['--target', 'gemini', '--project', TMP, '--with-discipline']);
 
   process.stdout.write = origWrite;
 
@@ -126,7 +126,7 @@ function mkTmpTracked() {
   const USER_CONTENT = 'USER CONTENT\n';
   fs.writeFileSync(path.join(TMP, 'AGENTS.md'), USER_CONTENT, 'utf8');
 
-  run(['--target', 'gemini', '--project', TMP]);
+  run(['--target', 'gemini', '--project', TMP, '--with-discipline']);
 
   const result = fs.readFileSync(path.join(TMP, 'AGENTS.md'), 'utf8');
   check('4a: file still contains original user content', result.includes('USER CONTENT'));
@@ -165,7 +165,7 @@ function mkTmpTracked() {
     const captured = [];
     process.stdout.write = (s) => { captured.push(s); origWrite(s); return true; };
 
-    run(['--target', 'gemini', '--project', TMP]);
+    run(['--target', 'gemini', '--project', TMP, '--with-discipline']);
 
     process.stdout.write = origWrite;
 
@@ -199,7 +199,7 @@ function mkTmpTracked() {
 {
   // claude -> CLAUDE.md, and NOT the other tools' adapters
   const C = mkTmpTracked();
-  run(['--target', 'claude', '--project', C]);
+  run(['--target', 'claude', '--project', C, '--with-discipline']);
   check('8a: claude installs CLAUDE.md adapter', fs.existsSync(path.join(C, 'CLAUDE.md')));
   check('8b: claude does NOT install GEMINI.md', !fs.existsSync(path.join(C, 'GEMINI.md')));
   check('8c: claude does NOT install .cursorrules', !fs.existsSync(path.join(C, '.cursorrules')));
@@ -207,20 +207,20 @@ function mkTmpTracked() {
 
   // cursor -> .cursorrules adapter + .cursor wrapper
   const U = mkTmpTracked();
-  run(['--target', 'cursor', '--project', U]);
+  run(['--target', 'cursor', '--project', U, '--with-discipline']);
   check('8e: cursor installs .cursorrules adapter', fs.existsSync(path.join(U, '.cursorrules')));
   check('8f: cursor installs .cursor/commands/frontier.md wrapper', fs.existsSync(path.join(U, '.cursor', 'commands', 'frontier.md')));
 
   // codex -> AGENTS.md only, no runtime adapter file
   const X = mkTmpTracked();
-  run(['--target', 'codex', '--project', X]);
+  run(['--target', 'codex', '--project', X, '--with-discipline']);
   check('8g: codex installs AGENTS.md', fs.existsSync(path.join(X, 'AGENTS.md')));
   check('8h: codex installs no adapter file', !fs.existsSync(path.join(X, 'CLAUDE.md')) && !fs.existsSync(path.join(X, 'GEMINI.md')) && !fs.existsSync(path.join(X, '.cursorrules')));
 
   // adapter is append-only / no-clobber
   const K = mkTmpTracked();
   fs.writeFileSync(path.join(K, 'CLAUDE.md'), 'USER KEEP\n', 'utf8');
-  run(['--target', 'claude', '--project', K]);
+  run(['--target', 'claude', '--project', K, '--with-discipline']);
   const cm = fs.readFileSync(path.join(K, 'CLAUDE.md'), 'utf8');
   check('8i: adapter append-only keeps user content above the block',
     cm.includes('USER KEEP') && cm.includes('<!-- maestro:begin -->') &&
@@ -251,7 +251,7 @@ function mkTmpTracked() {
   }
 
   // 9.3 Codex installs direct skills, not deprecated prompt wrappers.
-  check('9d: codex still installs AGENTS.md', fs.existsSync(path.join(TMP, 'AGENTS.md')));
+  check('9d: codex default does not install AGENTS.md', !fs.existsSync(path.join(TMP, 'AGENTS.md')));
   check('9d: codex does not install deprecated .codex/prompts/frontier.md wrapper',
     !fs.existsSync(path.join(TMP, '.codex', 'prompts', 'frontier.md')));
   check('9d: codex installs settings CLI used by settings/terse skills',
@@ -323,9 +323,9 @@ function mkTmpTracked() {
   const TMP = mkTmpTracked();
   const skillPath = path.join(TMP, '.agents', 'skills', 'maestro-update', 'SKILL.md');
 
-  run(['--target', 'codex', '--project', TMP]);
+  run(['--target', 'codex', '--project', TMP, '--with-discipline']);
   fs.writeFileSync(skillPath, '<!-- maestro-managed:codex-skill name=maestro-update sha256=0000 -->\nSTALE MANAGED\n', 'utf8');
-  run(['--target', 'codex', '--project', TMP]);
+  run(['--target', 'codex', '--project', TMP, '--with-discipline']);
 
   const refreshed = fs.readFileSync(skillPath, 'utf8');
   check('11a: stale managed namespaced skill is refreshed', !refreshed.includes('STALE MANAGED'));
@@ -343,7 +343,7 @@ function mkTmpTracked() {
   const origWrite = process.stdout.write.bind(process.stdout);
   const captured = [];
   process.stdout.write = (s) => { captured.push(s); origWrite(s); return true; };
-  const code = run(['--target', 'codex', '--project', TMP]);
+  const code = run(['--target', 'codex', '--project', TMP, '--with-discipline']);
   process.stdout.write = origWrite;
 
   const output = captured.join('');
@@ -408,7 +408,7 @@ function mkTmpTracked() {
     'MY NOTES\n\n<!-- maestro:begin -->\nOLD STALE DOCTRINE\n<!-- maestro:end -->\n\nMORE NOTES\n';
   fs.writeFileSync(agents, stale, 'utf8');
 
-  run(['--target', 'codex', '--project', TMP]);
+  run(['--target', 'codex', '--project', TMP, '--with-discipline']);
 
   const r = fs.readFileSync(agents, 'utf8');
   check('14a: stale block content is gone', !r.includes('OLD STALE DOCTRINE'));
@@ -426,13 +426,13 @@ function mkTmpTracked() {
 {
   const TMP = mkTmpTracked();
   const agents = path.join(TMP, 'AGENTS.md');
-  run(['--target', 'codex', '--project', TMP]);
+  run(['--target', 'codex', '--project', TMP, '--with-discipline']);
   const after1 = fs.readFileSync(agents, 'utf8');
 
   const origWrite = process.stdout.write.bind(process.stdout);
   const captured = [];
   process.stdout.write = (s) => { captured.push(s); origWrite(s); return true; };
-  run(['--target', 'codex', '--project', TMP]);
+  run(['--target', 'codex', '--project', TMP, '--with-discipline']);
   process.stdout.write = origWrite;
 
   const after2 = fs.readFileSync(agents, 'utf8');
@@ -452,7 +452,7 @@ function mkTmpTracked() {
   const origWrite = process.stdout.write.bind(process.stdout);
   const captured = [];
   process.stdout.write = (s) => { captured.push(s); origWrite(s); return true; };
-  const code = run(['--target', 'codex', '--project', TMP]);
+  const code = run(['--target', 'codex', '--project', TMP, '--with-discipline']);
   process.stdout.write = origWrite;
 
   check('16a: run returns non-zero on ambiguous markers', code !== 0);
@@ -470,7 +470,7 @@ function mkTmpTracked() {
   const origWrite = process.stdout.write.bind(process.stdout);
   const captured = [];
   process.stdout.write = (s) => { captured.push(s); origWrite(s); return true; };
-  const code = run(['--target', 'codex', '--project', TMP]);
+  const code = run(['--target', 'codex', '--project', TMP, '--with-discipline']);
   process.stdout.write = origWrite;
 
   check('17a: run returns non-zero on begin-without-end', code !== 0);
@@ -484,12 +484,12 @@ function mkTmpTracked() {
   const agents = path.join(TMP, 'AGENTS.md');
   fs.writeFileSync(agents, 'USER\r\n', 'utf8');
 
-  run(['--target', 'codex', '--project', TMP]);
+  run(['--target', 'codex', '--project', TMP, '--with-discipline']);
   const after1 = fs.readFileSync(agents, 'utf8');
   check('18a: block written with CRLF on a CRLF file', /<!-- maestro:begin -->\r\n/.test(after1));
   check('18b: user CRLF content preserved', after1.includes('USER\r\n'));
 
-  run(['--target', 'codex', '--project', TMP]);
+  run(['--target', 'codex', '--project', TMP, '--with-discipline']);
   const after2 = fs.readFileSync(agents, 'utf8');
   check('18c: re-run on a CRLF file is byte-idempotent', after2 === after1);
 }
@@ -542,6 +542,40 @@ function mkTmpTracked() {
 
   check('21a: mutually-exclusive profiles return non-zero', code === 1);
   check('21b: nothing written on rejection', listFiles(TMP).length === before);
+}
+
+// ---- test 22: --remove-discipline preserves user text and Frontier ----
+{
+  const TMP = mkTmpTracked();
+  const agents = path.join(TMP, 'AGENTS.md');
+  const claude = path.join(TMP, 'CLAUDE.md');
+  fs.writeFileSync(agents, 'USER AGENT RULES\n', 'utf8');
+  fs.writeFileSync(claude, 'USER CLAUDE RULES\n', 'utf8');
+  run(['--target', 'claude', '--project', TMP, '--with-discipline']);
+
+  const code = run(['--target', 'claude', '--project', TMP, '--remove-discipline']);
+  const agentsAfter = fs.readFileSync(agents, 'utf8');
+  const claudeAfter = fs.readFileSync(claude, 'utf8');
+
+  check('22a: --remove-discipline succeeds', code === 0);
+  check('22b: AGENTS user content preserved', agentsAfter.includes('USER AGENT RULES'));
+  check('22c: AGENTS managed block removed', !agentsAfter.includes('<!-- maestro:begin -->'));
+  check('22d: CLAUDE user content preserved', claudeAfter.includes('USER CLAUDE RULES'));
+  check('22e: CLAUDE managed block removed', !claudeAfter.includes('<!-- maestro:begin -->'));
+  check('22f: managed orchestration doc removed', !fs.existsSync(path.join(TMP, 'docs', 'orchestration.md')));
+  check('22g: Frontier engine remains', fs.existsSync(path.join(TMP, 'frontier', 'cli.cjs')));
+}
+
+// ---- test 23: --remove-discipline deletes exact standalone doctrine ----
+{
+  const TMP = mkTmpTracked();
+  const agents = path.join(TMP, 'AGENTS.md');
+  fs.copyFileSync(path.join(__dirname, '..', 'AGENTS.md'), agents);
+
+  const code = run(['--target', 'codex', '--project', TMP, '--remove-discipline']);
+
+  check('23a: standalone removal succeeds', code === 0);
+  check('23b: exact standalone AGENTS.md removed', !fs.existsSync(agents));
 }
 
 // ---- cleanup ----

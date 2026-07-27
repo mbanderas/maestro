@@ -85,6 +85,7 @@ async function runFrontier({ prompt, state, cfg, deps }) {
   const runJudge   = deps.runJudge   || judge.runJudge;
   const runSynth   = deps.runSynth   || synthesize.runSynth;
   const onProgress = (deps && typeof deps.onProgress === 'function') ? deps.onProgress : null;
+  const effort = typeof state.effort === 'string' ? state.effort : undefined;
 
   const startMs = Date.now();
 
@@ -155,7 +156,7 @@ async function runFrontier({ prompt, state, cfg, deps }) {
     }
     emit({ phase: 'single-start', model: state.model });
     const resp = await spawnOne(prompt, adapter,
-      { timeoutMs: stageTimeout(budgetRemaining()), fusionDepth: depth + 1 });
+      { timeoutMs: stageTimeout(budgetRemaining()), fusionDepth: depth + 1, effort });
     if (!resp.ok) {
       return {
         status: 'error',
@@ -200,7 +201,7 @@ async function runFrontier({ prompt, state, cfg, deps }) {
     }
 
     emit({ phase: 'panel-start', models: panelIds });
-    const panel  = await fanOut(prompt, panelIds, cfg, { fusionDepth: depth + 1, onProgress });
+    const panel  = await fanOut(prompt, panelIds, cfg, { fusionDepth: depth + 1, onProgress, effort });
     const ok     = panel.filter(p => p.ok);
     const failed = panel.filter(p => !p.ok);
 
@@ -223,6 +224,7 @@ async function runFrontier({ prompt, state, cfg, deps }) {
       ...cfg,
       judgeModel: resolveJudgeModel(state, cfg),
       synthModel: resolveSynthModel(state, cfg),
+      effort,
     };
     let analysis;
     const judgeRemaining = budgetRemaining();
@@ -266,7 +268,7 @@ async function runFrontier({ prompt, state, cfg, deps }) {
           let er;
           try {
             er = await spawnOne(buildReframeBrief(prompt), cfg.adapters[escalationModel],
-              { timeoutMs: stageTimeout(escalateRemaining), fusionDepth: depth + 1 });
+              { timeoutMs: stageTimeout(escalateRemaining), fusionDepth: depth + 1, effort });
           } catch { er = null; }
           if (er && er.ok && er.content) { final = er.content; escalated = true; }
         }

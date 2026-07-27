@@ -1,6 +1,7 @@
 # AGENTS.md -- Maestro Orchestration Kernel
 
-Discipline layer for AI coding agents. Always-on kernel; the full
+Optional discipline layer for AI coding agents. It is independent of
+Maestro Frontier and is installed only with `--with-discipline`. The full
 multi-agent protocol lives in
 [docs/orchestration.md](docs/orchestration.md), loaded on demand.
 S0-S10 are stable identifiers.
@@ -9,7 +10,7 @@ Calibrated defaults, not rigid laws — apply judgment, scale to the
 task. Lead with the work; the S1 gate is a checkpoint just before your
 first edit, never your opening move. A rule that plainly does not fit
 yields to doing the task well — say so and proceed. Hard invariants are
-narrow: verification honesty (S7.3 tokens), surgical scope (S7.4),
+narrow: verification honesty (S7.3), surgical scope (S7.4),
 compression integrity (S8).
 
 ---
@@ -121,11 +122,10 @@ trajectories do not.
 
 FORBIDDEN from reporting complete until the smallest relevant
 repo-defined checks pass — type-checker, linter, and tests from package
-scripts, Makefile/task runner, or CI, ALL errors fixed; on Claude Code
-the verify-gate Stop hook surfaces this on Stop (warns by default; set
-MAESTRO_VERIFY_GATE=block to enforce) when files were modified but no
-checker ran and no honest token was stated. No runnable checker: state
-it and report UNVERIFIED with the exact gap.
+scripts, Makefile/task runner, or CI, ALL errors fixed. The optional
+verify-gate Stop hook is off by default; `MAESTRO_VERIFY_GATE=warn` or
+`block` can surface file modifications with no checker and no validation
+receipt. No runnable checker: state the exact gap.
 Bug fix or new behavior: reproduce first — failing test before the fix
 — success criteria as the exit condition, not a post-hoc check. Changes
 with no observable behavior (config, docs, types, formatting): state
@@ -135,13 +135,13 @@ retry the same one: hand a fresh agent a clean-slate reframing brief
 (a different agent re-examining from scratch breaks a dead-end the
 original cannot).
 
-Every completion report carries exactly one status token: VERIFIED
-(relevant checks passed) | PENDING_REVIEW (protected surfaces touched —
-instructions, tests, evals, CI — needs human review) | UNVERIFIED
-(check could not run; name the gap) | FAIL (checks failed; fix the
-defect, never weaken the oracle). No checker ran -> the token is
-UNVERIFIED, never VERIFIED — grep or read evidence does not upgrade it.
-The final message BEGINS with the token; no separate wrap-up turn.
+When files changed, completion reports state validation plainly:
+`Validation: passed (<checks>)`, `Validation: not run (<exact gap>)`, or
+`Validation: failed (<checks>)`. No checker ran means validation did not
+pass — grep or read evidence does not upgrade it. Instructions, tests,
+evals, and CI do not require a special human-review label merely because
+they changed; require human review only when the user or repository says
+so. No separate wrap-up turn.
 
 ### 7.4 Edit safety
 
@@ -233,5 +233,6 @@ Work spanning sessions, iterations, or scheduled runs:
   limit; mark per-step completion before each irreversible action.
 - Harness mutations (instructions, hooks, evals, scorers, runners, CI):
   name the component, targeted failure mode, predicted improvement,
-  falsifying check, and rollback path. Report PENDING_REVIEW — never
-  count a harness change as green evidence.
+  falsifying check, and rollback path. Never count a harness change as
+  its own green evidence; use an independent check or report the exact
+  validation gap.

@@ -5,11 +5,14 @@
 
 const fs = require('fs');
 const path = require('path');
-const { DEFAULTS, loadState, saveState, resolveScope, validateMode, validatePreset, validateModel, adoptLegacyState, runCostAdvisory } = require('./config.cjs');
+const {
+  DEFAULTS, loadState, saveState, resolveScope, validateMode, validatePreset,
+  validateModel, adoptLegacyState, runCostAdvisory, resolveRunModels,
+} = require('./config.cjs');
 const { loadUserPresets, saveUserPreset, deleteUserPreset, withUserPresets } = require('./presets.cjs');
 const { runFrontier, ensureRunId, canonicalModelId, canonicalPresetId } = require('./run.cjs');
 const runlock = require('./runlock.cjs');
-const { cmdCatalog, cmdCompose } = require('./compose.cjs');
+const { cmdCatalog, cmdCompose, validateEffortSelection } = require('./compose.cjs');
 
 // ---------- arg helpers ----------
 
@@ -46,7 +49,8 @@ function stripScopeFlag(argv) {
 function usage() {
   process.stderr.write(
     'Usage:\n' +
-    '  frontier mode <off|single|fusion> [--model X] [--preset Y] [--models a,b,c] [--scope <name>]\n' +
+    '  frontier mode <off|single|fusion> [--model X] [--preset Y] [--models a,b,c] [--effort LEVEL] [--scope <name>]\n' +
+    '  frontier effort <auto|low|medium|high|xhigh|max|ultra> [--scope <name>]\n' +
     '  frontier status [--scope <name>]\n' +
     '  frontier run [<prompt>|-] [--scope <name>]\n' +
     '  frontier adopt [--force] [--scope <name>]\n' +
@@ -54,7 +58,7 @@ function usage() {
     '  frontier preset list|delete <name> [--scope <name>]\n' +
     '  frontier roster\n' +
     '  frontier catalog [--json]\n' +
-    '  frontier compose --models a,b,c [--judge m] [--synth m] [--save name] [--dry-run] [--scope <name>]\n'
+    '  frontier compose --models a,b,c [--judge m] [--synth m] [--effort LEVEL] [--save name] [--dry-run] [--scope <name>]\n'
   );
 }
 
@@ -132,6 +136,19 @@ function cmdMode(argv, scope) {
     }
   }
 
+  const rawEffort = getFlag(argv, '--effort');
+  if (rawEffort !== null && rawEffort !== 'auto') state.effort = rawEffort;
+  const modeCfg = withUserPresets(DEFAULTS, scope);
+  const effortValidation = validateEffortSelection(
+    rawEffort,
+    resolveRunModels(state, modeCfg),
+    modeCfg
+  );
+  if (!effortValidation.ok) {
+    process.stderr.write('ERROR: ' + effortValidation.error + '\n');
+    process.exit(2);
+  }
+
   saveState(state, scope);
   // Arm-time cost advisory (secondary echo): if the armed panel/model draws on
   // a subscription-until adapter past its cutoff, note it on stderr. The run-
@@ -140,6 +157,34 @@ function cmdMode(argv, scope) {
   const armAdvisory = runCostAdvisory(state, withUserPresets(DEFAULTS, scope));
   if (armAdvisory) process.stderr.write(armAdvisory + '\n');
   process.stdout.write('frontier mode set: ' + JSON.stringify(state) + '\n');
+}
+
+function cmdEffort(argv, scope) {
+  const cleanArgv = stripScopeFlag(argv);
+  if (cleanArgv.length !== 1) {
+    process.stderr.write('ERROR: effort requires one level: auto, low, medium, high, xhigh, max, or ultra\n');
+    process.exit(2);
+  }
+  const level = cleanArgv[0];
+  const state = loadState(scope);
+  if (state.mode === 'off') {
+    process.stderr.write('ERROR: arm single or fusion mode before setting effort\n');
+    process.exit(2);
+  }
+  const next = { ...state };
+  if (level === 'auto') delete next.effort;
+  else next.effort = level;
+  const cfg = withUserPresets(DEFAULTS, scope);
+  const validation = validateEffortSelection(level, resolveRunModels(next, cfg), cfg);
+  if (!validation.ok) {
+    process.stderr.write('ERROR: ' + validation.error + '\n');
+    process.exit(2);
+  }
+  if (!saveState(next, scope)) {
+    process.stderr.write('ERROR: failed to save Frontier state\n');
+    process.exit(1);
+  }
+  process.stdout.write('frontier effort set: ' + level + '\n');
 }
 
 function cmdStatus(scope) {
@@ -388,6 +433,8 @@ async function main() {
 
   if (cmd === 'mode') {
     cmdMode(argv.slice(1), scope);
+  } else if (cmd === 'effort') {
+    cmdEffort(argv.slice(1), scope);
   } else if (cmd === 'status') {
     cmdStatus(scope);
   } else if (cmd === 'run') {

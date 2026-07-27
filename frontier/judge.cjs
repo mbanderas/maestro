@@ -63,7 +63,7 @@ async function runJudge(userPrompt, responses, cfg, deps) {
     r = await spawn(
       buildJudgePrompt(userPrompt, responses, cfg),
       cfg.adapters[cfg.judgeModel],
-      { timeoutMs: cfg.timeoutMs, fusionDepth: 1 }
+      { timeoutMs: cfg.timeoutMs, fusionDepth: 1, effort: cfg.effort }
     );
   } catch {
     return undefined;

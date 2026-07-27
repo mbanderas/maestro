@@ -1,7 +1,7 @@
 #!/usr/bin/env node
-// Maestro installer — writes doctrine + engine + tool wrapper into a target
-// project. Append-only for AGENTS.md, no-clobber for wrapper files, safe to
-// re-run. Zero dependencies (Node stdlib only). CommonJS (.cjs).
+// Maestro installer — writes the Frontier engine + tool wrapper into a target
+// project. The optional discipline profile is marker-merged into existing
+// instruction files and can be removed safely. Zero dependencies. CommonJS.
 //
 // Usage (as module):  const { run } = require('./install.cjs'); run(argv);
 // Usage (as script):  node scripts/install.cjs [flags]
@@ -18,6 +18,10 @@ const crypto = require('crypto');
 const PKG_ROOT    = path.join(__dirname, '..');
 const SENTINEL    = '<!-- maestro:begin -->';
 const SENTINEL_END = '<!-- maestro:end -->';
+const LEGACY_DOCTRINE_HASHES = new Set([
+  '5E30931560DA680CE4BF5F5D9E8F84951470272914CB58A0E30A1AF6A2926EC3',
+  '1BA267D3ED1065E3DC30F597C04615A20AAB8F5A0BAC8ACE0A52F3F83FD5BF6D',
+]);
 
 // Map target -> { templateSrc, projectDest, userDest }
 // templateSrc is relative to PKG_ROOT.
@@ -90,8 +94,10 @@ maestro frontier mode fusion --preset custom --models <a,b,c> --scope codex
 maestro frontier mode fusion --preset <preset> --judge <model> --synth <model> --scope codex
 \`\`\`
 
-Models: \`opus\` (Claude Opus 4.8, needs \`claude\`), \`gpt-5.5\` (needs \`codex\`),
-\`gemini\` (needs \`gemini\`). Presets: \`opus-duo\`, \`opus-gpt\`, \`gpt-duo\`,
+Models: \`opus\` (Claude Opus 5, needs \`claude\`), current Codex selectors
+(needs \`codex\`), and \`gemini\` (needs \`gemini\`). Use
+\`maestro frontier catalog\` for exact ids and supported effort levels.
+Presets: \`opus-duo\`, \`opus-gpt\`, \`gpt-duo\`,
 \`frontier-trio\`, \`custom\`. Judge + synth default to Opus; \`--judge\`/\`--synth\`
 override for any preset (e.g. \`--judge opus --synth gpt-5.5\`). \`gpt-duo\` runs
 judge + synth on GPT-5.5 — a Codex-only fusion that needs no \`claude\`.
@@ -409,7 +415,7 @@ function legacyGenericCodexTemplate(srcContent, legacyName, namespacedName) {
 
 /**
  * @param {string[]} argv
- * @returns {{ target: string, project: string, user: boolean, dryRun: boolean, noHooks: boolean, doctrineOnly: boolean, engineOnly: boolean }}
+ * @returns {{ target: string, project: string, user: boolean, dryRun: boolean, noHooks: boolean, doctrineOnly: boolean, engineOnly: boolean, withDiscipline: boolean, removeDiscipline: boolean }}
  */
 function parseArgs(argv) {
   const opts = {
@@ -420,6 +426,8 @@ function parseArgs(argv) {
     noHooks: false,
     doctrineOnly: false,
     engineOnly: false,
+    withDiscipline: false,
+    removeDiscipline: false,
   };
 
   let i = 0;
@@ -439,6 +447,10 @@ function parseArgs(argv) {
       opts.doctrineOnly = true;
     } else if (a === '--engine-only') {
       opts.engineOnly = true;
+    } else if (a === '--with-discipline') {
+      opts.withDiscipline = true;
+    } else if (a === '--remove-discipline') {
+      opts.removeDiscipline = true;
     }
     i++;
   }
@@ -629,6 +641,109 @@ function installAdapter(target, projectRoot, dryRun, log) {
   const src = readPkgFile(rel, log);
   if (src === null) return false;
   return appendOnlyDoctrine(path.join(projectRoot, rel), src, rel, dryRun, log);
+}
+
+/**
+ * Remove one marker-owned Maestro block, or a known standalone Maestro file.
+ * Content outside markers is byte-preserved. Unrecognized unmarked files are
+ * never changed.
+ * @param {string} dest absolute destination path
+ * @param {string} label log label
+ * @param {boolean} allowLegacyDoctrine known AGENTS.md release hashes allowed
+ * @param {string|null} currentManagedContent exact current managed file content
+ * @param {boolean} dryRun
+ * @param {(msg: string) => void} log
+ * @returns {boolean}
+ */
+function removeManagedDisciplineFile(dest, label, allowLegacyDoctrine, currentManagedContent, dryRun, log) {
+  let st;
+  try { st = fs.lstatSync(dest); } catch { return true; }
+  if (st.isSymbolicLink()) {
+    log(`ERROR: ${label} is a symlink — refusing to remove through it: ${dest}`);
+    return false;
+  }
+  if (!st.isFile()) return true;
+
+  let existing;
+  try { existing = fs.readFileSync(dest, 'utf8'); } catch (err) {
+    log(`ERROR: cannot read existing ${label}: ${err.message}`);
+    return false;
+  }
+
+  const beginCount = existing.split(SENTINEL).length - 1;
+  const endCount = existing.split(SENTINEL_END).length - 1;
+  let updated = null;
+  if (beginCount || endCount) {
+    if (beginCount !== 1 || endCount !== 1) {
+      log(`ERROR: ${label} has ${beginCount} begin / ${endCount} end maestro markers — refusing ambiguous removal: ${dest}`);
+      return false;
+    }
+    const bi = existing.indexOf(SENTINEL);
+    const ei = existing.indexOf(SENTINEL_END);
+    if (ei < bi) {
+      log(`ERROR: ${label} has reversed maestro markers — refusing removal: ${dest}`);
+      return false;
+    }
+    updated = existing.slice(0, bi) + existing.slice(ei + SENTINEL_END.length);
+  } else {
+    const hash = crypto.createHash('sha256').update(Buffer.from(existing, 'utf8')).digest('hex').toUpperCase();
+    const currentMatch = currentManagedContent !== null && existing === currentManagedContent;
+    if ((allowLegacyDoctrine && LEGACY_DOCTRINE_HASHES.has(hash)) || currentMatch) updated = '';
+    else {
+      log(`[discipline] ${label} has no managed block — preserving`);
+      return true;
+    }
+  }
+
+  if (dryRun) {
+    log(updated.trim() ? `[dry-run] would remove maestro block from ${dest}` : `[dry-run] would remove ${dest}`);
+    return true;
+  }
+  if (!updated.trim()) {
+    try { fs.unlinkSync(dest); } catch (err) {
+      log(`ERROR: failed to remove ${label}: ${err.message}`);
+      return false;
+    }
+    log(`[discipline] removed ${label}`);
+    return true;
+  }
+  const res = safeWrite(dest, updated);
+  if (!res.ok) {
+    log(`ERROR: failed to remove maestro block from ${label}: ${res.reason}`);
+    return false;
+  }
+  log(`[discipline] removed maestro block from ${label}`);
+  return true;
+}
+
+function removeDiscipline(target, projectRoot, dryRun, log) {
+  let ok = true;
+  const agentsSrc = readPkgFile('AGENTS.md', log);
+  if (agentsSrc === null) return false;
+  if (!removeManagedDisciplineFile(
+    path.join(projectRoot, 'AGENTS.md'), 'AGENTS.md', true, agentsSrc, dryRun, log
+  )) ok = false;
+
+  const adapterRel = ADAPTER_MAP[target];
+  if (adapterRel) {
+    const adapterSrc = readPkgFile(adapterRel, log);
+    if (adapterSrc === null) return false;
+    if (!removeManagedDisciplineFile(
+      path.join(projectRoot, adapterRel), adapterRel, false, adapterSrc, dryRun, log
+    )) ok = false;
+  }
+
+  const orchestrationSrc = readPkgFile('docs/orchestration.md', log);
+  if (orchestrationSrc === null) return false;
+  if (!removeManagedDisciplineFile(
+    path.join(projectRoot, 'docs', 'orchestration.md'),
+    'docs/orchestration.md',
+    false,
+    orchestrationSrc,
+    dryRun,
+    log
+  )) ok = false;
+  return ok;
 }
 
 /**
@@ -1017,15 +1132,25 @@ function installCodexSkills(projectRoot, userGlobal, dryRun, log) {
  */
 function run(argv) {
   const opts = parseArgs(argv || []);
-  const { target: rawTarget, project, user: userGlobal, dryRun, doctrineOnly, engineOnly } = opts;
+  const {
+    target: rawTarget,
+    project,
+    user: userGlobal,
+    dryRun,
+    doctrineOnly,
+    engineOnly,
+    withDiscipline,
+    removeDiscipline: shouldRemoveDiscipline,
+  } = opts;
 
   const lines = [];
   const log = (msg) => { lines.push(msg); process.stdout.write(msg + '\n'); };
 
   if (dryRun) log('[dry-run] planning only — no files will be written');
 
-  if (doctrineOnly && engineOnly) {
-    log('ERROR: --doctrine-only and --engine-only are mutually exclusive');
+  const profileCount = [doctrineOnly, engineOnly, withDiscipline, shouldRemoveDiscipline].filter(Boolean).length;
+  if (profileCount > 1) {
+    log('ERROR: --doctrine-only, --engine-only, --with-discipline, and --remove-discipline are mutually exclusive');
     return 1;
   }
 
@@ -1045,7 +1170,7 @@ function run(argv) {
   if (target === 'auto') {
     target = detectTarget(project);
     if (target === 'none') {
-      log(`[auto] no tool marker dir found — installing ${engineOnly ? 'engine only' : 'doctrine + engine only'}`);
+      log(`[auto] no tool marker dir found — installing ${withDiscipline ? 'engine + optional discipline' : 'Frontier engine only'}`);
       log('[auto] pass --target <tool> to install a command wrapper');
     } else {
       log(`[auto] detected target: ${target}`);
@@ -1058,12 +1183,20 @@ function run(argv) {
     return 1;
   }
 
+  if (shouldRemoveDiscipline) {
+    if (!removeDiscipline(target, project, dryRun, log)) {
+      log('discipline removal completed with errors (see above)');
+      return 1;
+    }
+    log('discipline removal complete');
+    return 0;
+  }
+
   let anyError = false;
 
-  // 1. Doctrine half — portable AGENTS.md kernel + this target's runtime
-  //    adapter + the on-demand multi-agent protocol doc. Skipped by
-  //    --engine-only (Frontier engine without the discipline layer).
-  if (!engineOnly) {
+  // 1. Optional discipline profile — portable AGENTS.md kernel + this
+  //    target's runtime adapter + the on-demand multi-agent protocol doc.
+  if (withDiscipline) {
     if (!installDoctrine(project, dryRun, log)) anyError = true;
     if (!installAdapter(target, project, dryRun, log)) anyError = true;
     if (!installOrchestrationDoc(project, dryRun, log)) anyError = true;

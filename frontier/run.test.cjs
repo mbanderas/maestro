@@ -755,6 +755,52 @@ async function runTests() {
     check('(s5) over-budget passive fallback', result.final === 'longercontent', 'got ' + result.final);
   }
 
+  // (s6) one persisted effort value reaches panel, judge, and synth stages.
+  {
+    let panelOpts = null;
+    let judgeCfg = null;
+    let synthCfg = null;
+    const result = await runFrontier({
+      prompt: 'hello',
+      state: { mode: 'fusion', preset: 'opus-gpt', effort: 'xhigh' },
+      cfg: baseCfg,
+      deps: {
+        fanOut: async (_p, _ids, _cfg, opts) => {
+          panelOpts = opts;
+          return [makeOk('opus', 'a'), makeOk('gpt-5.5', 'b')];
+        },
+        runJudge: async (_p, _r, cfg) => { judgeCfg = cfg; return VALID_ANALYSIS; },
+        runSynth: async (_p, _b, cfg) => { synthCfg = cfg; return 'FINAL'; },
+      },
+    });
+    check('(s6) effort run ok', result.status === 'ok', 'got ' + result.status);
+    check('(s6) effort reaches panel', panelOpts && panelOpts.effort === 'xhigh',
+      JSON.stringify(panelOpts));
+    check('(s6) effort reaches judge', judgeCfg && judgeCfg.effort === 'xhigh',
+      JSON.stringify(judgeCfg));
+    check('(s6) effort reaches synth', synthCfg && synthCfg.effort === 'xhigh',
+      JSON.stringify(synthCfg));
+  }
+
+  // (s7) one persisted effort value reaches single-model dispatch.
+  {
+    let spawnOpts = null;
+    const result = await runFrontier({
+      prompt: 'hello',
+      state: { mode: 'single', model: 'opus', effort: 'medium' },
+      cfg: baseCfg,
+      deps: {
+        spawnOne: async (_p, _a, opts) => {
+          spawnOpts = opts;
+          return makeOk('opus', 'X');
+        },
+      },
+    });
+    check('(s7) single effort run ok', result.status === 'ok', 'got ' + result.status);
+    check('(s7) single effort reaches dispatch', spawnOpts && spawnOpts.effort === 'medium',
+      JSON.stringify(spawnOpts));
+  }
+
   // ---------- report ----------
   if (failures.length === 0) {
     process.stdout.write('\nAll cases passed.\n');

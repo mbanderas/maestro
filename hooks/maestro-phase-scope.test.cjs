@@ -20,7 +20,7 @@ function runHook(payload, env) {
   return execFileSync(process.execPath, [HOOK], {
     input: JSON.stringify(payload),
     encoding: 'utf8',
-    env: { ...process.env, ...env }
+    env: { ...process.env, MAESTRO_DISCIPLINE: 'on', ...env }
   });
 }
 

@@ -49,7 +49,12 @@ const cxExec = (cmd) => ({ timestamp: '2026-06-22T10:00:02.000Z', type: 'respons
 const cxSay = (text) => ({ timestamp: '2026-06-22T10:00:03.000Z', type: 'response_item', payload: { type: 'message', role: 'assistant', content: [{ type: 'output_text', text }] } });
 
 function runHook(payload, env) {
-  const base = { ...process.env, XDG_CONFIG_HOME: CFG, MAESTRO_VERIFY_GATE_STATE_DIR: STATE };
+  const base = {
+    ...process.env,
+    XDG_CONFIG_HOME: CFG,
+    MAESTRO_DISCIPLINE: 'on',
+    MAESTRO_VERIFY_GATE_STATE_DIR: STATE
+  };
   delete base.MAESTRO_VERIFY_GATE; // default unless a test sets it
   return execFileSync(process.execPath, [HOOK], {
     input: typeof payload === 'string' ? payload : JSON.stringify(payload),
@@ -60,7 +65,7 @@ function runHook(payload, env) {
 function payloadFor(txPath, extra) {
   return { session_id: 'vg-' + path.basename(txPath), transcript_path: txPath, cwd: TX, ...extra };
 }
-const BLOCK = { MAESTRO_VERIFY_GATE: 'block' }; // default is 'warn'; arm block explicitly
+const BLOCK = { MAESTRO_VERIFY_GATE: 'block' }; // default is 'off'; arm block explicitly
 function isBlock(out) {
   try { return JSON.parse(out).decision === 'block'; } catch { return false; }
 }
@@ -81,17 +86,17 @@ function check(name, cond) {
 
 console.log('maestro-verify-gate tests');
 
-// 0. DEFAULT (no env) is warn, not block -- safe at global scope.
+// 0. DEFAULT (no env) is off.
 let f = tx([edit, say('All done, looks good.')]);
 let out = runHook(payloadFor(f));
-check('default mode is warn, not block', isWarn(out) && !isBlock(out));
+check('default mode is off', out === '');
 
-// 1. modified + no checker + no honest token, armed block -> BLOCK.
+// 1. modified + no checker + no validation receipt, armed block -> BLOCK.
 f = tx([edit, say('All done, looks good.')]);
 out = runHook(payloadFor(f), BLOCK);
-check('armed block: modified + no-check + no-token -> block', isBlock(out));
-check('block reason is actionable (names a checker + tokens)',
-  /UNVERIFIED|PENDING_REVIEW|FAIL/.test(out) && /test|lint|check/i.test(out));
+check('armed block: modified + no-check + no-receipt -> block', isBlock(out));
+check('block reason is actionable (names a checker + receipt)',
+  /Validation: not run/.test(out) && /test|lint|check/i.test(out));
 
 // 2. modified + checker ran -> ALLOW.
 f = tx([edit, bash('npm test'), say('All done.')]);
@@ -103,16 +108,15 @@ check('modified + repo runner ran -> allow', runHook(payloadFor(f)) === '');
 f = tx([say('just answering a question'), bash('ls -la')]);
 check('no modifications -> allow', runHook(payloadFor(f)) === '');
 
-// 4. honest UNVERIFIED present -> ALLOW.
-f = tx([edit, say('UNVERIFIED: no checker configured for this docs-only change.')]);
-check('modified + honest UNVERIFIED -> allow', runHook(payloadFor(f)) === '');
+// 4. Plain validation gap present -> ALLOW.
+f = tx([edit, say('Validation: not run (no checker configured for this docs-only change).')]);
+check('modified + validation gap -> allow', runHook(payloadFor(f), BLOCK) === '');
 
-// 5. PENDING_REVIEW present -> ALLOW.
-f = tx([edit, say('PENDING_REVIEW: touched protected instructions.')]);
-check('modified + PENDING_REVIEW -> allow', runHook(payloadFor(f)) === '');
+// 5. Validation failure receipt -> ALLOW.
+f = tx([edit, say('Validation: failed (npm test: one failure).')]);
+check('modified + validation failure -> allow', runHook(payloadFor(f), BLOCK) === '');
 
-// 6. VERIFIED claim but NO checker ran -> BLOCK (false-verified is the
-//    exact S7.3 violation; VERIFIED is NOT in the honest-token allow set).
+// 6. A passed claim but NO checker ran -> BLOCK.
 f = tx([edit, say('VERIFIED everything works.')]);
 check('modified + VERIFIED but no checker -> block', isBlock(runHook(payloadFor(f), BLOCK)));
 
@@ -163,9 +167,9 @@ f = tx([edit, say('done')]);
 check('config verifyGate=off -> allow (no env)', runHook(payloadFor(f)) === '');
 f = tx([edit, say('done')]);
 check('env block overrides config off', isBlock(runHook(payloadFor(f), { MAESTRO_VERIFY_GATE: 'block' })));
-writeCfg({}); // default -> warn
+writeCfg({}); // default -> off
 f = tx([edit, say('done')]);
-check('config default -> warn (no env)', isWarn(runHook(payloadFor(f))));
+check('config default -> off (no env)', runHook(payloadFor(f)) === '');
 
 // --- Codex rollout format (detected by content, same 3 signals) ---
 // Pre-implementation, the Claude-only parser found nothing in a rollout and
@@ -179,9 +183,9 @@ check('codex: apply_patch + no-check + no-token (armed) -> block', isBlock(runHo
 f = codexTx([cxMeta, cxPatch, cxExec('npm test'), cxSay('done')]);
 check('codex: apply_patch + npm test ran -> allow', runHook(payloadFor(f), BLOCK) === '');
 
-// 18. Codex apply_patch + honest UNVERIFIED in assistant text -> ALLOW.
-f = codexTx([cxMeta, cxPatch, cxSay('UNVERIFIED: no checker configured for this change.')]);
-check('codex: apply_patch + honest UNVERIFIED -> allow', runHook(payloadFor(f), BLOCK) === '');
+// 18. Codex apply_patch + validation gap in assistant text -> ALLOW.
+f = codexTx([cxMeta, cxPatch, cxSay('Validation: not run (no checker configured for this change).')]);
+check('codex: apply_patch + validation gap -> allow', runHook(payloadFor(f), BLOCK) === '');
 
 // 19. Codex no modifications (only a read-only shell) -> ALLOW.
 f = codexTx([cxMeta, cxExec('ls -la'), cxSay('just looking around')]);
@@ -191,10 +195,10 @@ check('codex: no modifications -> allow', runHook(payloadFor(f), BLOCK) === '');
 f = codexTx([cxMeta, cxExec('echo data > out.txt'), cxSay('wrote the file')]);
 check('codex: shell mutation + no-check + no-token (armed) -> block', isBlock(runHook(payloadFor(f), BLOCK)));
 
-// 21. Codex default mode (no env) on a modified rollout -> WARN, not block.
+// 21. Codex default mode (no env) on a modified rollout -> OFF.
 f = codexTx([cxMeta, cxPatch, cxSay('done')]);
 out = runHook(payloadFor(f));
-check('codex: default mode warns, does not block', isWarn(out) && !isBlock(out));
+check('codex: default mode is off', out === '');
 
 // 22. Real Codex rollout smoke (skipped when ~/.codex absent): the streaming
 //     parser must handle production DATA without crashing; output must be ''

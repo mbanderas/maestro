@@ -9,6 +9,7 @@
 const {
   MODEL_ALIASES,
   PRESET_ALIASES,
+  EFFORT_LEVELS,
   buildRuntimeCatalog,
   canonicalModelId,
   listBuiltinPresets,
@@ -52,6 +53,7 @@ function catalogView(catalog) {
         readOnly: model.readOnly,
         selectable: model.selectable,
         configured: model.configured,
+        efforts: model.efforts,
         ready: readiness.ready,
         reasons: readiness.reasons,
         remediation: remediationFor(readiness),
@@ -89,6 +91,7 @@ function formatCatalogHuman(view) {
       'read-only=' + (model.readOnly ? 'yes' : 'no'),
       'selectable=' + (model.selectable ? 'yes' : 'no'),
       'configured=' + (model.configured ? 'yes' : 'no'),
+      'effort=' + (model.efforts.length ? model.efforts.join(',') : '-'),
       'ready=' + (model.ready ? 'yes' : 'no'),
       'reason=' + (model.reasons.length ? model.reasons.join(',') : '-'),
       'required-env=' + (model.requiredEnv.length ? model.requiredEnv.join(',') : '-'),
@@ -100,9 +103,10 @@ function formatCatalogHuman(view) {
 }
 
 function parseComposeArgs(argv) {
-  const values = { models: null, judge: null, synth: null, save: null, dryRun: false };
+  const values = { models: null, judge: null, synth: null, effort: null, save: null, dryRun: false };
   const valueFlags = new Map([
-    ['--models', 'models'], ['--judge', 'judge'], ['--synth', 'synth'], ['--save', 'save'],
+    ['--models', 'models'], ['--judge', 'judge'], ['--synth', 'synth'],
+    ['--effort', 'effort'], ['--save', 'save'],
   ]);
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i];
@@ -127,6 +131,9 @@ function parseComposeArgs(argv) {
   const models = values.models.split(',').map(model => model.trim());
   if (models.some(model => !model)) return { ok: false, error: '--models must be a comma-separated model list' };
   if (models.length < 1 || models.length > 8) return { ok: false, error: '--models must select between 1 and 8 models' };
+  if (values.effort !== null && values.effort !== 'auto' && !EFFORT_LEVELS.includes(values.effort)) {
+    return { ok: false, error: 'invalid effort "' + values.effort + '"; choose auto, ' + EFFORT_LEVELS.join(', ') };
+  }
   return { ok: true, ...values, models: models.map(canonicalModelId) };
 }
 
@@ -153,6 +160,28 @@ function resolveReadyModel(rawModel, role, catalog) {
   };
 }
 
+function validateEffortSelection(effort, modelIds, catalog) {
+  if (!effort || effort === 'auto') return { ok: true };
+  if (!EFFORT_LEVELS.includes(effort)) {
+    return { ok: false, error: 'invalid effort "' + effort + '"; choose auto, ' + EFFORT_LEVELS.join(', ') };
+  }
+  const capable = [];
+  const unsupported = [];
+  for (const id of [...new Set(modelIds.map(canonicalModelId))]) {
+    const adapter = catalog.adapters && catalog.adapters[id];
+    if (!adapter || !Array.isArray(adapter.efforts) || adapter.efforts.length === 0) continue;
+    capable.push(id);
+    if (!adapter.efforts.includes(effort)) unsupported.push(id);
+  }
+  if (unsupported.length) {
+    return { ok: false, error: 'effort "' + effort + '" is unsupported by: ' + unsupported.join(', ') };
+  }
+  if (!capable.length) {
+    return { ok: false, error: 'none of the selected models exposes effort control' };
+  }
+  return { ok: true };
+}
+
 function resolveComposition(options, catalog) {
   const panel = [];
   for (const model of options.models) {
@@ -166,6 +195,11 @@ function resolveComposition(options, catalog) {
     const resolved = resolveReadyModel(model, role, catalog);
     if (!resolved.ok) return resolved;
   }
+  const effort = validateEffortSelection(options.effort, [...panel, judge, synth], catalog);
+  if (!effort.ok) return effort;
+  const effortState = options.effort && options.effort !== 'auto'
+    ? { effort: options.effort }
+    : {};
   return {
     ok: true,
     panel,
@@ -177,6 +211,7 @@ function resolveComposition(options, catalog) {
       models: panel,
       judgeModel: judge,
       synthModel: synth,
+      ...effortState,
     },
   };
 }
@@ -222,7 +257,8 @@ function cmdCompose(argv, scope) {
     'frontier compose resolved:\n' +
     '  panel: ' + composition.panel.join(', ') + '\n' +
     '  judge: ' + composition.judge + '\n' +
-    '  synth: ' + composition.synth + '\n'
+    '  synth: ' + composition.synth + '\n' +
+    '  effort: ' + (composition.state.effort || 'auto') + '\n'
   );
   if (options.dryRun) {
     process.stdout.write('frontier compose dry-run: state and presets unchanged\n');
@@ -255,6 +291,7 @@ module.exports = {
   catalogView,
   formatCatalogHuman,
   parseComposeArgs,
+  validateEffortSelection,
   resolveComposition,
   cmdCatalog,
   cmdCompose,

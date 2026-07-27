@@ -169,24 +169,24 @@ function main() {
   }
 
   // ---- discipline ----
-  // (p) default ON; set off writes config.json discipline:false; on removes key
+  // (p) default OFF; set on writes config.json discipline:true; off removes key
   {
     delete process.env.MAESTRO_DISCIPLINE;
     const d0 = settings.readDiscipline();
-    check('discipline default on', d0.enabled === true && d0.source === 'default');
-
-    const off = settings.setDiscipline('off');
-    check('setDiscipline off ok', off.ok === true);
-    const d1 = settings.readDiscipline();
-    check('discipline reads off from config', d1.enabled === false && d1.source === 'config');
-    const cfg = JSON.parse(fs.readFileSync(settings.configJsonPath(), 'utf8'));
-    check('config.json discipline = false', cfg.discipline === false);
+    check('discipline default off', d0.enabled === false && d0.source === 'default');
 
     const on = settings.setDiscipline('on');
     check('setDiscipline on ok', on.ok === true);
+    const d1 = settings.readDiscipline();
+    check('discipline reads on from config', d1.enabled === true && d1.source === 'config');
+    const cfg = JSON.parse(fs.readFileSync(settings.configJsonPath(), 'utf8'));
+    check('config.json discipline = true', cfg.discipline === true);
+
+    const off = settings.setDiscipline('off');
+    check('setDiscipline off ok', off.ok === true);
     const cfg2 = JSON.parse(fs.readFileSync(settings.configJsonPath(), 'utf8'));
-    check('discipline on drops the key', !('discipline' in cfg2));
-    check('discipline reads on after re-enable', settings.readDiscipline().enabled === true);
+    check('discipline off drops the key', !('discipline' in cfg2));
+    check('discipline reads off after reset', settings.readDiscipline().enabled === false);
   }
 
   // (q) env override beats config and is reported + warned
@@ -208,11 +208,11 @@ function main() {
   }
 
   // ---- verify-gate ----
-  // (s) default warn; set block/off writes config.json; warn drops the key
+  // (s) default off; set block/warn writes config.json; off drops the key
   {
     delete process.env.MAESTRO_VERIFY_GATE;
     const v0 = settings.readVerify();
-    check('verify default warn', v0.mode === 'warn' && v0.source === 'default');
+    check('verify default off', v0.mode === 'off' && v0.source === 'default');
 
     check('setVerify block ok', settings.setVerify('block').ok === true);
     const v1 = settings.readVerify();
@@ -220,13 +220,13 @@ function main() {
     const cfg = JSON.parse(fs.readFileSync(settings.configJsonPath(), 'utf8'));
     check('config.json verifyGate = block', cfg.verifyGate === 'block');
 
-    check('setVerify off ok', settings.setVerify('off').ok === true);
-    check('verify reads off from config', settings.readVerify().mode === 'off');
+    check('setVerify warn ok', settings.setVerify('warn').ok === true);
+    check('verify reads warn from config', settings.readVerify().mode === 'warn');
 
-    check('setVerify warn drops the key', settings.setVerify('warn').ok === true);
+    check('setVerify off drops the key', settings.setVerify('off').ok === true);
     const cfg2 = JSON.parse(fs.readFileSync(settings.configJsonPath(), 'utf8'));
-    check('verify warn drops the key', !('verifyGate' in cfg2));
-    check('verify reads warn (default) after reset', settings.readVerify().mode === 'warn');
+    check('verify off drops the key', !('verifyGate' in cfg2));
+    check('verify reads off (default) after reset', settings.readVerify().mode === 'off');
   }
 
   // (t) env override (incl. 0=off alias) beats config + warns

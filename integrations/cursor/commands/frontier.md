@@ -24,8 +24,9 @@ the engine's state file by hand.
    ```bash
    maestro frontier catalog
    maestro frontier compose --models <model-a>,<model-b> --scope cursor
-   maestro frontier compose --models <model-a>,<model-b> --judge <model> --synth <model> --save my-panel --scope cursor
+   maestro frontier compose --models <model-a>,<model-b> --judge <model> --synth <model> --effort <level> --save my-panel --scope cursor
    maestro frontier compose --models <model-a>,<model-b> --dry-run --scope cursor
+   maestro frontier effort <auto|low|medium|high|xhigh|max|ultra> --scope cursor
    ```
 
 2. Switch mode (persists under Maestro's platform-specific config directory:
@@ -73,10 +74,11 @@ Notes:
   provider CLI's read-only/planning mode.
 - Each model's CLI must be on `PATH`, or point at a specific build with
   `MAESTRO_CLAUDE_BIN` / `MAESTRO_CODEX_BIN` / `MAESTRO_GEMINI_BIN`.
-- `terra`, `luna`, and `sol` have no assumed canonical model ID. They become
-  selectable only when their matching `MAESTRO_FRONTIER_MODEL_TERRA`,
-  `MAESTRO_FRONTIER_MODEL_LUNA`, or `MAESTRO_FRONTIER_MODEL_SOL` variable is
-  configured in the environment or `~/.codex/.env`; confirm with `frontier catalog`.
+- `opus` pins Claude Opus 5. Sol, Terra, Luna, GPT-5.5, GPT-5.4, GPT-5.4
+  Mini, GPT-5.3 Codex Spark, and Codex Auto Review are built-in selectors.
+  Confirm exact aliases and supported effort levels with `frontier catalog`.
+- `MAESTRO_FRONTIER_MODEL_TERRA`, `MAESTRO_FRONTIER_MODEL_LUNA`, and
+  `MAESTRO_FRONTIER_MODEL_SOL` remain optional model-ID overrides.
 - Run `node frontier/smoke.cjs` from the installed engine root for release
   verification.
 - Requires `maestro` on `PATH` (installed during Maestro setup). If it is missing,

@@ -3,7 +3,7 @@
 // wrapper and the docs call `maestro frontier ...` instead of the raw
 // `node frontier/cli.cjs` path.
 //
-//   maestro frontier <mode|status|run|adopt|preset|roster|catalog|compose> [...]
+//   maestro frontier <mode|effort|status|run|adopt|preset|roster|catalog|compose> [...]
 //       Delegates verbatim to frontier/cli.cjs in a child process with
 //       inherited cwd, env, and stdio -> identical Frontier state and
 //       scope (the engine's own scope autodetect and MAESTRO_SCOPE both
@@ -11,11 +11,14 @@
 //       is propagated.
 //
 //   maestro install [--target <tool>] [--dry-run] [--project <path>]
-//                   [--user] [--no-hooks] [--doctrine-only | --engine-only]
+//                   [--user] [--no-hooks]
+//                   [--with-discipline | --doctrine-only |
+//                    --engine-only | --remove-discipline]
 //       Runs the cross-tool installer (scripts/install.cjs). Profiles:
-//       default = doctrine + engine; --doctrine-only = AGENTS.md kernel
-//       splice only; --engine-only = Frontier engine without the
-//       discipline layer. Loaded
+//       default = Frontier engine only; --with-discipline also installs
+//       the optional policy pack; --doctrine-only splices only that pack;
+//       --engine-only is an explicit alias for the default;
+//       --remove-discipline removes managed policy files/blocks. Loaded
 //       lazily so the bin works for `frontier` even where the installer
 //       is absent.
 //
@@ -39,19 +42,21 @@ function usage(code) {
     'Maestro — unified CLI\n' +
     '\n' +
     'Usage:\n' +
-    '  maestro frontier <mode|status|run|adopt|preset|roster|catalog|compose> [...]   run the Frontier engine\n' +
-    '  maestro install [--target <tool>] [--dry-run] [--project <path>] [--user] [--no-hooks] [--doctrine-only | --engine-only]\n' +
+    '  maestro frontier <mode|effort|status|run|adopt|preset|roster|catalog|compose> [...]   run the Frontier engine\n' +
+    '  maestro install [--target <tool>] [--dry-run] [--project <path>] [--user] [--no-hooks] [--with-discipline | --doctrine-only | --engine-only | --remove-discipline]\n' +
     '\n' +
     'Examples:\n' +
     '  maestro frontier status\n' +
     '  maestro frontier catalog [--json]\n' +
-    '  maestro frontier compose --models <model>,<model> [--judge <model>] [--synth <model>] [--save <name>] [--dry-run] [--scope <name>]\n' +
+    '  maestro frontier compose --models <model>,<model> [--judge <model>] [--synth <model>] [--effort <level>] [--save <name>] [--dry-run] [--scope <name>]\n' +
+    '  maestro frontier effort <auto|low|medium|high|xhigh|max|ultra>\n' +
     '  maestro frontier mode fusion --preset opus-gpt\n' +
     '  maestro frontier run "fix the failing test"\n' +
     '  maestro frontier preset save my-duo --models kimi,gpt-5.5 --judge deepseek\n' +
     '  maestro frontier roster\n' +
-    '  maestro install --target auto --project .\n' +
-    '  maestro install --engine-only --project .   (Frontier engine, no discipline layer)\n'
+    '  maestro install --target auto --project .   (Frontier engine, default)\n' +
+    '  maestro install --with-discipline --project .\n' +
+    '  maestro install --remove-discipline --project .\n'
   );
   process.exit(code);
 }

@@ -6,6 +6,31 @@ All notable changes to Maestro are documented here. The format follows
 
 ## [Unreleased]
 
+### Changed
+
+- **Frontier now pins Claude Opus 5 and exposes the current Codex model
+  family.** Sol, Terra, Luna, GPT-5.5, GPT-5.4, GPT-5.4 Mini, GPT-5.3 Codex
+  Spark, and Codex Auto Review are selectable without model-ID setup. Existing
+  Sol/Terra/Luna environment settings remain optional overrides.
+- **Frontier is now the default product and install profile.** Portable
+  installs lay down the Frontier engine and command/skill surface without
+  repository doctrine. `--with-discipline` opts into the independent policy
+  pack; `--engine-only` remains an explicit alias for the default.
+- **Discipline and verify hooks are off by default.** Users can enable them
+  explicitly through settings or environment overrides.
+- **Universal completion-status and human-review labels were removed.**
+  Optional verification hooks now accept plain validation receipts and no
+  longer require a fixed final-message vocabulary.
+
+### Added
+
+- **Per-panel effort control.** `frontier mode ... --effort`,
+  `frontier compose ... --effort`, and `frontier effort <level|auto>` validate
+  and persist provider-supported effort across panel, judge, and synth stages.
+- **`maestro install --remove-discipline`.** Removes marker-owned policy
+  blocks and recognized standalone Maestro doctrine while preserving
+  surrounding project instructions and the Frontier engine.
+
 ## [1.14.2] - 2026-07-18
 
 ### Fixed

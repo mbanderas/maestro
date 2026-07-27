@@ -66,7 +66,7 @@ async function runSynth(userPrompt, bundle, cfg, deps) {
     r = await spawn(
       buildSynthPrompt(userPrompt, bundle, cfg),
       cfg.adapters[cfg.synthModel],
-      { timeoutMs: cfg.timeoutMs, fusionDepth: 1 }
+      { timeoutMs: cfg.timeoutMs, fusionDepth: 1, effort: cfg.effort }
     );
   } catch {
     return '';

@@ -16,15 +16,20 @@ The design and the staff-engineer review are recorded in
 | Toggle | Values | What it controls |
 |---|---|---|
 | `terse` | `off`, `lite`, `full`, `ultra` | Output-token reduction (`/maestro:terse`). |
-| `frontier` | `off`; `single:` `opus` / `fable` / `sonnet-5` / `gpt-5.5` / `gemini` / `glm` / `kimi` / `deepseek`; `fusion:` `opus-duo` / `opus-gpt` / `chatgpt-duo` / `frontier-trio` / `fable-duo` / `fable-gpt` / `fable-trio` / `sonnet-duo` / `sonnet-gpt` / `sonnet-trio` / `frontier-quad` / `frontier-quint` / `budget-trio` / `east-west` / `custom`, each with optional `--judge` / `--synth` | The local multi-CLI fusion engine (`/maestro:frontier`). Any non-`off` value arms auto-run: every prompt is routed through the engine and the answer relayed; `off` disables it. Arming/running a Fable panel past 2026-07-07 prints a non-blocking `[frontier] …` Usage-Credits cost advisory. |
+| `frontier` | `off`; `single:` any model from `frontier catalog`; `fusion:` any named or saved preset, or `custom`, with optional judge, synthesizer, and shared effort | The local multi-CLI fusion engine (`/maestro:frontier`). Any non-`off` value arms auto-run: every prompt is routed through the engine and the answer relayed; `off` disables it. Current first-party selectors include Opus 5 plus `gpt-5.6-sol`, `gpt-5.6-terra`, `gpt-5.6-luna`, `codex-auto-review`, `gpt-5.5`, `gpt-5.4`, `gpt-5.4-mini`, and `gpt-5.3-codex-spark`. |
 | `context-bar` | `on`, `off` | The status-line context progress bar (`/maestro:context-bar`). |
-| `discipline` | `on`, `off` | The discipline enforcement-hook pack (gate-reminder, doctrine-guard, phase-scope, subagent-guard, verify-gate, loop-guard, gate-telemetry, toolbudget). `off` makes every hook no-op — the runtime counterpart to `frontier off` for users who want only the engine. The doctrine TEXT (`AGENTS.md` kernel) is autoloaded at session start and cannot be unloaded mid-session, so the toggle covers the hook half only; install `--engine-only` to omit the kernel entirely. |
-| `verify` | `off`, `warn`, `block` | The S7.3 verify-gate Stop hook (`hooks/maestro-verify-gate.cjs`). `warn` (default) injects a non-blocking nudge when a session modified files but ran no checker and stated no honest status token; `block` blocks the Stop once to force a checker run or honest token (`VERIFIED` with no checker still fires); `off` disables. Arm `block` per-repo where a real test suite exists. |
+| `discipline` | `on`, `off` | Optional enforcement-hook pack. `off` is the default; `on` enables gate-reminder, doctrine-guard, phase-scope, subagent-guard, verify-gate, loop-guard, gate-telemetry, and toolbudget. The doctrine text is installed separately with `--with-discipline`; use `--remove-discipline` to remove managed copies. |
+| `verify` | `off`, `warn`, `block` | Optional S7.3 verify-gate Stop hook (`hooks/maestro-verify-gate.cjs`). `off` is the default; `warn` injects a non-blocking nudge; `block` blocks Stop once until a checker runs or the report states `Validation: not run (<gap>)` / `Validation: failed (<check>)`. |
 
 The frontier models and presets above are not a second list maintained here:
 `/maestro:settings` and the table are both driven by
 `node settings/cli.cjs list`, which sources them from `frontier/config.cjs`,
 so they cannot drift from what the engine accepts.
+
+Effort is part of the armed Frontier panel rather than a Maestro-wide toggle.
+Set it with `/maestro:frontier effort <auto|low|medium|high|xhigh|max|ultra>`
+or pass `--effort <level>` while composing or arming a panel. Validation uses
+the selected models' catalog capabilities.
 
 `compress` is an action that transforms a file, not a persisted toggle, so
 it is not part of settings.
@@ -66,7 +71,7 @@ questionnaire. The first argument selects the action:
 | `/maestro:settings frontier fusion custom --models opus,gpt-5.5,gemini` | a custom panel |
 | `/maestro:settings frontier fusion opus-gpt --judge opus --synth gpt-5.5` | with stage overrides |
 | `/maestro:settings context-bar off` | hide the context bar |
-| `/maestro:settings discipline off` | silence the enforcement-hook pack |
+| `/maestro:settings discipline on` | enable the optional enforcement-hook pack |
 | `/maestro:settings verify block` | enforce the verify-gate (block on unverified Stop) |
 
 The friendly space form (`frontier fusion opus-gpt`) is normalized to the
@@ -90,7 +95,7 @@ node settings/cli.cjs list              # every available value
 node settings/cli.cjs list --json       # machine-readable catalog
 node settings/cli.cjs set terse ultra
 node settings/cli.cjs set context-bar off
-node settings/cli.cjs set discipline off
+node settings/cli.cjs set discipline on
 node settings/cli.cjs set verify block
 node settings/cli.cjs set frontier fusion:opus-gpt
 node settings/cli.cjs set frontier fusion:chatgpt-duo --scope codex-project
@@ -133,15 +138,15 @@ store.
   `${CLAUDE_CONFIG_DIR or ~/.claude}/settings.json`, defaulting to
   `~/.claude/statusline/`. Present means disabled, absent means enabled.
 - **discipline**: the boolean `discipline` key in `<configDir>/config.json`
-  (the same file as `terseLevel`). Default on means the key is absent;
-  `set discipline off` writes `discipline: false`. The enforcement hooks read
-  it through `hooks/maestro-discipline-gate.cjs` (fail-safe: any read error =
-  enabled). `MAESTRO_DISCIPLINE=off|on` in the environment overrides the file
+  (the same file as `terseLevel`). Default off means the key is absent;
+  `set discipline on` writes `discipline: true`. The enforcement hooks read
+  it through `hooks/maestro-discipline-gate.cjs` (fail-open: any read error =
+  disabled). `MAESTRO_DISCIPLINE=off|on` in the environment overrides the file
   until unset, and `set discipline` says so.
 - **verify**: the `verifyGate` key in `<configDir>/config.json` (same file as
-  `terseLevel`). Default `warn` means the key is absent; `set verify block`/`off`
+  `terseLevel`). Default `off` means the key is absent; `set verify warn`/`block`
   writes it explicitly. The verify-gate Stop hook reads it through
-  `settings/config.cjs` `readVerify` (fail-safe: any read error = `warn`).
+  `settings/config.cjs` `readVerify` (fail-open: any read error = `off`).
   `MAESTRO_VERIFY_GATE=off|warn|block` (and `0` = off) overrides the file until
   unset, and `set verify` says so.
 

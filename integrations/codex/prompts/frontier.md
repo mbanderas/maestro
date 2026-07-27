@@ -1,6 +1,6 @@
 ---
 description: Maestro Frontier local multi-CLI fusion engine — compose or choose a read-only model panel, inspect the catalog, arm, disarm, or run it
-argument-hint: "<off | single <model> | fusion <preset> | compose --models <model>,<model> ... | catalog | status | run <prompt> | preset ... | roster>"
+argument-hint: "<off | single <model> | fusion <preset> | effort <level|auto> | compose --models <model>,<model> ... | catalog | status | run <prompt> | preset ... | roster>"
 ---
 
 Drive the **Maestro Frontier** engine: a local multi-CLI fusion engine where a
@@ -19,15 +19,18 @@ not edit Frontier state files by hand.
 maestro frontier catalog
 maestro frontier catalog --json
 maestro frontier compose --models <model>,<model> --dry-run --scope codex-project
-maestro frontier compose --models <model>,<model> --judge <model> --synth <model> --scope codex-project
+maestro frontier compose --models <model>,<model> --judge <model> --synth <model> --effort <level> --scope codex-project
 maestro frontier compose --models <model>,<model> --save <name> --scope codex-project
+maestro frontier effort <auto|low|medium|high|xhigh|max|ultra> --scope codex-project
 ```
 
 `frontier catalog` is the source of truth for models, presets, aliases,
 readiness, and required configuration. `compose` accepts one to eight
 comma-separated models. Judge and synth default to the first panel model.
 `--dry-run` does not change state; a non-dry run saves and arms the resolved
-custom fusion panel.
+custom fusion panel. Effort persists across panel, judge, and synth stages for
+selected effort-aware Claude and Codex models; `effort auto` returns to
+provider defaults.
 
 ## Modes, inspection, and one-off runs
 
@@ -47,20 +50,22 @@ maestro frontier run "<prompt>" --scope codex-project
 After a non-`off` mode is armed, use ordinary Codex prompts. For `run`, report
 stdout verbatim. On `ERROR [<reason>]: <detail>`, relay the reason.
 
-## Configuration and release gate
+## Current models, overrides, and release gate
 
-Configure optional Codex aliases only with
+`opus` pins Claude Opus 5. Sol, Terra, Luna, GPT-5.5, GPT-5.4, GPT-5.4
+Mini, GPT-5.3 Codex Spark, and Codex Auto Review are built-in selectors.
 `MAESTRO_FRONTIER_MODEL_TERRA`, `MAESTRO_FRONTIER_MODEL_LUNA`, and
-`MAESTRO_FRONTIER_MODEL_SOL`. Codex Desktop / IDE sessions read them from
-`~/.codex/.env`; restart and open a new thread after changing that file.
+`MAESTRO_FRONTIER_MODEL_SOL` remain optional model-ID overrides. Codex Desktop
+/ IDE sessions read overrides from `~/.codex/.env`; restart and open a new
+thread after changing that file.
 
-Before releasing configured optional Codex aliases, run:
+Before releasing Sol, Terra, or Luna changes, run:
 
 ```bash
 node frontier/smoke.cjs
 ```
 
-The explicit gate invokes only configured optional aliases through the normal
-read-only dispatch path. All panel, judge, and synthesizer subprocesses are
+The explicit gate invokes those selectors through the normal read-only
+dispatch path. All panel, judge, and synthesizer subprocesses are
 one-shot and read-only: they return text only and never edit the workspace,
 commit, or run autonomous loops.

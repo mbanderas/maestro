@@ -2,7 +2,7 @@
   "name": "maestro",
   "version": "1.14.2",
   "displayName": "Maestro",
-  "description": "Maestro Frontier is an opt-in, zero-dependency local multi-CLI fusion engine for AI coding agents. Use /maestro:frontier catalog to inspect the portable catalog, then /maestro:frontier compose --models ... to choose and arm a panel. Panel, judge, and synthesizer subprocesses are one-shot and read-only. Off, single, and fusion modes also switch via /maestro:frontier. Built on Maestro orchestration discipline: decision-gated routing, verified done-claims, surgical scope, and structural enforcement hooks.",
+  "description": "Maestro Frontier is an opt-in, zero-dependency local multi-CLI fusion engine for AI coding agents. Use /maestro:frontier catalog to inspect Opus 5 and current Codex models, then compose a panel with validated effort. Panel, judge, and synthesizer subprocesses are one-shot and read-only. Optional policy hooks are independent and off by default.",
   "author": {
     "name": "Mark Laursen",
     "url": "https://github.com/mbanderas"
@@ -10,5 +10,5 @@
   "homepage": "https://github.com/mbanderas/maestro",
   "repository": "https://github.com/mbanderas/maestro",
   "license": "MIT",
-  "keywords": ["multi-cli-fusion", "fusion-engine", "frontier", "multi-agent", "orchestration", "claude-code", "gemini", "codex", "agents", "hooks", "doctrine"]
+  "keywords": ["multi-cli-fusion", "fusion-engine", "frontier", "model-panel", "orchestration", "claude-code", "gemini", "codex", "agents"]
 }

@@ -105,7 +105,9 @@ frontier_badge() {
   case "$mode" in
     single)
       case "$(jq -r '.model // empty' "$f" 2>/dev/null)" in
-        opus) panel='O' ;; gpt-5.5) panel='C' ;; gemini) panel='G' ;;
+        opus) panel='O' ;; sol) panel='S' ;; terra) panel='T' ;; luna) panel='L' ;;
+        auto-review) panel='A' ;; gpt-5.5) panel='C' ;; gpt-5.4) panel='5' ;;
+        gpt-5.4-mini) panel='M' ;; spark) panel='R' ;; gemini) panel='G' ;;
         kimi) panel='K' ;; deepseek) panel='D' ;; glm) panel='Z' ;; *) panel='' ;;
       esac
       ;;
@@ -159,7 +161,7 @@ if [ "$cap" -le 0 ]; then
   case "$model_id" in
     *1m*|*"[1m]"*)     cap=1000000 ;;
     *fable*|*mythos*)  cap=1000000 ;;
-    *opus-4-6*|*opus-4-7*|*opus-4-8*) cap=1000000 ;;
+    *opus-4-6*|*opus-4-7*|*opus-4-8*|*opus-5*) cap=1000000 ;;
     *)                 cap=200000 ;;
   esac
   shopt -u nocasematch

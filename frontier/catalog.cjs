@@ -2,8 +2,8 @@
 // Maestro Frontier — built-in model/preset catalog.
 //
 // Runtime adapters are derived here so roster, CLI validation, dispatch, and
-// future composition code share one source of truth. Optional Codex models
-// become selectable only when their explicit model-id setting is present.
+// future composition code share one source of truth. Current Codex models use
+// pinned first-party ids; explicit settings can override Sol/Terra/Luna.
 
 'use strict';
 
@@ -13,6 +13,12 @@ const path = require('path');
 
 const MODEL_ALIASES = Object.freeze({
   chatgpt: 'gpt-5.5',
+  'gpt-5.6': 'sol',
+  'gpt-5.6-sol': 'sol',
+  'gpt-5.6-terra': 'terra',
+  'gpt-5.6-luna': 'luna',
+  'codex-auto-review': 'auto-review',
+  'gpt-5.3-codex-spark': 'spark',
 });
 
 const PRESET_ALIASES = Object.freeze({
@@ -23,6 +29,19 @@ const OPTIONAL_CODEX_MODEL_ENV = Object.freeze({
   terra: 'MAESTRO_FRONTIER_MODEL_TERRA',
   luna: 'MAESTRO_FRONTIER_MODEL_LUNA',
   sol: 'MAESTRO_FRONTIER_MODEL_SOL',
+});
+
+const EFFORT_LEVELS = Object.freeze(['low', 'medium', 'high', 'xhigh', 'max', 'ultra']);
+const CLAUDE_EFFORTS = Object.freeze(['low', 'medium', 'high', 'xhigh', 'max']);
+const CODEX_EFFORTS = Object.freeze({
+  sol: Object.freeze(['low', 'medium', 'high', 'xhigh', 'max', 'ultra']),
+  terra: Object.freeze(['low', 'medium', 'high', 'xhigh', 'max', 'ultra']),
+  luna: Object.freeze(['low', 'medium', 'high', 'xhigh', 'max']),
+  'auto-review': Object.freeze(['low', 'medium', 'high', 'xhigh', 'max', 'ultra']),
+  'gpt-5.5': Object.freeze(['low', 'medium', 'high', 'xhigh']),
+  'gpt-5.4': Object.freeze(['low', 'medium', 'high', 'xhigh']),
+  'gpt-5.4-mini': Object.freeze(['low', 'medium', 'high', 'xhigh']),
+  spark: Object.freeze(['low', 'medium', 'high', 'xhigh']),
 });
 
 // Optional model ids become argv values for a local Codex invocation. Keep
@@ -91,18 +110,19 @@ const CODEX_ENV_PASSTHROUGH = Object.freeze({
   CODEX_HOME: 'CODEX_HOME',
 });
 
-// These records are declarative metadata only. In particular, Terra/Luna/SOL
-// have no fallback model string: their `modelEnv` is the sole source of a
-// launch model id.
+// These records are declarative metadata only. Current first-party Codex
+// model ids are pinned defaults; the existing Terra/Luna/SOL environment
+// settings remain optional overrides for compatible custom backends.
 const MODEL_SPECS = Object.freeze([
   {
-    id: 'opus', label: 'Opus 4.8', backend: 'claude', binEnv: 'MAESTRO_CLAUDE_BIN', binDefault: 'claude',
-    baseArgs: () => claudeArgs(), promptVia: 'stdin', webTools: false, output: 'stdout', parse: 'claude-json',
+    id: 'opus', label: 'Opus 5', backend: 'claude', binEnv: 'MAESTRO_CLAUDE_BIN', binDefault: 'claude',
+    baseArgs: () => claudeArgs('claude-opus-5'), promptVia: 'stdin', webTools: false, output: 'stdout', parse: 'claude-json',
+    efforts: CLAUDE_EFFORTS,
   },
   {
     id: 'gpt-5.5', label: 'GPT-5.5', backend: 'codex', binEnv: 'MAESTRO_CODEX_BIN', binDefault: 'codex',
     baseArgs: () => codexArgs('gpt-5.5'), promptVia: 'stdin', webTools: true, output: 'last-message-file', parse: 'text',
-    envPassthrough: CODEX_ENV_PASSTHROUGH,
+    envPassthrough: CODEX_ENV_PASSTHROUGH, efforts: CODEX_EFFORTS['gpt-5.5'],
   },
   {
     id: 'gemini', label: 'Gemini 3.1 Pro', backend: 'gemini', binEnv: 'MAESTRO_GEMINI_BIN', binDefault: 'gemini',
@@ -112,11 +132,12 @@ const MODEL_SPECS = Object.freeze([
   {
     id: 'fable', label: 'Fable 5', backend: 'claude', binEnv: 'MAESTRO_CLAUDE_BIN', binDefault: 'claude',
     baseArgs: () => claudeArgs('claude-fable-5'), promptVia: 'stdin', webTools: false, output: 'stdout', parse: 'claude-json',
-    costTier: 'subscription-until', freeUntil: '2026-07-07',
+    costTier: 'subscription-until', freeUntil: '2026-07-07', efforts: CLAUDE_EFFORTS,
   },
   {
     id: 'sonnet-5', label: 'Sonnet 5', backend: 'claude', binEnv: 'MAESTRO_CLAUDE_BIN', binDefault: 'claude',
     baseArgs: () => claudeArgs('claude-sonnet-5'), promptVia: 'stdin', webTools: false, output: 'stdout', parse: 'claude-json',
+    efforts: CLAUDE_EFFORTS,
   },
   {
     id: 'glm', label: 'GLM 5.2', backend: 'claude', binEnv: 'MAESTRO_CLAUDE_BIN', binDefault: 'claude',
@@ -158,25 +179,48 @@ const MODEL_SPECS = Object.freeze([
     envFrom: cnAuthEnvFrom('DEEPSEEK_API_KEY'),
   },
   {
-    id: 'terra', label: 'Terra', backend: 'codex', binEnv: 'MAESTRO_CODEX_BIN', binDefault: 'codex',
+    id: 'terra', label: 'GPT-5.6 Terra', backend: 'codex', binEnv: 'MAESTRO_CODEX_BIN', binDefault: 'codex',
     modelEnv: OPTIONAL_CODEX_MODEL_ENV.terra,
+    modelDefault: 'gpt-5.6-terra',
     baseArgs: modelId => codexArgs(modelId), promptVia: 'stdin', webTools: true, output: 'last-message-file', parse: 'text',
-    envPassthrough: CODEX_ENV_PASSTHROUGH,
+    envPassthrough: CODEX_ENV_PASSTHROUGH, efforts: CODEX_EFFORTS.terra,
     smoke: { supported: true, plan: 'codex-read-only' },
   },
   {
-    id: 'luna', label: 'Luna', backend: 'codex', binEnv: 'MAESTRO_CODEX_BIN', binDefault: 'codex',
+    id: 'luna', label: 'GPT-5.6 Luna', backend: 'codex', binEnv: 'MAESTRO_CODEX_BIN', binDefault: 'codex',
     modelEnv: OPTIONAL_CODEX_MODEL_ENV.luna,
+    modelDefault: 'gpt-5.6-luna',
     baseArgs: modelId => codexArgs(modelId), promptVia: 'stdin', webTools: true, output: 'last-message-file', parse: 'text',
-    envPassthrough: CODEX_ENV_PASSTHROUGH,
+    envPassthrough: CODEX_ENV_PASSTHROUGH, efforts: CODEX_EFFORTS.luna,
     smoke: { supported: true, plan: 'codex-read-only' },
   },
   {
-    id: 'sol', label: 'SOL', backend: 'codex', binEnv: 'MAESTRO_CODEX_BIN', binDefault: 'codex',
+    id: 'sol', label: 'GPT-5.6 Sol', backend: 'codex', binEnv: 'MAESTRO_CODEX_BIN', binDefault: 'codex',
     modelEnv: OPTIONAL_CODEX_MODEL_ENV.sol,
+    modelDefault: 'gpt-5.6-sol',
     baseArgs: modelId => codexArgs(modelId), promptVia: 'stdin', webTools: true, output: 'last-message-file', parse: 'text',
-    envPassthrough: CODEX_ENV_PASSTHROUGH,
+    envPassthrough: CODEX_ENV_PASSTHROUGH, efforts: CODEX_EFFORTS.sol,
     smoke: { supported: true, plan: 'codex-read-only' },
+  },
+  {
+    id: 'auto-review', label: 'Codex Auto Review', backend: 'codex', binEnv: 'MAESTRO_CODEX_BIN', binDefault: 'codex',
+    baseArgs: () => codexArgs('codex-auto-review'), promptVia: 'stdin', webTools: true, output: 'last-message-file', parse: 'text',
+    envPassthrough: CODEX_ENV_PASSTHROUGH, efforts: CODEX_EFFORTS['auto-review'],
+  },
+  {
+    id: 'gpt-5.4', label: 'GPT-5.4', backend: 'codex', binEnv: 'MAESTRO_CODEX_BIN', binDefault: 'codex',
+    baseArgs: () => codexArgs('gpt-5.4'), promptVia: 'stdin', webTools: true, output: 'last-message-file', parse: 'text',
+    envPassthrough: CODEX_ENV_PASSTHROUGH, efforts: CODEX_EFFORTS['gpt-5.4'],
+  },
+  {
+    id: 'gpt-5.4-mini', label: 'GPT-5.4 Mini', backend: 'codex', binEnv: 'MAESTRO_CODEX_BIN', binDefault: 'codex',
+    baseArgs: () => codexArgs('gpt-5.4-mini'), promptVia: 'stdin', webTools: true, output: 'last-message-file', parse: 'text',
+    envPassthrough: CODEX_ENV_PASSTHROUGH, efforts: CODEX_EFFORTS['gpt-5.4-mini'],
+  },
+  {
+    id: 'spark', label: 'GPT-5.3 Codex Spark', backend: 'codex', binEnv: 'MAESTRO_CODEX_BIN', binDefault: 'codex',
+    baseArgs: () => codexArgs('gpt-5.3-codex-spark'), promptVia: 'stdin', webTools: true, output: 'last-message-file', parse: 'text',
+    envPassthrough: CODEX_ENV_PASSTHROUGH, efforts: CODEX_EFFORTS.spark,
   },
 ]);
 
@@ -291,7 +335,7 @@ function effectiveBin(spec, env) {
 }
 
 function configured(spec, values) {
-  return !spec.modelEnv || !!values[spec.modelEnv];
+  return !spec.modelEnv || !!values[spec.modelEnv] || !!spec.modelDefault;
 }
 
 function smokeSupported(spec) {
@@ -299,7 +343,7 @@ function smokeSupported(spec) {
 }
 
 function adapterFor(spec, env, values) {
-  const modelValue = spec.modelEnv ? values[spec.modelEnv] : undefined;
+  const modelValue = spec.modelEnv ? (values[spec.modelEnv] || spec.modelDefault) : undefined;
   const adapter = {
     model: spec.id,
     backend: spec.backend,
@@ -317,11 +361,12 @@ function adapterFor(spec, env, values) {
   if (spec.envPassthrough) adapter.envPassthrough = cloneObject(spec.envPassthrough);
   if (spec.costTier) adapter.costTier = spec.costTier;
   if (spec.freeUntil) adapter.freeUntil = spec.freeUntil;
+  if (spec.efforts) adapter.efforts = spec.efforts.slice();
   return adapter;
 }
 
 function modelMetadata(spec, env, values) {
-  const needsModel = !!spec.modelEnv;
+  const needsModel = !!spec.modelEnv && !spec.modelDefault;
   const modelConfigured = configured(spec, values);
   const selectable = modelConfigured && smokeSupported(spec);
   return {
@@ -332,6 +377,7 @@ function modelMetadata(spec, env, values) {
     readOnly: true,
     selectable,
     configured: modelConfigured,
+    efforts: spec.efforts ? spec.efforts.slice() : [],
     requiredEnv: [
       ...(needsModel ? [spec.modelEnv] : []),
       ...new Set(Object.values(spec.envFrom || {})),
@@ -404,10 +450,35 @@ function validateCatalog(catalog) {
   if (!catalog || typeof catalog !== 'object') return { ok: false, errors: ['catalog is not an object'] };
   const models = catalog.models || {};
   const adapters = catalog.adapters || {};
+  for (const [id, model] of Object.entries(models)) {
+    const efforts = model && model.efforts;
+    if (!Array.isArray(efforts)) {
+      errors.push('model effort metadata is not an array: ' + id);
+      continue;
+    }
+    for (const effort of efforts) {
+      if (!EFFORT_LEVELS.includes(effort)) errors.push('model has unknown effort: ' + id + '/' + effort);
+    }
+    if (new Set(efforts).size !== efforts.length) errors.push('model has duplicate effort: ' + id);
+  }
   for (const [id, adapter] of Object.entries(adapters)) {
     if (!hasOwn(models, id)) errors.push('adapter has no model metadata: ' + id);
     if (!models[id] || !models[id].selectable) errors.push('adapter is not selectable: ' + id);
     if (!isReadOnlyAdapter(adapter)) errors.push('adapter is not read-only: ' + id);
+    const efforts = adapter && adapter.efforts;
+    if (efforts !== undefined && !Array.isArray(efforts)) {
+      errors.push('adapter effort metadata is not an array: ' + id);
+    } else if (Array.isArray(efforts)) {
+      for (const effort of efforts) {
+        if (!EFFORT_LEVELS.includes(effort)) errors.push('adapter has unknown effort: ' + id + '/' + effort);
+      }
+      if (new Set(efforts).size !== efforts.length) errors.push('adapter has duplicate effort: ' + id);
+      if (models[id] && JSON.stringify(efforts) !== JSON.stringify(models[id].efforts)) {
+        errors.push('adapter effort metadata differs from model: ' + id);
+      }
+    } else if (models[id] && models[id].efforts.length) {
+      errors.push('adapter effort metadata missing: ' + id);
+    }
   }
   for (const [preset, members] of Object.entries(catalog.presets || {})) {
     if (!Array.isArray(members) || members.length === 0 || members.length > 8) {
@@ -437,6 +508,7 @@ function listCatalogModels(catalog) {
     readOnly: model.readOnly,
     selectable: model.selectable,
     configured: model.configured,
+    efforts: model.efforts.slice(),
     requiredEnv: model.requiredEnv.slice(),
     smoke: model.smoke && { ...model.smoke },
   }));
@@ -489,7 +561,7 @@ function modelReadiness(modelId, catalog, opts) {
   const binReady = typeof find === 'function' ? !!find(model.bin) : !!findOnPath(model.bin, env);
   const missing = model.requiredEnv.filter(name => {
     // Explicit model ids may be supplied by ~/.codex/.env; provider auth may
-    // not. Do not mistake a configured optional model for configured auth.
+    // not. Do not mistake a configured model override for configured auth.
     if (Object.values(OPTIONAL_CODEX_MODEL_ENV).includes(name)) return !model.configured;
     return !(typeof env[name] === 'string' && env[name].trim());
   });
@@ -522,6 +594,7 @@ module.exports = {
   MODEL_ALIASES,
   PRESET_ALIASES,
   OPTIONAL_CODEX_MODEL_ENV,
+  EFFORT_LEVELS,
   isSafeModelId,
   BUILTIN_PRESETS,
   canonicalModelId,

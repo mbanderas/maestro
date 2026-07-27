@@ -21,7 +21,11 @@ function runHook(payload, env) {
   // Hermetic: default to an empty registry dir and strip the
   // coordinated-child suppress signals so host env never leaks into a case;
   // cases opt in explicitly via the `env` arg.
-  const base = { ...process.env, MAESTRO_FRONTIER_RUNS_DIR: emptyRuns };
+  const base = {
+    ...process.env,
+    MAESTRO_DISCIPLINE: 'on',
+    MAESTRO_FRONTIER_RUNS_DIR: emptyRuns
+  };
   delete base.MAESTRO_FRONTIER_RUN_ID;
   delete base.FUSION_DEPTH;
   return execFileSync(process.execPath, [HOOK], {

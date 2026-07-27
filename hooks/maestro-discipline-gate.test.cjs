@@ -27,14 +27,14 @@ function check(name, cond) {
 
 console.log('maestro-discipline-gate tests');
 
-// 1. Default (no config, no env) -> enabled (fail-safe bias).
-check('default -> enabled', gate.disciplineEnabled() === true);
+// 1. Default (no config, no env) -> disabled.
+check('default -> disabled', gate.disciplineEnabled() === false);
 
 // 2. config.json discipline:false -> disabled; back on -> enabled.
-settings.setDiscipline('off');
-check('config off -> disabled', gate.disciplineEnabled() === false);
 settings.setDiscipline('on');
 check('config on -> enabled', gate.disciplineEnabled() === true);
+settings.setDiscipline('off');
+check('config off -> disabled', gate.disciplineEnabled() === false);
 
 // 3. env override wins over config.
 settings.setDiscipline('on');

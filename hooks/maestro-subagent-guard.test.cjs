@@ -22,7 +22,11 @@ function runHook(payload) {
   return execFileSync(process.execPath, [HOOK], {
     input: JSON.stringify(payload),
     encoding: 'utf8',
-    env: { ...process.env, MAESTRO_GUARD_STATE_DIR: stateDir }
+    env: {
+      ...process.env,
+      MAESTRO_DISCIPLINE: 'on',
+      MAESTRO_GUARD_STATE_DIR: stateDir
+    }
   });
 }
 
@@ -41,25 +45,6 @@ const writerVerifiedTx = transcript('writer-verified.jsonl', [
   { type: 'assistant', message: { content: [{ type: 'tool_use', name: 'Write', input: { file_path: 'a.ts' } }] } },
   { type: 'assistant', message: { content: [{ type: 'tool_use', name: 'Bash', input: { command: 'npx tsc --noEmit && npx eslint . --quiet' } }] } },
   { type: 'assistant', message: { content: [{ type: 'text', text: 'Done, checks pass. VERIFIED.' }] } }
-]);
-
-const verifyNoTokenTx = transcript('verify-notoken.jsonl', [
-  { type: 'assistant', message: { content: [{ type: 'tool_use', name: 'Write', input: { file_path: 'a.ts' } }] } },
-  { type: 'assistant', message: { content: [{ type: 'tool_use', name: 'Bash', input: { command: 'npx tsc --noEmit' } }] } },
-  { type: 'assistant', message: { content: [{ type: 'text', text: 'All checks pass, work complete.' }] } }
-]);
-
-const tokenEarlyNotFinalTx = transcript('token-early.jsonl', [
-  { type: 'assistant', message: { content: [{ type: 'tool_use', name: 'Edit', input: { file_path: 'a.ts' } }] } },
-  { type: 'assistant', message: { content: [{ type: 'text', text: 'Interim status: VERIFIED for module a.' }] } },
-  { type: 'assistant', message: { content: [{ type: 'tool_use', name: 'Bash', input: { command: 'npx tsc --noEmit' } }] } },
-  { type: 'assistant', message: { content: [{ type: 'text', text: 'Wrapped up, everything looks good.' }] } }
-]);
-
-const lowercaseTokenTx = transcript('lowercase-token.jsonl', [
-  { type: 'assistant', message: { content: [{ type: 'tool_use', name: 'Edit', input: { file_path: 'a.ts' } }] } },
-  { type: 'assistant', message: { content: [{ type: 'tool_use', name: 'Bash', input: { command: 'npx tsc --noEmit' } }] } },
-  { type: 'assistant', message: { content: [{ type: 'text', text: 'I verified everything, done.' }] } }
 ]);
 
 const bashWriterTx = transcript('bash-writer.jsonl', [
@@ -139,22 +124,9 @@ check('warning is valid hook JSON', (() => {
   } catch { return false; }
 })());
 
-// 4. Writer with verification and status token: silent.
+// 4. Writer with verification: silent.
 out = runHook({ agent_transcript_path: writerVerifiedTx });
-check('writer with verify + status token -> silent', out === '');
-
-// 4b. Writer verified but final text has no status token: warns.
-out = runHook({ agent_transcript_path: verifyNoTokenTx });
-check('writer verified, no status token -> warns', out.includes('status token'));
-check('no-token warning omits verify warning', !out.includes('No type-check/lint/test'));
-
-// 4c. Token in earlier message but not in final text: still warns.
-out = runHook({ agent_transcript_path: tokenEarlyNotFinalTx });
-check('token early but not final -> warns', out.includes('status token'));
-
-// 4d. Lowercase "verified" in prose is not a status token: warns.
-out = runHook({ agent_transcript_path: lowercaseTokenTx });
-check('lowercase token -> warns', out.includes('status token'));
+check('writer with verify -> silent', out === '');
 
 // 5. Bash-pattern mutation (git commit) counts as writer.
 out = runHook({ agent_transcript_path: bashWriterTx });

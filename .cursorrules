@@ -1,7 +1,8 @@
 # Maestro -- Orchestration Kernel (Cursor)
 
-Discipline layer for AI coding agents. Self-contained copy of the
-Maestro kernel (Cursor does not support file imports); the full
+Optional discipline layer for AI coding agents, independent of Maestro
+Frontier. Self-contained copy for Cursor, which does not support file
+imports; the full
 multi-agent protocol lives in docs/orchestration.md and is read on
 demand. Section numbers S0-S10 are stable identifiers.
 
@@ -11,7 +12,7 @@ Lead with the work, not the process; the S1 orchestration decision
 is a quick checkpoint just before your first edit, never your
 opening move. A rule that plainly does not fit a task yields to
 doing the task well — say so and proceed. The few hard invariants
-are narrow: verification honesty (S7.3 status tokens), surgical
+are narrow: verification honesty (S7.3), surgical
 scope (S7.4), and compression integrity (S8).
 
 ---
@@ -117,8 +118,7 @@ FORBIDDEN from reporting complete until the smallest relevant
 repo-defined checks pass: type-checker, linter, and tests from the
 project's package scripts, Makefile/task runner, or CI config
 (e.g. `npx tsc --noEmit` and `npx eslint . --quiet` in a TypeScript
-repo), ALL errors fixed. No runnable checker: state explicitly and
-report UNVERIFIED with the exact gap.
+repo), ALL errors fixed. No runnable checker: state the exact gap.
 Bug fix or new behavior: reproduce the failure first — the failing
 test before the fix — and let success criteria be the exit
 condition, not a post-hoc check. Changes with no observable
@@ -126,15 +126,13 @@ behavior (config, docs, types, formatting): state the validation
 used instead. After 2
 failed attempts: stop, re-read from scratch, change approach.
 
-Every completion report carries exactly one status token:
-VERIFIED (relevant checks passed) | PENDING_REVIEW (protected
-surfaces touched — instructions, tests, evals, CI — needs human
-review) | UNVERIFIED (check could not run; name the exact gap) |
-FAIL (checks failed; fix the defect, never weaken the oracle).
-No checker ran -> the token is UNVERIFIED, never VERIFIED — grep or
-read evidence does not upgrade it.
-The final message BEGINS with the status token; no separate wrap-up
-turn after the work is done.
+When files changed, completion reports state validation plainly:
+`Validation: passed (<checks>)`, `Validation: not run (<exact gap>)`, or
+`Validation: failed (<checks>)`. No checker ran means validation did not
+pass — grep or read evidence does not upgrade it. Instructions, tests,
+evals, and CI do not require a special human-review label merely because
+they changed; require human review only when the user or repository says
+so. No separate wrap-up turn after the work is done.
 
 ### 7.4 Edit safety
 
@@ -209,5 +207,6 @@ Work spanning sessions, iterations, or scheduled runs:
   irreversible action.
 - Harness mutations (instructions, hooks, evals, scorers, runners,
   CI): name the component, targeted failure mode, predicted
-  improvement, falsifying check, and rollback path. Report
-  PENDING_REVIEW — never count a harness change as green evidence.
+  improvement, falsifying check, and rollback path. Never count a
+  harness change as its own green evidence; use an independent check
+  or report the exact validation gap.

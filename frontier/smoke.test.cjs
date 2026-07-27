@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Tests for the optional Codex release smoke gate. All invocations inject a
+// Tests for the current Codex release smoke gate. All invocations inject a
 // stub dispatcher; this suite must never launch a real Codex process.
 
 'use strict';
@@ -37,15 +37,13 @@ const missingEnvFile = path.join(tmp, 'missing.env');
     const noneReport = await smokeConfiguredOptionalCodexModels(none, {
       spawnOne: async () => { noneCalls++; return { ok: true, content: SMOKE_SUCCESS }; },
     });
-    check('unconfigured aliases make no external calls', noneCalls === 0);
-    check('unconfigured aliases are blocked but do not fail the release gate',
-      noneReport.releaseReady === true && noneReport.configuredCount === 0 &&
-      noneReport.models.every(model => !model.configured && !model.attempted && !model.available));
+    check('current aliases are smoked through the injected dispatcher', noneCalls === 3);
+    check('current aliases pass when every exact response is OK',
+      noneReport.releaseReady === true && noneReport.configuredCount === 3 &&
+      noneReport.models.every(model => model.configured && model.attempted && model.available));
     const noneText = formatSmokeReport(noneReport);
-    check('unconfigured report gives safe setting-name remediation',
-      noneText.includes('set ' + OPTIONAL_CODEX_MODEL_ENV.terra) &&
-      noneText.includes('set ' + OPTIONAL_CODEX_MODEL_ENV.luna) &&
-      noneText.includes('set ' + OPTIONAL_CODEX_MODEL_ENV.sol));
+    check('current report needs no model-id configuration remediation',
+      !noneText.includes('remediation: set '));
 
     const configuredId = 'provider/terra@2026-07';
     const one = buildRuntimeCatalog({
@@ -60,19 +58,19 @@ const missingEnvFile = path.join(tmp, 'missing.env');
         return { ok: true, content: SMOKE_SUCCESS };
       },
     });
-    check('configured smoke invokes only the configured alias',
-      calls.length === 1 && calls[0].adapter.model === 'terra');
+    check('current smoke invokes Terra, Luna, and Sol',
+      calls.length === 3 && calls.map(call => call.adapter.model).join(',') === 'terra,luna,sol');
     check('configured smoke uses the minimal smoke prompt and guarded depth',
-      calls.length === 1 && calls[0].prompt === SMOKE_PROMPT && calls[0].opts.fusionDepth === 3);
+      calls.length === 3 && calls.every(call => call.prompt === SMOKE_PROMPT && call.opts.fusionDepth === 3));
     check('configured smoke retains the exact configured Codex model argv',
-      calls.length === 1 && calls[0].adapter.baseArgs.join('\u0000') === [
+      calls.length === 3 && calls[0].adapter.baseArgs.join('\u0000') === [
         'exec', '--skip-git-repo-check', '--sandbox', 'read-only', '--ask-for-approval', 'never',
         '-m', configuredId, '--color', 'never',
       ].join('\u0000'));
-    check('successful configured smoke qualifies only that alias as available',
-      oneReport.releaseReady === true && oneReport.configuredCount === 1 &&
+    check('successful current smoke qualifies all three selectors as available',
+      oneReport.releaseReady === true && oneReport.configuredCount === 3 &&
       oneReport.models.find(model => model.id === 'terra').available === true &&
-      oneReport.models.filter(model => model.id !== 'terra').every(model => !model.attempted && !model.available));
+      oneReport.models.every(model => model.attempted && model.available));
 
     const wrongSuccess = await smokeConfiguredOptionalCodexModels(one, {
       spawnOne: async () => ({ ok: true, content: 'NOT_OK' }),
@@ -91,7 +89,7 @@ const missingEnvFile = path.join(tmp, 'missing.env');
     check('smoke report never prints configured ids or injected error text',
       !formatSmokeReport(failed).includes(configuredId) && !JSON.stringify(failed).includes(configuredId) &&
       !noneText.includes(configuredId));
-    check('optional aliases are a fixed declared set',
+    check('smoked selectors are a fixed declared set',
       OPTIONAL_CODEX_MODEL_IDS.join(',') === 'terra,luna,sol');
   } finally {
     fs.rmSync(tmp, { recursive: true, force: true });

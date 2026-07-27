@@ -322,7 +322,7 @@ const RUNTIME_CATALOG = buildRuntimeCatalog();
 const DEFAULTS = {
   // Model metadata, spawn adapters, and built-in stage/preset maps are all
   // catalog-owned. `models` is display-safe; adapters are launch-ready only
-  // for configured optional Codex model ids.
+  // for current models and any safe local model-id overrides.
   models: RUNTIME_CATALOG.models,
   adapters: RUNTIME_CATALOG.adapters,
   presets: RUNTIME_CATALOG.presets,
@@ -503,7 +503,7 @@ function costAdvisory(models, cfg, now = new Date()) {
   if (flagged.length === 0) return null;
   return `[frontier] ${flagged.join(', ')} draws Usage Credits after ` +
          `${cfg.adapters[flagged[0]].freeUntil} (subscription no longer covers it) ` +
-         `and burns usage faster than Opus 4.8.`;
+         `and burns usage faster than Opus 5.`;
 }
 
 /**
@@ -543,6 +543,7 @@ module.exports = {
   resolvePanel,
   resolveJudgeModel,
   resolveSynthModel,
+  resolveRunModels,
   validateMode,
   validatePreset,
   validateModel,

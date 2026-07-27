@@ -152,12 +152,15 @@ function main() {
     vgOut = execFileSync(process.execPath, [VGHOOK], {
       input: JSON.stringify({ session_id: 'cli-vg', transcript_path: txFile, cwd: tmpBase }),
       encoding: 'utf8',
-      env: Object.assign({}, env, { MAESTRO_VERIFY_GATE_STATE_DIR: vgState }),
+      env: Object.assign({}, env, {
+        MAESTRO_DISCIPLINE: 'on',
+        MAESTRO_VERIFY_GATE_STATE_DIR: vgState,
+      }),
     });
   } catch {}
   check('verify-gate hook blocks under CLI-written block',
     (() => { try { return JSON.parse(vgOut).decision === 'block'; } catch { return false; } })());
-  run(['set', 'verify', 'warn']); // reset to default
+  run(['set', 'verify', 'off']); // reset to default
 
   try { fs.rmSync(tmpBase, { recursive: true, force: true }); } catch {}
   if (failures > 0) { console.error('\n' + failures + ' test(s) failed.'); process.exit(1); }

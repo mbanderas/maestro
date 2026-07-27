@@ -12,8 +12,8 @@
 // unaffected — this gate is symmetric with Frontier's clean off only for
 // the hook half (see README "Discipline layer toggle").
 //
-// Fail-safe: any error resolving the setting returns ENABLED. A toggle
-// read that cannot be trusted must never silently drop enforcement.
+// Fail-open: any error resolving the optional setting returns DISABLED.
+// Frontier must remain usable when the policy pack cannot read config.
 //
 // .cjs so Node treats it as CommonJS regardless of any "type": "module"
 // package.json in a parent directory of the install location.
@@ -28,7 +28,7 @@ function disciplineEnabled() {
     const cfg = require('../settings/config.cjs');
     return cfg.readDiscipline().enabled !== false;
   } catch {
-    return true;
+    return false;
   }
 }
 

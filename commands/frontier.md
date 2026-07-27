@@ -1,6 +1,6 @@
 ---
 description: Maestro Frontier local multi-CLI engine: arm or disarm it, inspect the catalog, or compose and choose a read-only model panel
-argument-hint: "<off | single <model> | fusion <preset> | compose --models <model>,<model> ... | catalog | status | run <prompt> | adopt | preset ... | roster>"
+argument-hint: "<off | single <model> | fusion <preset> | effort <level|auto> | compose --models <model>,<model> ... | catalog | status | run <prompt> | adopt | preset ... | roster>"
 allowed-tools: Bash, Read
 ---
 
@@ -22,9 +22,9 @@ files by hand.
 
 ```bash
 node "${CLAUDE_PLUGIN_ROOT}/bin/maestro.cjs" frontier mode off
-node "${CLAUDE_PLUGIN_ROOT}/bin/maestro.cjs" frontier mode single --model <model>
-node "${CLAUDE_PLUGIN_ROOT}/bin/maestro.cjs" frontier mode fusion --preset <preset>
-node "${CLAUDE_PLUGIN_ROOT}/bin/maestro.cjs" frontier mode fusion --preset custom --models <model>,<model>
+node "${CLAUDE_PLUGIN_ROOT}/bin/maestro.cjs" frontier mode single --model <model> [--effort <level>]
+node "${CLAUDE_PLUGIN_ROOT}/bin/maestro.cjs" frontier mode fusion --preset <preset> [--effort <level>]
+node "${CLAUDE_PLUGIN_ROOT}/bin/maestro.cjs" frontier mode fusion --preset custom --models <model>,<model> [--effort <level>]
 ```
 
 Use `mode` for a known catalog model or preset. For a custom panel, prefer
@@ -36,8 +36,9 @@ Use `mode` for a known catalog model or preset. For a custom panel, prefer
 node "${CLAUDE_PLUGIN_ROOT}/bin/maestro.cjs" frontier catalog
 node "${CLAUDE_PLUGIN_ROOT}/bin/maestro.cjs" frontier catalog --json
 node "${CLAUDE_PLUGIN_ROOT}/bin/maestro.cjs" frontier compose --models <model>,<model> --dry-run
-node "${CLAUDE_PLUGIN_ROOT}/bin/maestro.cjs" frontier compose --models <model>,<model> --judge <model> --synth <model>
+node "${CLAUDE_PLUGIN_ROOT}/bin/maestro.cjs" frontier compose --models <model>,<model> --judge <model> --synth <model> --effort <level>
 node "${CLAUDE_PLUGIN_ROOT}/bin/maestro.cjs" frontier compose --models <model>,<model> --save <name>
+node "${CLAUDE_PLUGIN_ROOT}/bin/maestro.cjs" frontier effort <auto|low|medium|high|xhigh|max|ultra>
 ```
 
 `frontier catalog` is the source of truth for selectable models, presets,
@@ -45,6 +46,9 @@ aliases, readiness, and required configuration. Do not list or invent model
 IDs in this command. `compose` accepts one to eight comma-separated models;
 `--judge` and `--synth` default to the first panel model. `--dry-run` validates
 without changing state; otherwise `compose` arms the `custom` fusion panel.
+`--effort` persists one validated level for all selected effort-aware Claude
+and Codex members. `frontier effort auto` returns an armed panel to provider
+defaults.
 
 ## Inspect, saved presets, and one-off runs
 
@@ -64,23 +68,23 @@ current scope. `run` is a manual one-off; an armed mode already handles normal
 prompts. `adopt` copies a previously armed legacy global state into this Claude
 Code workspace only when explicitly requested.
 
-## Optional Codex aliases and release gate
+## Current models, overrides, and release gate
 
-Configure optional Codex aliases only through
+`opus` pins Claude Opus 5. Sol, Terra, Luna, GPT-5.5, GPT-5.4, GPT-5.4
+Mini, GPT-5.3 Codex Spark, and Codex Auto Review are built-in Codex selectors.
+Use `frontier catalog` for exact aliases and supported effort levels.
 `MAESTRO_FRONTIER_MODEL_TERRA`, `MAESTRO_FRONTIER_MODEL_LUNA`, and
-`MAESTRO_FRONTIER_MODEL_SOL`. For Codex Desktop, place those settings in
-`~/.codex/.env` and restart/open a new thread. The catalog reports whether an
-optional alias is configured and ready without revealing its configured value.
+`MAESTRO_FRONTIER_MODEL_SOL` remain optional model-ID overrides. For Codex
+Desktop, place overrides in `~/.codex/.env` and restart/open a new thread.
+The catalog never reveals override values.
 
-Before releasing configured optional Codex aliases, run the explicit smoke
-gate:
+Before releasing Sol, Terra, or Luna changes, run the explicit smoke gate:
 
 ```bash
 node "${CLAUDE_PLUGIN_ROOT}/frontier/smoke.cjs"
 ```
 
-It invokes only configured aliases through their normal read-only dispatch
-path. No configured alias means the gate has nothing external to run.
+It invokes those selectors through their normal read-only dispatch path.
 
 ## Safety and reporting
 

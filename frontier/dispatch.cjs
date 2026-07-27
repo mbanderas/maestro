@@ -97,11 +97,23 @@ function classifyStderr(stderr) {
   return 'subprocess error';
 }
 
+function effortArgs(adapter, effort) {
+  if (!effort || !adapter || !Array.isArray(adapter.efforts)) return { ok: true, args: [] };
+  if (!adapter.efforts.includes(effort)) {
+    return { ok: false, error: 'unsupported effort "' + effort + '" for ' + adapter.model };
+  }
+  if (adapter.backend === 'claude') return { ok: true, args: ['--effort', effort] };
+  if (adapter.backend === 'codex') {
+    return { ok: true, args: ['-c', 'model_reasoning_effort=' + effort] };
+  }
+  return { ok: true, args: [] };
+}
+
 /**
  * Spawn one adapter process and return a PanelResponse (never rejects).
  * @param {string} prompt
  * @param {object} adapter  — DEFAULTS.adapters[id] shape
- * @param {{ timeoutMs?: number, fusionDepth?: number }} [opts]
+ * @param {{ timeoutMs?: number, fusionDepth?: number, effort?: string }} [opts]
  * @returns {Promise<import('./schema.cjs').PanelResponse>}
  */
 function spawnOne(prompt, adapter, opts) {
@@ -130,7 +142,18 @@ function spawnOne(prompt, adapter, opts) {
       (!binExt || binExt === '.cmd' || binExt === '.bat');
 
     // program args: base flags (+ optional output file) (+ optional prompt arg)
-    const baseArgs = Array.isArray(adapter.baseArgs) ? adapter.baseArgs : [];
+    const effort = effortArgs(adapter, opts && opts.effort);
+    if (!effort.ok) {
+      return resolve({
+        model: adapter.model, content: '', ok: false,
+        durationMs: Date.now() - start, tokensEst: 0,
+        error: effort.error,
+      });
+    }
+    const baseArgs = [
+      ...(Array.isArray(adapter.baseArgs) ? adapter.baseArgs : []),
+      ...effort.args,
+    ];
     if (isWinShim && (unsafeForWinShimBaseArg(adapter.bin) || baseArgs.some(unsafeForWinShimBaseArg))) {
       return resolve({
         model: adapter.model, content: '', ok: false,
@@ -341,7 +364,7 @@ function spawnOne(prompt, adapter, opts) {
  * @param {string} prompt
  * @param {string[]} modelIds
  * @param {{ adapters: object, timeoutMs: number, concurrency: number }} cfg
- * @param {{ fusionDepth?: number, concurrency?: number, onProgress?: function }} [opts]
+ * @param {{ fusionDepth?: number, concurrency?: number, onProgress?: function, effort?: string }} [opts]
  * @returns {Promise<import('./schema.cjs').PanelResponse[]>}
  */
 async function fanOut(prompt, modelIds, cfg, opts) {
@@ -360,6 +383,7 @@ async function fanOut(prompt, modelIds, cfg, opts) {
     return spawnOne(prompt, adapter, {
       timeoutMs: (cfg && cfg.timeoutMs) || 180000,
       fusionDepth,
+      effort: opts && opts.effort,
     }).then((result) => {
       done++;
       if (onProgress) {
@@ -390,4 +414,5 @@ module.exports = {
   unsafeForWinShimBaseArg,
   buildChildEnv,
   classifyStderr,
+  effortArgs,
 };

@@ -6,8 +6,8 @@ fixtures, and benchmark summaries remain the source of truth.
 
 ## First Stops
 
-- `AGENTS.md` is the always-on doctrine kernel loaded by agent
-  runtimes. Do not re-read it when it is already in context.
+- `AGENTS.md` is the optional discipline kernel installed only with
+  `--with-discipline`. Do not re-read it when it is already in context.
 - `README.md` is the user-facing product narrative, install guide,
   runtime adapter map, hook docs, and benchmark summary. Use this map
   first when you only need repo navigation.

@@ -5,7 +5,7 @@
 Maestro ships an optional `SubagentStop` hook for Claude Code that
 enforces the Section 7.3 verification rule structurally: no prompt
 reminder, no relying on the model to police itself. When a subagent
-stops, the hook checks three things and emits a soft warning if any
+stops, the hook checks two things and emits a soft warning if either
 fails:
 
 1. Are there orphaned `background_tasks` still active? If so, the
@@ -15,11 +15,6 @@ fails:
    must not nag an agent that spawned nothing.
 2. Did a file-modifying subagent run a type-checker, linter, or test
    runner? If not, it likely skipped verification.
-3. Does a file-modifying subagent's final report carry one of the
-   Section 7.3 status tokens (`VERIFIED` / `PENDING_REVIEW` /
-   `UNVERIFIED` / `FAIL`)? Uppercase only; lowercase "verified" in
-   prose is not a status declaration.
-
 Three safety properties keep the warning from doing more harm than
 good (a warning on stop extends the subagent's turn, so a careless
 guard can displace the final report the orchestrator is waiting for):
@@ -35,8 +30,8 @@ guard can displace the final report the orchestrator is waiting for):
   its complete final report, since only the last message is returned
   to the orchestrator.
 
-The hook never blocks. It injects `additionalContext` so the next
-turn sees the warning and can re-verify. Recognized tools include
+The hook blocks the subagent's stop once so its supported feedback channel can
+deliver the warning, then allows the next stop. Recognized tools include
 `tsc --noEmit`, `eslint`, `pytest`, `jest`, `vitest`, `go test`,
 `cargo test`, `npm/pnpm/yarn test`, `ruff check`, `mypy`,
 `prettier --check`, and `biome check`.
@@ -108,7 +103,7 @@ hooks/<name>.test.cjs`).
 | `maestro-loop-guard.cjs` | `Stop` | S10 long-horizon: warns when a looping session (session crons or `ScheduleWakeup` calls) has no `_<task>.md` checkpoint artifact in the working directory, or exceeds the iteration cap (`MAESTRO_LOOP_MAX_ITER`, default 50) |
 | `maestro-phase-scope.cjs` | `PostToolUse` | S7.1 phase scope: warns when more than 5 distinct files (`MAESTRO_PHASE_FILE_CAP`) are modified in a single turn |
 | `maestro-gate-reminder.cjs` | `UserPromptSubmit` | S1 gate: injects a minimal verdict reminder on the first prompt of a session — the live frontier badge + the parseable verdict template + a pointer to `AGENTS.md S1` (~43 tok; the full spec stays in cached doctrine, not re-emitted). Fire-once; opt-out `MAESTRO_GATE_REMINDER=0` |
-| `maestro-verify-gate.cjs` | `Stop` | S7.3 verification: when a session modified files but ran **no** checker (test/lint/tsc) AND stated **no** honest status token (UNVERIFIED/PENDING_REVIEW/FAIL), nudges once. Mode = the persisted `verify` toggle (`settings set verify <off\|warn\|block>`) or the `MAESTRO_VERIFY_GATE` env override: `warn` (default) injects a non-blocking reminder; `block` blocks the Stop once to force a checker run or honest token; `off` disables. A `VERIFIED` claim with no checker still fires (S7.3: no checker → never VERIFIED). Parses both Claude JSONL transcripts and Codex rollouts (format auto-detected from the transcript content), so `block` enforces on the Codex `Stop` event as well. Block-once per session; respects `discipline off` |
+| `maestro-verify-gate.cjs` | `Stop` | Optional S7.3 verification: when a session modified files but ran **no** checker (test/lint/tsc) and stated no plain validation-gap receipt, nudges once. Mode = the persisted `verify` toggle (`settings set verify <off\|warn\|block>`) or the `MAESTRO_VERIFY_GATE` env override: `off` (default) disables; `warn` injects a non-blocking reminder; `block` blocks Stop once until a checker runs or the report states `Validation: not run (<gap>)` / `Validation: failed (<check>)`. Parses both Claude JSONL transcripts and Codex rollouts. Block-once per session; requires `discipline on` |
 | `maestro-gate-telemetry.cjs` | `SessionEnd` | S1 audit (opt-in): logs one JSON line per session with gate decision (single/multi), specialist count, end reason, and token usage (input/output/cache/turns) |
 
 **Privacy (gate telemetry):** the telemetry hook does nothing unless

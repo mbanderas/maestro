@@ -71,13 +71,14 @@ show `SCLI help` so the user sees the valid values.
 
    Then a second `AskUserQuestion` (the first is at the 4-question cap) for
    the remaining persisted toggle, pre-set to current:
-   - verify: `list.verify.values` (`off`, `warn`, `block`) — the S7.3
-     verify-gate Stop hook: `warn` nudges (default), `block` enforces (blocks
-     a Stop that modified files but ran no checker and stated no honest
-     token), `off` disables.
+   - verify: `list.verify.values` (`off`, `warn`, `block`) — the optional S7.3
+     verify-gate Stop hook: `off` is the default, `warn` nudges, and `block`
+     enforces once when files changed without a checker or validation-gap
+     receipt.
 
 3. Frontier follow-ups (only if mode is not `off`):
-   - **single** → one question, `model` = `list.frontier.models` (3, fits);
+   - **single** → page `model` = `list.frontier.models` three at a time with
+     a fourth `More models…` option until every catalog entry is reachable;
      result `single:<id>`.
    - **fusion** → pick from `list.frontier.presets` (named presets + `custom`);
      there are more than 4, so **page them 3 at a time** with a fourth
@@ -109,3 +110,5 @@ node settings/cli.cjs set frontier fusion:opus-gpt --judge opus --synth gpt-5.5
 ```
 
 See [`docs/settings.md`](../docs/settings.md) for the full reference.
+Frontier effort is panel state, not a global settings toggle; manage it with
+`/maestro:frontier effort <auto|low|medium|high|xhigh|max|ultra>`.

@@ -18,7 +18,7 @@
 // verdict, with the parseable template the telemetry oracle keys on.
 // (A 2026-06-12 smoke run favored the verbose variant; that predates the
 // doctrine being reliably cached and is superseded by the 2026-06-22
-// overhead work. Behavior change — PENDING_REVIEW.)
+// overhead work. Behavior change; validate against the benchmark harness.)
 //
 // Payload fields verified against code.claude.com/docs/en/hooks
 // (UserPromptSubmit input: session_id, transcript_path, cwd, prompt;

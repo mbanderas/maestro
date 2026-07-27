@@ -148,6 +148,29 @@ function runTests() {
     check('(g2) synth alias canonical', r2.stdout.includes('"synthModel":"gpt-5.5"'), 'stdout: ' + r2.stdout.trim());
   }
 
+  // (g3) effort validates against the selected model set and persists.
+  {
+    const dir = makeTmpDir();
+    const r1 = run(['mode', 'single', '--model', 'sol', '--effort', 'max'], dir);
+    check('(g3) mode effort exit 0', r1.code === 0, 'exit ' + r1.code + ' stderr: ' + r1.stderr.trim());
+    const r2 = run(['status'], dir);
+    check('(g3) mode effort persisted', r2.stdout.includes('"effort":"max"'), 'stdout: ' + r2.stdout.trim());
+    const r3 = run(['effort', 'medium'], dir);
+    check('(g3) effort subcommand exit 0', r3.code === 0, 'exit ' + r3.code + ' stderr: ' + r3.stderr.trim());
+    check('(g3) effort subcommand updates state',
+      run(['status'], dir).stdout.includes('"effort":"medium"'));
+    const r4 = run(['effort', 'auto'], dir);
+    check('(g3) effort auto exit 0', r4.code === 0, 'exit ' + r4.code + ' stderr: ' + r4.stderr.trim());
+    check('(g3) effort auto removes override',
+      !run(['status'], dir).stdout.includes('"effort"'));
+    const r5 = run(['mode', 'single', '--model', 'gpt-5.5', '--effort', 'max'], dir);
+    check('(g3) unsupported model effort exits 2',
+      r5.code === 2 && r5.stderr.includes('unsupported by: gpt-5.5'), r5.stderr.trim());
+    const r6 = run(['mode', 'single', '--model', 'sol', '--effort', 'extreme'], dir);
+    check('(g3) invalid effort exits 2',
+      r6.code === 2 && r6.stderr.includes('invalid effort'), r6.stderr.trim());
+  }
+
   // (h) adopt: legacy global state -> per-workspace cc-* scope
   {
     const dir = makeTmpDir();
@@ -269,7 +292,10 @@ function runTests() {
     const dir = makeTmpDir();
     const r = run(['roster'], dir);
     check('(l) roster exit 0', r.code === 0, 'exit ' + r.code + ' stderr: ' + r.stderr.trim());
-    for (const id of ['opus', 'gpt-5.5', 'gemini', 'fable', 'sonnet-5', 'glm', 'kimi', 'deepseek']) {
+    for (const id of [
+      'opus', 'sol', 'terra', 'luna', 'auto-review', 'gpt-5.5', 'gpt-5.4',
+      'gpt-5.4-mini', 'spark', 'gemini', 'fable', 'sonnet-5', 'glm', 'kimi', 'deepseek',
+    ]) {
       check('(l) roster lists ' + id, r.stdout.includes(id), 'stdout: ' + r.stdout.trim());
     }
     check('(l) roster names ZAI_API_KEY', r.stdout.includes('ZAI_API_KEY'), 'stdout: ' + r.stdout.trim());

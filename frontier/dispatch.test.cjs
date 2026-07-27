@@ -89,6 +89,33 @@ const c = await spawnOne('prompt', adapter(stubC, { parse: 'claude-json', output
 check('(c) FUSION_DEPTH injected',      c.ok === true && c.content === '1');
 
 // ------------------------------------------------------------------ //
+// (c2) provider-specific effort flags are validated and appended.
+// ------------------------------------------------------------------ //
+const stubC2 = stub('c2-effort', `
+process.stdout.write(JSON.stringify({is_error:false, result: process.argv.slice(2).join('|')}));
+`);
+const claudeEffort = await spawnOne('prompt', adapter(stubC2, {
+  backend: 'claude',
+  baseArgs: ['--model', 'claude-opus-5'],
+  efforts: ['low', 'medium', 'high', 'xhigh', 'max'],
+}), { effort: 'xhigh' });
+check('(c2) Claude effort uses --effort',
+  claudeEffort.ok === true && claudeEffort.content.includes('--effort|xhigh'));
+const codexEffort = await spawnOne('prompt', adapter(stubC2, {
+  backend: 'codex',
+  baseArgs: ['exec', '-m', 'gpt-5.6-sol'],
+  efforts: ['low', 'medium', 'high', 'xhigh', 'max', 'ultra'],
+}), { effort: 'max' });
+check('(c2) Codex effort uses model_reasoning_effort config',
+  codexEffort.ok === true && codexEffort.content.includes('-c|model_reasoning_effort=max'));
+const unsupportedEffort = await spawnOne('prompt', adapter(stubC2, {
+  backend: 'codex',
+  efforts: ['low', 'medium', 'high', 'xhigh'],
+}), { effort: 'ultra' });
+check('(c2) unsupported effort fails before spawn',
+  unsupportedEffort.ok === false && unsupportedEffort.error === 'unsupported effort "ultra" for test-model');
+
+// ------------------------------------------------------------------ //
 // (d) last-message-file + parse 'text'
 // ------------------------------------------------------------------ //
 const stubD = stub('d-last-msg', `
@@ -192,7 +219,7 @@ check('(f2) claude child depth',           f2Results[1].content === 'claude:2');
 check('(f2) gemini child depth',           f2Results[2].content === 'gemini:2');
 
 // ------------------------------------------------------------------ //
-// (f2a) configured optional Codex aliases dispatch their declared canonical
+// (f2a) current Codex selectors dispatch their declared or overridden
 //       model ids through the same read-only argv shape as GPT-5.5. The
 //       MAESTRO_CODEX_BIN override is a local Node stub, so no real Codex is
 //       launched; the child records the exact argv and recursion depth it got.

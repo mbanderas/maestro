@@ -26,18 +26,19 @@ and therefore override earlier guidance. Codex skips empty files,
 discovers once per run, and stops adding files once the combined set
 hits `project_doc_max_bytes` (32 KiB by default).
 
-Practical consequences for Maestro:
+Practical consequences for the optional `--with-discipline` profile:
 
 - **Placement:** put Maestro's `AGENTS.md` at the repository root. If
   you already have a project `AGENTS.md`, append Maestro's content to
   it (Codex concatenates by directory level, not by file).
-- **Budget:** Maestro's always-on kernel is ~11 KB, a third of the
+- **Budget:** Maestro's optional kernel is ~11 KB, a third of the
   default 32 KiB cap, leaving room for your project instructions
   (the full S2-S6 protocol lives in `docs/orchestration.md`, read on
   demand). If you layer nested `AGENTS.md` files, watch the cap:
   Codex silently stops adding files beyond it.
 - **Global install:** putting Maestro in `~/.codex/AGENTS.md` applies
-  the doctrine to every project; per-repo files then layer on top and
+  the doctrine to every project. This is intentionally not the default;
+  per-repo files then layer on top and
   win where they conflict.
 
 ## Config, hooks, and trust
@@ -56,11 +57,11 @@ review and trust the plugin before enabling them. Codex sets
 `CLAUDE_PLUGIN_ROOT` and `CLAUDE_PLUGIN_DATA` for compatibility.
 
 Maestro's verify gate runs on Codex too. The `verify` setting
-(`off`/`warn`/`block`, default `warn`) persists portably through the Maestro
+(`off`/`warn`/`block`, default `off`) persists portably through the Maestro
 CLI and the `maestro-settings` skill, and the `maestro-verify-gate.cjs` `Stop`
 hook now parses Codex rollout transcripts with the same three signals it derives
-from Claude's (a file edit, a checker run, an honest status token). So once the
-plugin hooks are installed and trusted, `verify block` enforces S7.3 on the
+from Claude's (a file edit, a checker run, a plain validation-gap receipt). Once
+the optional discipline setting is on, `verify block` enforces S7.3 on the
 Codex `Stop` event — which honors `decision:"block"` — exactly as on Claude
 Code. (Codex omits the `stop_hook_active` re-entry flag; the gate's block-once
 marker is the re-entry guard there.)
@@ -195,8 +196,9 @@ Use the same active scope for all lifecycle commands:
 /maestro frontier status
 /maestro frontier off
 /maestro frontier compose --models <model-a>,<model-b>
-/maestro frontier compose --models <model-a>,<model-b> --judge <model> --synth <model> --save my-panel
+/maestro frontier compose --models <model-a>,<model-b> --judge <model> --synth <model> --effort <level> --save my-panel
 /maestro frontier compose --models <model-a>,<model-b> --dry-run
+/maestro frontier effort <auto|low|medium|high|xhigh|max|ultra>
 /maestro frontier preset list
 ```
 
@@ -207,12 +209,14 @@ prints configured model IDs or secret values. `frontier compose` selects ready
 models and arms a custom panel; its portable CLI grammar is:
 
 ```text
-maestro frontier compose --models a,b,c [--judge m] [--synth m] [--save name] [--dry-run] [--scope <name>]
+maestro frontier compose --models a,b,c [--judge m] [--synth m] [--effort level] [--save name] [--dry-run] [--scope <name>]
 ```
 
 `--dry-run` validates without changing Frontier state or saved presets; `--save`
 saves the resolved panel and arms it. Every panel, judge, and synthesizer
-subprocess uses a read-only/planning provider mode.
+subprocess uses a read-only/planning provider mode. Effort persists across
+panel, judge, and synth stages for selected effort-aware Claude and Codex
+models; `frontier effort auto` returns the armed panel to provider defaults.
 
 For Codex CLI launched from a terminal, exported env vars are usually enough.
 For Codex Desktop or the IDE extension, prefer `~/.codex/.env`:
@@ -222,17 +226,19 @@ export ZAI_API_KEY=
 export MOONSHOT_API_KEY=
 export DEEPSEEK_API_KEY=
 export MAESTRO_CLAUDE_BIN=
+# Optional model-ID overrides only:
 export MAESTRO_FRONTIER_MODEL_TERRA=
 export MAESTRO_FRONTIER_MODEL_LUNA=
 export MAESTRO_FRONTIER_MODEL_SOL=
 ```
 
-`terra`, `luna`, and `sol` are optional aliases only: each becomes selectable
-when its matching `MAESTRO_FRONTIER_MODEL_*` variable supplies the local model
-ID. Put the same named variables in `~/.codex/.env` for Codex Desktop or the
-IDE extension. Do not assume any canonical ID for those aliases; consult
-`maestro frontier catalog` after configuring them. Run `node frontier/smoke.cjs`
-from the installed engine root for release verification.
+`opus` pins Claude Opus 5. Sol, Terra, Luna, GPT-5.5, GPT-5.4, GPT-5.4
+Mini, GPT-5.3 Codex Spark, and Codex Auto Review are built-in selectors. Put
+optional `MAESTRO_FRONTIER_MODEL_*` overrides in `~/.codex/.env` for Codex
+Desktop or the IDE extension. Consult `maestro frontier catalog` for exact
+aliases, supported effort levels, and local readiness. Run
+`node frontier/smoke.cjs` from the installed engine root for Sol/Terra/Luna
+release verification.
 
 ## What differs from Claude Code
 
