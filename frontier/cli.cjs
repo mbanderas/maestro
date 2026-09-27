@@ -150,10 +150,10 @@ function cmdMode(argv, scope) {
   }
 
   saveState(state, scope);
-  // Arm-time cost advisory (secondary echo): if the armed panel/model draws on
-  // a subscription-until adapter past its cutoff, note it on stderr. The run-
-  // time emit (cmdRun / autorun) is the load-bearing surface; this just flags
-  // it when the user arms. stderr keeps stdout the machine-readable state line.
+  // Arm-time cost advisory (secondary echo): for Fable, note that billing and
+  // any usage credits depend on the user's Claude plan, with no fixed date gate.
+  // The run-time emit (cmdRun / autorun) is the load-bearing surface; this just
+  // flags it when the user arms. stderr keeps stdout the machine-readable state line.
   const armAdvisory = runCostAdvisory(state, withUserPresets(DEFAULTS, scope));
   if (armAdvisory) process.stderr.write(armAdvisory + '\n');
   process.stdout.write('frontier mode set: ' + JSON.stringify(state) + '\n');
@@ -247,8 +247,9 @@ async function cmdRun(argv, scope) {
   // Saved user presets resolve through the merged cfg (identity when the
   // scope has none, so the built-in-only path is unchanged).
   const runCfg = withUserPresets(DEFAULTS, scope);
-  // Non-blocking cost advisory (run time): flag a subscription-until adapter
-  // past its cutoff on stderr before the run. stdout stays the fused answer.
+  // Non-blocking cost advisory (run time): note that Fable billing and any
+  // usage credits depend on the user's Claude plan, with no fixed date gate.
+  // stdout stays the fused answer.
   const runAdvisory = runCostAdvisory(state, runCfg);
   if (runAdvisory) process.stderr.write(runAdvisory + '\n');
   let result;

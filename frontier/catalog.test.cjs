@@ -51,9 +51,10 @@ try {
   const blocked = buildRuntimeCatalog({ env: emptyEnv, codexEnvPath: missingEnvFile });
   check('default catalog validates', validateCatalog(blocked).ok === true);
   const currentCodex = {
-    sol: 'gpt-5.6-sol',
+    astra: 'gpt-6-astra',
+    sol: 'gpt-6-sol',
     terra: 'gpt-5.6-terra',
-    luna: 'gpt-5.6-luna',
+    luna: 'gpt-6-luna',
     'auto-review': 'codex-auto-review',
     'gpt-5.5': 'gpt-5.5',
     'gpt-5.4': 'gpt-5.4',
@@ -72,16 +73,45 @@ try {
     check(id + ' is ready when its binary resolves', readiness.ready === true);
   }
   check('Opus selector pins Claude Opus 5',
-    blocked.models.opus.label === 'Opus 5' &&
-    blocked.adapters.opus.baseArgs.includes('claude-opus-5'));
+    blocked.models.opus.label === 'Opus 5.5' &&
+    blocked.adapters.opus.baseArgs.includes('claude-opus-5-5') &&
+    blocked.models.opus.minClaudeCodeVersion === '2.1.280');
+  check('Fable selector pins Claude Fable 5.1 with the supported CLI floor',
+    blocked.models.fable.label === 'Fable 5.1' &&
+    blocked.adapters.fable.baseArgs.includes('claude-fable-5-1') &&
+    blocked.models.fable.minClaudeCodeVersion === '2.1.257' &&
+    blocked.adapters.fable.costTier === 'plan-dependent' &&
+    !('freeUntil' in blocked.adapters.fable));
+  check('Haiku selector uses its exact dated Claude model id without effort support',
+    blocked.models.haiku.label === 'Haiku 4.5' &&
+    blocked.adapters.haiku.baseArgs.includes('claude-haiku-4-5-20251001') &&
+    blocked.models.haiku.efforts.length === 0);
+  const publicModels = listCatalogModels(blocked);
+  check('catalog listing exposes Claude Code minimum versions',
+    publicModels.find(model => model.id === 'opus').minClaudeCodeVersion === '2.1.280' &&
+    publicModels.find(model => model.id === 'fable').minClaudeCodeVersion === '2.1.257');
+  check('Sonnet selector remains on Claude Sonnet 5',
+    blocked.models['sonnet-5'].label === 'Sonnet 5' &&
+    blocked.adapters['sonnet-5'].baseArgs.includes('claude-sonnet-5'));
   check('catalog declares supported effort levels',
     JSON.stringify(blocked.models.opus.efforts) === JSON.stringify(['low', 'medium', 'high', 'xhigh', 'max']) &&
-    blocked.models.sol.efforts.includes('ultra') &&
-    !blocked.models.luna.efforts.includes('ultra') &&
-    blocked.models.spark.efforts.includes('xhigh'));
+    JSON.stringify(blocked.models.fable.efforts) === JSON.stringify(['low', 'medium', 'high', 'xhigh', 'max']) &&
+    JSON.stringify(blocked.models['sonnet-5'].efforts) === JSON.stringify(['low', 'medium', 'high', 'xhigh', 'max']) &&
+    JSON.stringify(blocked.models.astra.efforts) === JSON.stringify(['low', 'medium', 'high', 'xhigh', 'max']) &&
+    JSON.stringify(blocked.models.sol.efforts) === JSON.stringify(['low', 'medium', 'high', 'xhigh', 'max']) &&
+    JSON.stringify(blocked.models.luna.efforts) === JSON.stringify(['low', 'medium', 'high', 'xhigh', 'max']) &&
+    JSON.stringify(blocked.models.terra.efforts) === JSON.stringify(['low', 'medium', 'high', 'xhigh', 'max', 'ultra']) &&
+    JSON.stringify(blocked.models['gpt-5.5'].efforts) === JSON.stringify(['low', 'medium', 'high', 'xhigh']) &&
+    JSON.stringify(blocked.models['gpt-5.4'].efforts) === JSON.stringify(['low', 'medium', 'high', 'xhigh']) &&
+    JSON.stringify(blocked.models['gpt-5.4-mini'].efforts) === JSON.stringify(['low', 'medium', 'high', 'xhigh']) &&
+    JSON.stringify(blocked.models.spark.efforts) === JSON.stringify(['low', 'medium', 'high', 'xhigh']) &&
+    JSON.stringify(blocked.models['auto-review'].efforts) === JSON.stringify(['low', 'medium', 'high', 'xhigh', 'max', 'ultra']));
 
   // Aliases belong to the catalog and normalize every persisted state field.
-  check('chatgpt canonicalizes to GPT-5.5', canonicalModelId('chatgpt') === 'gpt-5.5');
+  check('chatgpt canonicalizes to preserved GPT-5.5', canonicalModelId('chatgpt') === 'gpt-5.5');
+  check('GPT-5.6 aliases remain valid',
+    canonicalModelId('gpt-5.6') === 'sol' && canonicalModelId('gpt-5.6-sol') === 'sol' &&
+    canonicalModelId('gpt-5.6-terra') === 'terra' && canonicalModelId('gpt-5.6-luna') === 'luna');
   check('chatgpt-duo canonicalizes to gpt-duo', canonicalPresetId('chatgpt-duo') === 'gpt-duo');
   const aliases = normalizeStateAliases({
     model: 'chatgpt', preset: 'chatgpt-duo', models: ['chatgpt'],
@@ -209,14 +239,14 @@ try {
   check('~/.codex/.env overrides the Terra id',
     desktop.models.terra.selectable === true && desktop.adapters.terra.baseArgs.includes('desktop-terra-id'));
   check('~/.codex/.env leaves Luna and SOL on their declared defaults',
-    desktop.adapters.luna.baseArgs.includes('gpt-5.6-luna') &&
-    desktop.adapters.sol.baseArgs.includes('gpt-5.6-sol'));
+    desktop.adapters.luna.baseArgs.includes('gpt-6-luna') &&
+    desktop.adapters.sol.baseArgs.includes('gpt-6-sol'));
   fs.writeFileSync(path.join(codexDir, '.env'),
     OPTIONAL_CODEX_MODEL_ENV.luna + '=bad%EXPANSION%\n', 'utf8');
   const unsafeDesktop = buildRuntimeCatalog({ env: emptyEnv, homeDir });
   check('unsafe ~/.codex/.env model id falls back to the declared default',
     unsafeDesktop.models.luna.selectable === true &&
-    unsafeDesktop.adapters.luna.baseArgs.includes('gpt-5.6-luna'));
+    unsafeDesktop.adapters.luna.baseArgs.includes('gpt-6-luna'));
 
   // Validation defends the read-only subprocess invariant, including any
   // future catalog entry that accidentally adds a write grant.

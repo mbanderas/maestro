@@ -89,7 +89,7 @@ try {
     const opusGpt = parsed.presets.find(preset => preset.id === 'opus-gpt');
     check('catalog JSON exposes stable built-in preset records',
       !!opusGpt && JSON.stringify(opusGpt) === JSON.stringify({
-        id: 'opus-gpt', models: ['opus', 'gpt-5.5'], judge: null, synth: null,
+        id: 'opus-gpt', models: ['opus', 'sol'], judge: null, synth: null,
       }), JSON.stringify(parsed.presets));
     check('catalog JSON built-in presets never leak rejected model values',
       !JSON.stringify(parsed.presets).includes('sk-NOT-FOR-OUTPUT'));
@@ -100,7 +100,7 @@ try {
     const humanAgain = run(['catalog'], configured);
     check('catalog human output is stable and readable',
       human.code === 0 && human.stdout.includes('model chatgpt -> gpt-5.5') &&
-      human.stdout.includes('opus-gpt models=opus,gpt-5.5 judge=- synth=-') &&
+      human.stdout.includes('opus-gpt models=opus,sol judge=- synth=-') &&
       human.stdout.includes('effort=low,medium,high,xhigh,max,ultra') &&
       human.stdout.includes('configured=yes') && !human.stdout.includes(configuredTerraId) &&
       human.stdout === humanAgain.stdout, human.stderr.trim());
@@ -112,9 +112,12 @@ try {
   // Current first-party model ids are ready without custom env configuration.
   // Binary readiness and unknown-model checks remain local and offline.
   {
-    const current = run(['compose', '--models', 'terra', '--scope', 'current'], { MAESTRO_CODEX_BIN: fakeCodex });
-    check('compose accepts current Terra without a custom model id', current.code === 0, current.stderr.trim());
-    check('current Terra compose arms state', state('current', configured).mode === 'fusion');
+    const current = run(['compose', '--models', 'astra,sol,luna,terra,haiku', '--scope', 'current'], {
+      MAESTRO_CODEX_BIN: fakeCodex,
+      MAESTRO_CLAUDE_BIN: fakeCodex,
+    });
+    check('compose accepts current model selectors without custom ids', current.code === 0, current.stderr.trim());
+    check('new selector compose arms state', state('current', configured).mode === 'fusion');
 
     const directoryBin = run(['compose', '--models', 'terra', '--scope', 'directory-bin'], {
       ...configured, MAESTRO_CODEX_BIN: directoryCodex,
@@ -171,7 +174,7 @@ try {
     check('compose rejects unready stage model', badJudge.code === 2 && badJudge.stderr.includes('judge model "not-a-model"'), badJudge.stderr.trim());
 
     const effort = run([
-      'compose', '--models', 'sol,terra', '--effort', 'ultra', '--scope', 'effort',
+      'compose', '--models', 'terra', '--effort', 'ultra', '--scope', 'effort',
     ], configured);
     check('compose accepts a shared supported effort', effort.code === 0, effort.stderr.trim());
     check('compose prints and persists effort',

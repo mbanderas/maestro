@@ -74,9 +74,19 @@ Notes:
   provider CLI's read-only/planning mode.
 - Each model's CLI must be on `PATH`, or point at a specific build with
   `MAESTRO_CLAUDE_BIN` / `MAESTRO_CODEX_BIN` / `MAESTRO_GEMINI_BIN`.
-- `opus` pins Claude Opus 5. Sol, Terra, Luna, GPT-5.5, GPT-5.4, GPT-5.4
-  Mini, GPT-5.3 Codex Spark, and Codex Auto Review are built-in selectors.
-  Confirm exact aliases and supported effort levels with `frontier catalog`.
+- Claude selectors: `opus` pins Opus 5.5 (`claude-opus-5-5`), `fable` pins
+  Fable 5.1 (`claude-fable-5-1`), `sonnet-5` keeps Sonnet 5
+  (`claude-sonnet-5`), and `haiku` adds Haiku 4.5
+  (`claude-haiku-4-5-20251001`). Claude Code v2.1.280+ is required for Opus
+  5.5; v2.1.257+ is required for Fable 5.1. Opus, Fable, and Sonnet support
+  `low`, `medium`, `high`, `xhigh`, and `max`; Haiku has no effort flag.
+  Codex selectors include `astra` (`gpt-6-astra`), `sol` (`gpt-6-sol`),
+  `terra` (`gpt-5.6-terra`), `luna` (`gpt-6-luna`), `auto-review`, and the
+  retained GPT-5.5, GPT-5.4, GPT-5.4 Mini, and GPT-5.3 Codex Spark selectors.
+  GPT-6 supports `low`, `medium`, `high`, `xhigh`, and `max` in Maestro’s UI,
+  without `none` or `ultra`. Earlier explicit selectors and third-party
+  adapters remain available. Confirm exact aliases, supported efforts, and
+  readiness with `frontier catalog`.
 - `MAESTRO_FRONTIER_MODEL_TERRA`, `MAESTRO_FRONTIER_MODEL_LUNA`, and
   `MAESTRO_FRONTIER_MODEL_SOL` remain optional model-ID overrides.
 - Run `node frontier/smoke.cjs` from the installed engine root for release

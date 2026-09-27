@@ -232,8 +232,18 @@ export MAESTRO_FRONTIER_MODEL_LUNA=
 export MAESTRO_FRONTIER_MODEL_SOL=
 ```
 
-`opus` pins Claude Opus 5. Sol, Terra, Luna, GPT-5.5, GPT-5.4, GPT-5.4
-Mini, GPT-5.3 Codex Spark, and Codex Auto Review are built-in selectors. Put
+`opus` pins Claude Opus 5.5 (`claude-opus-5-5`), `fable` pins Fable 5.1
+(`claude-fable-5-1`), `sonnet-5` keeps Sonnet 5 (`claude-sonnet-5`), and
+`haiku` adds Haiku 4.5 (`claude-haiku-4-5-20251001`). Claude Code v2.1.280+
+is required for Opus 5.5; v2.1.257+ is required for Fable 5.1.
+Opus, Fable, and Sonnet support `low`, `medium`, `high`, `xhigh`, and `max`;
+Haiku has no effort flag.
+Codex selectors include `astra` (`gpt-6-astra`), `sol` (`gpt-6-sol`),
+`terra` (`gpt-5.6-terra`), and `luna` (`gpt-6-luna`), plus `auto-review` and
+the retained GPT-5.5, GPT-5.4, GPT-5.4 Mini, and GPT-5.3 Codex Spark selectors.
+GPT-6 models support `low`, `medium`, `high`, `xhigh`, and `max` in Maestro’s
+UI, without `none` or `ultra`. Earlier explicit selectors and third-party
+adapters remain available. Put
 optional `MAESTRO_FRONTIER_MODEL_*` overrides in `~/.codex/.env` for Codex
 Desktop or the IDE extension. Consult `maestro frontier catalog` for exact
 aliases, supported effort levels, and local readiness. Run

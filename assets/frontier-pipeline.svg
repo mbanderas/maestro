@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 460" role="img" aria-labelledby="t d">
   <title id="t">Maestro Frontier fusion pipeline</title>
-  <desc id="d">A hero animation of the Maestro Frontier fusion pipeline. A prompt fans out to three parallel model panels (Opus 5, GPT-5.5, Gemini 3.1 Pro), which converge into an Opus judge performing consensus, contradiction, unique-insight, and blind-spot analysis, then flows into a grounded synthesis output. Dash-flow pulses animate left to right along every connector.</desc>
+  <desc id="d">A hero animation of the Maestro Frontier fusion pipeline. A prompt fans out to three parallel model panels (Opus 5.5, GPT-6 Sol, Gemini 3.1 Pro), which converge into an Opus 5.5 judge performing consensus, contradiction, unique-insight, and blind-spot analysis, then flows into a grounded synthesis output. Dash-flow pulses animate left to right along every connector.</desc>
   <style>
     .bg   { fill: #0a0a0c; }
     .node { fill: #121216; stroke: #222228; stroke-width: 1.5; }
@@ -57,14 +57,14 @@
   <!-- bottom branch: hub -> bottom model left edge (214,350) -->
   <path class="edge flow" d="M170 230 V350 H214" marker-end="url(#a)"/>
 
-  <!-- ── model box 1: Opus 5 (top) — center y=110 -->
+  <!-- ── model box 1: Opus 5.5 (top) — center y=110 -->
   <rect class="panel" x="214" y="86" width="160" height="48" rx="8"/>
-  <text class="mdl" x="294" y="107" text-anchor="middle">Opus 5</text>
+  <text class="mdl" x="294" y="107" text-anchor="middle">Opus 5.5</text>
   <text class="sub" x="294" y="123" text-anchor="middle">Anthropic</text>
 
-  <!-- ── model box 2: GPT-5.5 (middle) — center y=230 -->
+  <!-- ── model box 2: GPT-6 Sol (middle) — center y=230 -->
   <rect class="panel" x="214" y="206" width="160" height="48" rx="8"/>
-  <text class="mdl" x="294" y="227" text-anchor="middle">GPT-5.5</text>
+  <text class="mdl" x="294" y="227" text-anchor="middle">GPT-6 Sol</text>
   <text class="sub" x="294" y="244" text-anchor="middle">OpenAI Codex</text>
 
   <!-- ── model box 3: Gemini 3.1 Pro (bottom) — center y=350 -->
@@ -82,9 +82,9 @@
   <!-- hub -> judge left edge (432,230) -->
   <path class="edge flow" d="M408 230 H432" marker-end="url(#a)"/>
 
-  <!-- ── Opus judge box — x=432..618, center y=230 -->
+  <!-- ── Opus 5.5 judge box — x=432..618, center y=230 -->
   <rect class="judge" x="432" y="152" width="186" height="156" rx="8"/>
-  <text class="lbl acct" x="525" y="178" text-anchor="middle">Opus judge</text>
+  <text class="lbl acct" x="525" y="178" text-anchor="middle">Opus 5.5 judge</text>
   <text class="sub" x="525" y="200" text-anchor="middle">consensus · contradictions</text>
   <text class="sub" x="525" y="218" text-anchor="middle">unique insights · blind spots</text>
   <text class="sub" x="525" y="244" text-anchor="middle">cross-model analysis</text>

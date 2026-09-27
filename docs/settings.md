@@ -16,7 +16,7 @@ The design and the staff-engineer review are recorded in
 | Toggle | Values | What it controls |
 |---|---|---|
 | `terse` | `off`, `lite`, `full`, `ultra` | Output-token reduction (`/maestro:terse`). |
-| `frontier` | `off`; `single:` any model from `frontier catalog`; `fusion:` any named or saved preset, or `custom`, with optional judge, synthesizer, and shared effort | The local multi-CLI fusion engine (`/maestro:frontier`). Any non-`off` value arms auto-run: every prompt is routed through the engine and the answer relayed; `off` disables it. Current first-party selectors include Opus 5 plus `gpt-5.6-sol`, `gpt-5.6-terra`, `gpt-5.6-luna`, `codex-auto-review`, `gpt-5.5`, `gpt-5.4`, `gpt-5.4-mini`, and `gpt-5.3-codex-spark`. |
+| `frontier` | `off`; `single:` any model from `frontier catalog`; `fusion:` any named or saved preset, or `custom`, with optional judge, synthesizer, and shared effort | The local multi-CLI fusion engine (`/maestro:frontier`). Any non-`off` value arms auto-run: every prompt is routed through the engine and the answer relayed; `off` disables it. Current first-party selectors include Opus 5.5, Fable 5.1, Sonnet 5, Haiku 4.5, `gpt-6-astra`, `gpt-6-sol`, `gpt-5.6-terra`, `gpt-6-luna`, and the retained `gpt-5.5`, `gpt-5.4`, `gpt-5.4-mini`, Auto Review, and Spark. |
 | `context-bar` | `on`, `off` | The status-line context progress bar (`/maestro:context-bar`). |
 | `discipline` | `on`, `off` | Optional enforcement-hook pack. `off` is the default; `on` enables gate-reminder, doctrine-guard, phase-scope, subagent-guard, verify-gate, loop-guard, gate-telemetry, and toolbudget. The doctrine text is installed separately with `--with-discipline`; use `--remove-discipline` to remove managed copies. |
 | `verify` | `off`, `warn`, `block` | Optional S7.3 verify-gate Stop hook (`hooks/maestro-verify-gate.cjs`). `off` is the default; `warn` injects a non-blocking nudge; `block` blocks Stop once until a checker runs or the report states `Validation: not run (<gap>)` / `Validation: failed (<check>)`. |
@@ -68,8 +68,8 @@ questionnaire. The first argument selects the action:
 | `/maestro:settings set terse off` | set a toggle |
 | `/maestro:settings terse off` | shorthand for `set terse off` |
 | `/maestro:settings frontier fusion opus-gpt` | `set frontier fusion:opus-gpt` |
-| `/maestro:settings frontier fusion custom --models opus,gpt-5.5,gemini` | a custom panel |
-| `/maestro:settings frontier fusion opus-gpt --judge opus --synth gpt-5.5` | with stage overrides |
+| `/maestro:settings frontier fusion custom --models opus,sol,gemini` | a custom panel |
+| `/maestro:settings frontier fusion opus-gpt --judge opus --synth sol` | with stage overrides |
 | `/maestro:settings context-bar off` | hide the context bar |
 | `/maestro:settings discipline on` | enable the optional enforcement-hook pack |
 | `/maestro:settings verify block` | enforce the verify-gate (block on unverified Stop) |
@@ -102,7 +102,7 @@ node settings/cli.cjs set frontier fusion:chatgpt-duo --scope codex-project
 node settings/cli.cjs set frontier fusion:budget-trio --scope codex-project
 node settings/cli.cjs set frontier fusion:east-west --scope codex-project
 node settings/cli.cjs set frontier fusion:frontier-trio --judge chatgpt --synth chatgpt --scope codex-project
-node settings/cli.cjs set frontier fusion:custom --models kimi,gpt-5.5,deepseek
+node settings/cli.cjs set frontier fusion:custom --models kimi,sol,deepseek
 node settings/cli.cjs set frontier single:opus
 node settings/cli.cjs set frontier off --scope codex-project
 ```

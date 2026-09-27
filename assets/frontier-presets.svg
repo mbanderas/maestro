@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 820 474" role="img" aria-labelledby="t d">
   <title id="t">Maestro Frontier fusion presets</title>
-  <desc id="d">A dark reference card listing the thirteen Maestro Frontier fusion presets: opus-duo, opus-gpt, chatgpt-duo (amber-highlighted as the Codex-only option), frontier-trio, the Fable 5 family (fable-duo, fable-gpt, fable-trio), the Sonnet 5 family (sonnet-duo, sonnet-gpt, sonnet-trio), frontier-quad, frontier-quint, and custom. The custom row includes current GPT-5.6 and other Codex models. Each row shows the preset name, panel composition, and judge plus synthesis model.</desc>
+  <desc id="d">A dark reference card showing current Maestro Frontier fusion presets: opus-duo, opus-gpt, chatgpt-duo (amber-highlighted as the Codex-only option), frontier-trio, the Fable 5.1 family (fable-duo, fable-gpt, fable-trio), the Sonnet 5 family (sonnet-duo, sonnet-gpt, sonnet-trio), frontier-quad, frontier-quint, and custom. Built-in mixed presets use stable Sol. The custom row includes GPT-6 Astra, Sol, and Luna, GPT-5.6 Terra, and other Codex models. Each row shows the preset name, panel composition, and judge plus synthesis model.</desc>
   <style>
     .bg    { fill: #0a0a0c; }
     .lbl   { font: 600 13px ui-monospace, SFMono-Regular, Consolas, monospace; fill: #f0f0f4; }
@@ -45,45 +45,45 @@
 
   <!-- ROW 1: opus-duo  band 38..70 -->
   <text class="name" x="36" y="54" dominant-baseline="middle">opus-duo</text>
-  <text class="cell" x="222" y="54" dominant-baseline="middle">Opus 5 ×2</text>
-  <text class="cell" x="602" y="54" dominant-baseline="middle">Opus 5</text>
+  <text class="cell" x="222" y="54" dominant-baseline="middle">Opus 5.5 ×2</text>
+  <text class="cell" x="602" y="54" dominant-baseline="middle">Opus 5.5</text>
   <line class="divider" x1="24" y1="70" x2="796" y2="70"/>
 
   <!-- ROW 2: opus-gpt  band 70..102 -->
   <text class="name" x="36" y="86" dominant-baseline="middle">opus-gpt</text>
-  <text class="cell" x="222" y="86" dominant-baseline="middle">Opus 5 + GPT-5.5</text>
-  <text class="cell" x="602" y="86" dominant-baseline="middle">Opus 5</text>
+  <text class="cell" x="222" y="86" dominant-baseline="middle">Opus 5.5 + GPT-6 Sol</text>
+  <text class="cell" x="602" y="86" dominant-baseline="middle">Opus 5.5</text>
   <line class="divider" x1="24" y1="102" x2="796" y2="102"/>
 
   <!-- ROW 3: chatgpt-duo (amber highlight)  band 102..134 -->
   <rect class="row-amb" x="1" y="102" width="818" height="32"/>
   <text class="amb-c" x="36" y="118" dominant-baseline="middle">chatgpt-duo</text>
-  <text class="amb-c" x="222" y="118" dominant-baseline="middle">GPT-5.5 ×2</text>
-  <text class="amb-c" x="602" y="118" dominant-baseline="middle">GPT-5.5</text>
+  <text class="amb-c" x="222" y="118" dominant-baseline="middle">GPT-6 Sol ×2</text>
+  <text class="amb-c" x="602" y="118" dominant-baseline="middle">GPT-6 Sol</text>
   <line class="divider" x1="24" y1="134" x2="796" y2="134"/>
 
   <!-- ROW 4: frontier-trio  band 134..166 -->
   <text class="name" x="36" y="150" dominant-baseline="middle">frontier-trio</text>
-  <text class="cell" x="222" y="150" dominant-baseline="middle">Opus 5 + GPT-5.5 + Gemini</text>
-  <text class="cell" x="602" y="150" dominant-baseline="middle">Opus 5</text>
+  <text class="cell" x="222" y="150" dominant-baseline="middle">Opus 5.5 + GPT-6 Sol + Gemini</text>
+  <text class="cell" x="602" y="150" dominant-baseline="middle">Opus 5.5</text>
   <line class="divider" x1="24" y1="166" x2="796" y2="166"/>
 
   <!-- ROW 5: fable-duo  band 166..198 -->
   <text class="name" x="36" y="182" dominant-baseline="middle">fable-duo</text>
-  <text class="cell" x="222" y="182" dominant-baseline="middle">Fable 5 ×2</text>
-  <text class="cell" x="602" y="182" dominant-baseline="middle">Fable 5</text>
+  <text class="cell" x="222" y="182" dominant-baseline="middle">Fable 5.1 ×2</text>
+  <text class="cell" x="602" y="182" dominant-baseline="middle">Fable 5.1</text>
   <line class="divider" x1="24" y1="198" x2="796" y2="198"/>
 
   <!-- ROW 6: fable-gpt  band 198..230 -->
   <text class="name" x="36" y="214" dominant-baseline="middle">fable-gpt</text>
-  <text class="cell" x="222" y="214" dominant-baseline="middle">Fable 5 + GPT-5.5</text>
-  <text class="cell" x="602" y="214" dominant-baseline="middle">Fable 5</text>
+  <text class="cell" x="222" y="214" dominant-baseline="middle">Fable 5.1 + GPT-6 Sol</text>
+  <text class="cell" x="602" y="214" dominant-baseline="middle">Fable 5.1</text>
   <line class="divider" x1="24" y1="230" x2="796" y2="230"/>
 
   <!-- ROW 7: fable-trio  band 230..262 -->
   <text class="name" x="36" y="246" dominant-baseline="middle">fable-trio</text>
-  <text class="cell" x="222" y="246" dominant-baseline="middle">Fable 5 + GPT-5.5 + Gemini</text>
-  <text class="cell" x="602" y="246" dominant-baseline="middle">Fable 5</text>
+  <text class="cell" x="222" y="246" dominant-baseline="middle">Fable 5.1 + GPT-6 Sol + Gemini</text>
+  <text class="cell" x="602" y="246" dominant-baseline="middle">Fable 5.1</text>
   <line class="divider" x1="24" y1="262" x2="796" y2="262"/>
 
   <!-- ROW 8: sonnet-duo  band 262..294 -->
@@ -94,30 +94,30 @@
 
   <!-- ROW 9: sonnet-gpt  band 294..326 -->
   <text class="name" x="36" y="310" dominant-baseline="middle">sonnet-gpt</text>
-  <text class="cell" x="222" y="310" dominant-baseline="middle">Sonnet 5 + GPT-5.5</text>
+  <text class="cell" x="222" y="310" dominant-baseline="middle">Sonnet 5 + GPT-6 Sol</text>
   <text class="cell" x="602" y="310" dominant-baseline="middle">Sonnet 5</text>
   <line class="divider" x1="24" y1="326" x2="796" y2="326"/>
 
   <!-- ROW 10: sonnet-trio  band 326..358 -->
   <text class="name" x="36" y="342" dominant-baseline="middle">sonnet-trio</text>
-  <text class="cell" x="222" y="342" dominant-baseline="middle">Sonnet 5 + GPT-5.5 + Gemini</text>
+  <text class="cell" x="222" y="342" dominant-baseline="middle">Sonnet 5 + GPT-6 Sol + Gemini</text>
   <text class="cell" x="602" y="342" dominant-baseline="middle">Sonnet 5</text>
   <line class="divider" x1="24" y1="358" x2="796" y2="358"/>
 
   <!-- ROW 11: frontier-quad  band 358..390 -->
   <text class="name" x="36" y="374" dominant-baseline="middle">frontier-quad</text>
-  <text class="cell" x="222" y="374" dominant-baseline="middle">Fable 5 + Opus + GPT-5.5 + Gemini</text>
-  <text class="cell" x="602" y="374" dominant-baseline="middle">Opus 5</text>
+  <text class="cell" x="222" y="374" dominant-baseline="middle">Fable 5.1 + Opus 5.5 + GPT-6 Sol + Gemini</text>
+  <text class="cell" x="602" y="374" dominant-baseline="middle">Opus 5.5</text>
   <line class="divider" x1="24" y1="390" x2="796" y2="390"/>
 
   <!-- ROW 12: frontier-quint  band 390..422 -->
   <text class="name" x="36" y="406" dominant-baseline="middle">frontier-quint</text>
   <text class="cell" x="222" y="406" dominant-baseline="middle">+ Sonnet 5  (five-model panel)</text>
-  <text class="cell" x="602" y="406" dominant-baseline="middle">Opus 5</text>
+  <text class="cell" x="602" y="406" dominant-baseline="middle">Opus 5.5</text>
   <line class="divider" x1="24" y1="422" x2="796" y2="422"/>
 
   <!-- ROW 13: custom  band 422..454 -->
   <text class="name" x="36" y="438" dominant-baseline="middle">custom</text>
-  <text class="cell" x="222" y="438" dominant-baseline="middle">1–8; Opus 5 / GPT-5.6 / Codex models</text>
+  <text class="cell" x="222" y="438" dominant-baseline="middle">1–8; Claude / GPT-6 / GPT-5.6 Terra</text>
   <text class="cell" x="602" y="438" dominant-baseline="middle">any + effort control</text>
 </svg>

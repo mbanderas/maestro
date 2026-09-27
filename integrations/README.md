@@ -117,13 +117,17 @@ installed engine root to verify the catalog and read-only dispatch contract.
 - **Codex Desktop environment:** Desktop/IDE sessions may not inherit shell
   env vars. Put Frontier provider keys and binary overrides in `~/.codex/.env`
   (`ZAI_API_KEY`, `MOONSHOT_API_KEY`, `DEEPSEEK_API_KEY`,
-  `MAESTRO_CLAUDE_BIN`) and restart/open a new thread. Sol, Terra, and Luna are
-  current built-in Codex selectors. Their named variables —
+  `MAESTRO_CLAUDE_BIN`) and restart/open a new thread. Current built-in
+  selectors are Astra (`gpt-6-astra`), Sol (`gpt-6-sol`), Terra
+  (`gpt-5.6-terra`), and Luna (`gpt-6-luna`). Their named variables —
   `MAESTRO_FRONTIER_MODEL_TERRA`, `MAESTRO_FRONTIER_MODEL_LUNA`, and
   `MAESTRO_FRONTIER_MODEL_SOL` — remain optional model-ID overrides in the
   environment or `~/.codex/.env`. Run `maestro frontier catalog` to see exact
   aliases, supported effort levels, and readiness without printing secrets or
   override values.
+- **Claude Code model minimums.** Opus 5.5 (`claude-opus-5-5`) requires
+  Claude Code v2.1.280+; Fable 5.1 (`claude-fable-5-1`) requires v2.1.257+.
+  Sonnet 5 remains unchanged, and Haiku 4.5 is available without an effort flag.
 - **Maestro Frontier ON indicator (Codex only).** When
   `maestro frontier status --scope codex-project` reports mode != off, the
   `maestro-frontier` skill instructs Codex to lead its reply with
@@ -138,5 +142,5 @@ installed engine root to verify the catalog and read-only dispatch contract.
   subprocesses run in their provider CLI's read-only/planning mode.
 - **Windows + Gemini judge/synth.** `gemini` is fine as a panel member, but a poor
   `--judge`/`--synth` on Windows (its arg-passing rejects the newline-bearing
-  judge/synth prompts, so the stage degrades). Use `opus` or `gpt-5.5` for
+  judge/synth prompts, so the stage degrades). Use `opus` or `sol` for
   judge/synth on Windows.

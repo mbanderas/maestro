@@ -105,8 +105,8 @@ function Get-FrontierProgress($cfgDir, $ws) {
 # Frontier badge. Reads frontier-state.<scope>.json written by frontier/config.cjs
 # (configDir = $XDG_CONFIG_HOME/maestro, else %APPDATA%\maestro). Same
 # hardening as the terse badge: refuse symlinks, size cap, and -- crucially --
-# only ever emit letters from the whitelist tables below or an integer count,
-# never raw bytes from the file. Letter tables mirror frontier/config.cjs
+# only ever emit labels from the whitelist tables below or an integer count,
+# never raw bytes from the file. Label tables mirror frontier/config.cjs
 # DEFAULTS (adapters + presets); keep them in sync if models/presets change.
 # Output: presence = on, absence = off (no ON/OFF text).
 function Get-FrontierBadge {
@@ -127,8 +127,8 @@ function Get-FrontierBadge {
     if ($item.Length -gt 8192) { return '' }
     try { $st = [IO.File]::ReadAllText($item.FullName) | ConvertFrom-Json } catch { return '' }
     if (-not $st) { return '' }
-    $letters = @{ 'opus' = 'O'; 'sol' = 'S'; 'terra' = 'T'; 'luna' = 'L'; 'auto-review' = 'A'; 'gpt-5.5' = 'C'; 'gpt-5.4' = '5'; 'gpt-5.4-mini' = 'M'; 'spark' = 'R'; 'gemini' = 'G'; 'kimi' = 'K'; 'deepseek' = 'D'; 'glm' = 'Z' }
-    $presets = @{ 'opus-duo' = 'O+O'; 'opus-gpt' = 'O+C'; 'gpt-duo' = 'C+C'; 'frontier-trio' = 'O+C+G'; 'budget-trio' = 'K+D+Z'; 'east-west' = 'D+C' }
+    $letters = @{ 'opus' = 'O'; 'haiku' = 'H'; 'fable' = 'F'; 'sonnet-5' = 'N'; 'sol' = 'S'; 'terra' = 'T'; 'luna' = 'L'; 'astra' = 'AS'; 'auto-review' = 'A'; 'gpt-5.6-sol' = 'S'; 'gpt-5.6-luna' = 'L'; 'gpt-5.5' = 'C'; 'gpt-5.4' = '5'; 'gpt-5.4-mini' = 'M'; 'spark' = 'R'; 'gemini' = 'G'; 'kimi' = 'K'; 'deepseek' = 'D'; 'glm' = 'Z' }
+    $presets = @{ 'opus-duo' = 'O+O'; 'opus-gpt' = 'O+S'; 'gpt-duo' = 'S+S'; 'frontier-trio' = 'O+S+G'; 'budget-trio' = 'K+D+Z'; 'east-west' = 'D+S' }
     $panel = ''
     switch ([string]$st.mode) {
         'single' { if ($letters.ContainsKey([string]$st.model)) { $panel = $letters[[string]$st.model] } }

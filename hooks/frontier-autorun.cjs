@@ -136,10 +136,10 @@ async function run() {
     const { runFrontier, ensureRunId } = require('../frontier/run.cjs');
     ensureRunId();
     runlock.registerRun({ kind: 'frontier', cwd: runCwd });
-    // Non-blocking cost advisory (run time, the load-bearing surface): if this
-    // run invokes a subscription-until adapter past its cutoff (Fable 5 after
-    // 2026-07-07), emit a one-line stderr notice. stderr only — stdout is the
-    // fused-answer channel the host relays. Best-effort; never gates the run.
+    // Non-blocking cost advisory: if this run invokes an adapter with
+    // plan-dependent billing (Fable 5.1), emit a one-line stderr notice.
+    // stderr only — stdout is the fused-answer channel the host relays.
+    // Best-effort; never gates the run.
     try {
       const cfg = require('../frontier/config.cjs');
       const advisory = cfg.runCostAdvisory(state, cfg.DEFAULTS);
@@ -216,14 +216,14 @@ async function run() {
 
 /**
  * One stderr line per stage event, e.g. `panel 2/3 (gpt-5.5 41s)` /
- * `judge start (opus)`. Model names are whitelisted (same regex as
- * frontier/progress.cjs) and counts clamped — presentation data only.
+ * `judge start (opus)`. Model names are whitelisted with the same validator
+ * as frontier/progress.cjs and counts clamped — presentation data only.
  * Returns null for events not worth a line.
  * @param {object} ev @returns {string|null}
  */
 function stageBreadcrumb(ev) {
   if (!ev || typeof ev.phase !== 'string') return null;
-  const model = typeof ev.model === 'string' && /^[a-z0-9.-]{1,24}$/i.test(ev.model) ? ev.model : '';
+  const model = require('../frontier/progress.cjs').isSafeModelName(ev.model) ? ev.model : '';
   const ms = Number(ev.ms);
   const secs = Number.isFinite(ms) && ms >= 0 ? Math.round(ms / 1000) + 's' : '';
   const clamp = (v) => {

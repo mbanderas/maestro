@@ -31,7 +31,11 @@ const { statePath } = require('./config.cjs');
 const PHASES = ['panel', 'judge', 'synth', 'single', 'escalate'];
 
 // Model names are presentation data: whitelisted or omitted, never raw bytes.
-const MODEL_RE = /^[a-z0-9.-]{1,24}$/i;
+const MODEL_RE = /^[a-z0-9.-]{1,25}$/i;
+
+function isSafeModelName(value) {
+  return typeof value === 'string' && MODEL_RE.test(value);
+}
 
 /**
  * Progress file path for a scope, derived from statePath so the scope-alias
@@ -69,7 +73,7 @@ function writeProgress(scope, rec) {
   // Optional enrichments (statusline renders model + elapsed): whitelist the
   // model name or omit it; startTs is the run start, forwarded verbatim only
   // when it is a sane positive epoch ms.
-  if (typeof rec.model === 'string' && MODEL_RE.test(rec.model)) record.model = rec.model;
+  if (isSafeModelName(rec.model)) record.model = rec.model;
   const startTs = Math.floor(Number(rec.startTs));
   if (Number.isFinite(startTs) && startTs > 0) record.startTs = startTs;
   const payload = JSON.stringify(record);
@@ -154,4 +158,4 @@ function makeProgressWriter(scope) {
   };
 }
 
-module.exports = { progressPath, writeProgress, clearProgress, makeProgressWriter, PHASES };
+module.exports = { progressPath, writeProgress, clearProgress, makeProgressWriter, isSafeModelName, PHASES };

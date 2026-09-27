@@ -26,17 +26,19 @@ const MAX_CONFIG_BYTES = 1 << 16; // 64 KB cap for config.json / settings.json
 // sourced from frontier DEFAULTS.adapters so there is one source of truth;
 // an id with no label here falls back to the id itself.
 const MODEL_LABELS = {
-  opus: 'Opus 5',
-  sol: 'GPT-5.6 Sol (Codex)',
+  opus: 'Opus 5.5',
+  haiku: 'Haiku 4.5',
+  sol: 'GPT-6 Sol (Codex)',
   terra: 'GPT-5.6 Terra (Codex)',
-  luna: 'GPT-5.6 Luna (Codex)',
+  luna: 'GPT-6 Luna (Codex)',
+  astra: 'GPT-6 Astra (Codex)',
   'auto-review': 'Codex Auto Review',
   'gpt-5.5': 'GPT-5.5 (Codex)',
   'gpt-5.4': 'GPT-5.4 (Codex)',
   'gpt-5.4-mini': 'GPT-5.4 Mini (Codex)',
   spark: 'GPT-5.3 Codex Spark',
   gemini: 'Gemini 3.1 Pro',
-  fable: 'Fable 5',
+  fable: 'Fable 5.1',
   'sonnet-5': 'Sonnet 5',
   glm: 'GLM 5.2 (Z.ai)',
   kimi: 'Kimi K2.7 Code (Moonshot)',
@@ -319,11 +321,9 @@ function setVerify(mode) {
 
 function readFrontier(scope) { return frontier.loadState(scope); }
 
-// Arm-time cost advisory (secondary echo): the one-line notice for a
-// subscription-until adapter (Fable 5) armed past its cutoff, routed into the
-// `warning` field so settings/cli prints it (r.warning). The load-bearing
-// surface is the run-time emit in frontier autorun/cmdRun; this only flags it
-// when the user arms. Best-effort — never blocks the save.
+// Arm-time cost advisory (secondary echo): the one-line notice for
+// plan-dependent billing (Fable 5.1), routed into the `warning` field so
+// settings/cli prints it (r.warning). Best-effort — never blocks the save.
 function frontierCostWarning(state) {
   try {
     return frontier.runCostAdvisory(state, frontier.DEFAULTS);

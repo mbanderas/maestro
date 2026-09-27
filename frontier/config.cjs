@@ -485,46 +485,39 @@ function resolveRunModels(state, cfg) {
 
 /**
  * Soft, non-blocking cost advisory for a resolved run. Returns a one-line
- * `[frontier] ...` string when any distinct member (panel + judge + synth) is a
- * `subscription-until` adapter whose `freeUntil` cutoff has passed, else null.
- * Pure and clock-injectable so it can be unit-tested deterministically. This
- * never gates a run — the caller emits it to stderr and continues.
+ * `[frontier] ...` string when any distinct member (panel + judge + synth) has
+ * plan-dependent billing, else null. `now` remains accepted for compatibility;
+ * billing terms are plan-dependent rather than date-gated. This never gates a
+ * run — the caller emits it to stderr and continues.
  * @param {string[]} models resolved member ids (panel + judge + synth)
  * @param {typeof DEFAULTS} cfg
  * @param {Date} [now]
  * @returns {string|null}
  */
 function costAdvisory(models, cfg, now = new Date()) {
+  void now;
   const flagged = [...new Set(models)].filter(m => {
     const a = cfg.adapters[m];
-    return a && a.costTier === 'subscription-until' && a.freeUntil &&
-           now >= new Date(a.freeUntil + 'T00:00:00Z');
+    return a && a.costTier === 'plan-dependent';
   });
   if (flagged.length === 0) return null;
-  return `[frontier] ${flagged.join(', ')} draws Usage Credits after ` +
-         `${cfg.adapters[flagged[0]].freeUntil} (subscription no longer covers it) ` +
-         `and burns usage faster than Opus 5.`;
+  const labels = flagged.map(m => (cfg.models && cfg.models[m] && cfg.models[m].label) || m);
+  return `[frontier] ${labels.join(', ')} billing depends on your Claude plan; ` +
+         `check your plan's current terms.`;
 }
 
 /**
  * Compose resolveRunModels + costAdvisory for a run/arm state — the single
- * entry point every call site uses (autorun, cli run/mode, settings). The clock
- * defaults to now, overridable via MAESTRO_FRONTIER_NOW (ISO date) so an
- * operator can preview the post-cutoff advisory and the integration boundary is
- * deterministically testable. Returns the one-line advisory string, or null.
+ * entry point every call site uses (autorun, cli run/mode, settings). The
+ * optional date parameter remains accepted for compatibility, but plan-based
+ * billing advisories are not date-gated. Returns the advisory string or null.
  * @param {object} state
  * @param {typeof DEFAULTS} cfg
  * @param {Date} [now]
  * @returns {string|null}
  */
 function runCostAdvisory(state, cfg, now) {
-  let clock = now;
-  if (!clock) {
-    const override = process.env.MAESTRO_FRONTIER_NOW;
-    const parsed = override ? new Date(override) : null;
-    clock = parsed && !Number.isNaN(parsed.getTime()) ? parsed : new Date();
-  }
-  return costAdvisory(resolveRunModels(state, cfg), cfg, clock);
+  return costAdvisory(resolveRunModels(state, cfg), cfg, now);
 }
 
 module.exports = {

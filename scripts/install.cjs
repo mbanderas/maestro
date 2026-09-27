@@ -94,13 +94,19 @@ maestro frontier mode fusion --preset custom --models <a,b,c> --scope codex
 maestro frontier mode fusion --preset <preset> --judge <model> --synth <model> --scope codex
 \`\`\`
 
-Models: \`opus\` (Claude Opus 5, needs \`claude\`), current Codex selectors
-(needs \`codex\`), and \`gemini\` (needs \`gemini\`). Use
-\`maestro frontier catalog\` for exact ids and supported effort levels.
-Presets: \`opus-duo\`, \`opus-gpt\`, \`gpt-duo\`,
-\`frontier-trio\`, \`custom\`. Judge + synth default to Opus; \`--judge\`/\`--synth\`
-override for any preset (e.g. \`--judge opus --synth gpt-5.5\`). \`gpt-duo\` runs
-judge + synth on GPT-5.5 — a Codex-only fusion that needs no \`claude\`.
+Models: \`opus\` (Opus 5.5, needs Claude Code v2.1.280+), \`fable\` (Fable 5.1,
+needs Claude Code v2.1.257+), \`sonnet-5\` (Sonnet 5), and \`haiku\` (Haiku 4.5),
+plus \`astra\` (\`gpt-6-astra\`), \`sol\` (\`gpt-6-sol\`), \`terra\`
+(\`gpt-5.6-terra\`), \`luna\` (\`gpt-6-luna\`), \`auto-review\`, and retained
+Codex selectors, plus \`gemini\`. Use \`maestro frontier catalog\` for exact ids
+and supported effort levels; Haiku has no effort flag.
+Presets: \`opus-duo\`, \`opus-gpt\` (Opus + Sol), \`gpt-duo\` (Sol ×2),
+\`frontier-trio\` (Opus + Sol + Gemini), \`fable-duo\`, \`fable-gpt\`,
+\`fable-trio\`, \`sonnet-duo\`, \`sonnet-gpt\`, \`sonnet-trio\`, \`frontier-quad\`,
+\`frontier-quint\`, \`budget-trio\`, \`east-west\`, and \`custom\`. Judge + synth
+default to Opus; \`--judge\`/\`--synth\` override any preset (e.g. \`--judge opus
+--synth sol\`). \`gpt-duo\` runs judge + synth on GPT-6 Sol — a Codex-only fusion
+that needs no \`claude\`.
 
 ## 2. Show current mode/preset
 

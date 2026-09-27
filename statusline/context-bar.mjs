@@ -123,7 +123,7 @@ function frontierProgress(cfgDir, ws) {
   // Optional enrichments; absent or invalid fields degrade to the bare label
   // (old progress files keep rendering exactly as before). The model string is
   // re-validated reader-side with the writer's own whitelist regex.
-  const model = typeof p.model === 'string' && /^[a-z0-9.-]{1,24}$/i.test(p.model) ? p.model : '';
+  const model = typeof p.model === 'string' && /^[a-z0-9.-]{1,25}$/i.test(p.model) ? p.model : '';
   const startTs = Number.parseInt(p.startTs, 10);
   const elapsedMs = Number.isFinite(startTs) && startTs > 0 ? Date.now() - startTs : 0;
   const secs = elapsedMs > 0 && elapsedMs < 86400000 ? `${Math.floor(elapsedMs / 1000)}s` : '';
@@ -141,8 +141,8 @@ function frontierProgress(cfgDir, ws) {
   return ` ${ESC}[38;5;214mƒ${label}${RESET}`;
 }
 
-// Frontier badge. Letter tables mirror frontier/config.cjs DEFAULTS; emit only
-// whitelisted letters or a clamped count. Presence = on, absence = off.
+// Frontier badge. Label tables mirror frontier/config.cjs DEFAULTS; emit only
+// whitelisted labels or a clamped count. Presence = on, absence = off.
 function frontierBadge(cfgDir, ws) {
   const prog = frontierProgress(cfgDir, ws);
   if (prog) return prog;
@@ -151,13 +151,15 @@ function frontierBadge(cfgDir, ws) {
   const st = readGuardedJson(path, 8192);
   if (!st) return '';
   const letters = {
-    opus: 'O', sol: 'S', terra: 'T', luna: 'L', 'auto-review': 'A',
+    opus: 'O', haiku: 'H', fable: 'F', 'sonnet-5': 'N',
+    sol: 'S', terra: 'T', luna: 'L', astra: 'AS', 'auto-review': 'A',
+    'gpt-5.6-sol': 'S', 'gpt-5.6-luna': 'L',
     'gpt-5.5': 'C', 'gpt-5.4': '5', 'gpt-5.4-mini': 'M', spark: 'R',
     gemini: 'G', kimi: 'K', deepseek: 'D', glm: 'Z',
   };
   const presets = {
-    'opus-duo': 'O+O', 'opus-gpt': 'O+C', 'gpt-duo': 'C+C', 'frontier-trio': 'O+C+G',
-    'budget-trio': 'K+D+Z', 'east-west': 'D+C',
+    'opus-duo': 'O+O', 'opus-gpt': 'O+S', 'gpt-duo': 'S+S', 'frontier-trio': 'O+S+G',
+    'budget-trio': 'K+D+Z', 'east-west': 'D+S',
   };
   let panel = '';
   switch (String(st.mode)) {

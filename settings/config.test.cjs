@@ -29,6 +29,16 @@ function check(name, cond) {
 }
 
 function main() {
+  // ---- Frontier model labels ----
+  {
+    const models = Object.fromEntries(settings.catalog().frontier.models.map(model => [model.id, model.label]));
+    check('model labels identify the refreshed Claude models',
+      models.opus === 'Opus 5.5' && models.fable === 'Fable 5.1' && models.haiku === 'Haiku 4.5');
+    check('model labels distinguish GPT-6 stable selectors from Terra',
+      models.astra === 'GPT-6 Astra (Codex)' && models.sol === 'GPT-6 Sol (Codex)' &&
+      models.luna === 'GPT-6 Luna (Codex)' && models.terra === 'GPT-5.6 Terra (Codex)');
+  }
+
   // ---- terse ----
   // (a) no config -> off / default
   {

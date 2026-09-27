@@ -286,37 +286,35 @@ setState({ mode: 'single', model: 'opus', autorunFanLoops: true });
 out = runHook({ hook_event_name: 'UserPromptSubmit', prompt: 'AUTONOMOUS LOOP RESUME — read the checkpoint' });
 check('loop guard opt-out: autorunFanLoops alone fans non-slash loop prompt', (ctx(out) || '').includes('FAKE_ENGINE_ANSWER'));
 
-// 21. Cost advisory (run time): a Fable panel armed past the subscription
-// cutoff emits a one-line [frontier] notice on STDERR only — never into the
-// relayed answer on stdout. Clock is controlled via MAESTRO_FRONTIER_NOW.
+// 21. Cost advisory (run time): Fable billing depends on the user's Claude
+// plan, so the notice is plan-based rather than tied to a fixed cutoff.
 setState({ mode: 'fusion', preset: 'fable-duo' });
 let cap = runHookCapture(
-  { hook_event_name: 'UserPromptSubmit', prompt: 'fable cost after cutoff' },
+  { hook_event_name: 'UserPromptSubmit', prompt: 'fable billing plan' },
   { MAESTRO_FRONTIER_NOW: '2026-08-01T00:00:00Z' });
-check('advisory: fires on stderr after cutoff',
-  /\[frontier\].*Usage Credits/.test(cap.stderr));
-check('advisory: names the 2026-07-07 cutoff', cap.stderr.includes('2026-07-07'));
+check('advisory: states billing depends on the Claude plan',
+  /\[frontier\].*depends on your Claude plan/i.test(cap.stderr));
+check('advisory: contains no stale fixed cutoff date', !/2026-07-07|Usage Credits after/.test(cap.stderr));
 check('advisory: run still injects the engine answer',
   (ctx(cap.stdout) || '').includes('FAKE_ENGINE_ANSWER'));
 check('advisory: never leaks into stdout / the relayed answer',
   !cap.stdout.includes('[frontier]'));
 
-// 22. Dormant before cutoff: same Fable panel, clock before freeUntil -> silent.
+// 22. Same plan-dependent Fable advisory applies before and after the old cutoff.
 cap = runHookCapture(
-  { hook_event_name: 'UserPromptSubmit', prompt: 'fable cost before cutoff' },
+  { hook_event_name: 'UserPromptSubmit', prompt: 'fable billing before old cutoff' },
   { MAESTRO_FRONTIER_NOW: '2026-07-01T00:00:00Z' });
-check('advisory: dormant before cutoff (no stderr notice)',
-  !cap.stderr.includes('Usage Credits'));
+check('advisory: remains plan-based before the old cutoff',
+  /depends on your Claude plan/i.test(cap.stderr) && !/2026-07-07/.test(cap.stderr));
 check('advisory: dormant run still injects the answer',
   (ctx(cap.stdout) || '').includes('FAKE_ENGINE_ANSWER'));
 
-// 23. Non-Fable panel after cutoff -> no advisory (opus/gpt/gemini uncharged).
+// 23. Non-Fable panels do not receive a Fable billing advisory.
 setState({ mode: 'fusion', preset: 'opus-duo' });
 cap = runHookCapture(
   { hook_event_name: 'UserPromptSubmit', prompt: 'opus panel after cutoff' },
   { MAESTRO_FRONTIER_NOW: '2026-08-01T00:00:00Z' });
-check('advisory: non-fable panel silent after cutoff',
-  !cap.stderr.includes('Usage Credits'));
+check('advisory: non-Fable panel is silent', !/Claude plan|Usage Credits/.test(cap.stderr));
 
 // 23b. Stage breadcrumbs: a fusion run emits one [frontier] line per stage
 // event on STDERR (the live surface for CLI verbose view + Codex), never

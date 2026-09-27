@@ -58,10 +58,10 @@ The toggle is a flag file (`.context-bar-disabled`) next to the script. No setti
 **Maestro badges.** When active, two compact badges trail the folder name — **presence means on, absence means off**, so there is no `ON`/`OFF` text to read:
 
 - **Terse** — the level in amber: `ULTRA`, `FULL`, or `LITE`.
-- **Frontier** — `ƒ` plus the panel, in blue: `ƒO` (single Opus), `ƒO+C` (a fusion panel), `ƒO+C+G` (the trio), `ƒ✦3` (a custom panel of three). Letters are `O`=Opus, `C`=ChatGPT (GPT-5.5), `G`=Gemini.
+- **Frontier** — `ƒ` plus the panel, in blue: `ƒO` (single Opus), `ƒO+S` (Opus + Sol), `ƒO+S+G` (the trio), `ƒ✦3` (a custom panel of three). Letters are `O`=Opus 5.5, `F`=Fable 5.1, `N`=Sonnet 5, `H`=Haiku 4.5, `AS`=GPT-6 Astra, `S`=GPT-6 Sol, `T`=GPT-5.6 Terra, `L`=GPT-6 Luna, `C`=retained GPT-5.5, and `G`=Gemini.
 
 ```text
-████████░░░░░░░░░░░░ 42% 84k/200k · my-project  ULTRA ƒO+C
+████████░░░░░░░░░░░░ 42% 84k/200k · my-project  ULTRA ƒO+S
 ```
 
 Both read their state files symlink-refusing, size-capped, and whitelisted: the badge only ever renders letters from a fixed table or a count, never bytes from the file. The frontier badge reads the per-workspace scoped file `frontier-state.cc-<hash>.json` when running under Claude Code (falling back to `frontier-state.json` for other scopes) and, on macOS / Linux, needs `jq` (same as the bar).

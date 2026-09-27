@@ -91,7 +91,11 @@ test('makeProgressWriter maps escalate-start to the escalate phase', () => {
 test('writeProgress whitelists the model name (pass) and omits it (reject)', () => {
   progress.writeProgress(SCOPE, { phase: 'judge', model: 'gpt-5.5' });
   assert.strictEqual(read(SCOPE).model, 'gpt-5.5');
-  for (const bad of ['no spaces', 'a'.repeat(25), 'evil;rm -rf', '', 42, null]) {
+  const haikuModelId = 'claude-haiku-4-5-20251001';
+  assert.strictEqual(progress.isSafeModelName(haikuModelId), true);
+  progress.writeProgress(SCOPE, { phase: 'judge', model: haikuModelId });
+  assert.strictEqual(read(SCOPE).model, haikuModelId);
+  for (const bad of ['no spaces', 'a'.repeat(26), 'evil;rm -rf', '', 42, null]) {
     progress.writeProgress(SCOPE, { phase: 'judge', model: bad });
     assert.strictEqual('model' in read(SCOPE), false, 'model leaked: ' + String(bad));
   }

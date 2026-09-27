@@ -81,9 +81,9 @@ const SCOPE = 'presets-test';
   check('(c) valid row survives', 'my-duo' in loaded);
   const merged = withUserPresets(DEFAULTS, SCOPE);
   check('(c) built-in gpt-duo panel intact after merge',
-    JSON.stringify(resolvePanel({ preset: 'gpt-duo' }, merged)) === JSON.stringify(['gpt-5.5', 'gpt-5.5']));
+    JSON.stringify(resolvePanel({ preset: 'gpt-duo' }, merged)) === JSON.stringify(['sol', 'sol']));
   check('(c) built-in gpt-duo stages intact after merge',
-    resolveJudgeModel({ preset: 'gpt-duo' }, merged) === 'gpt-5.5');
+    resolveJudgeModel({ preset: 'gpt-duo' }, merged) === 'sol');
 }
 
 // (d) save validation errors

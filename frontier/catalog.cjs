@@ -34,6 +34,7 @@ const OPTIONAL_CODEX_MODEL_ENV = Object.freeze({
 const EFFORT_LEVELS = Object.freeze(['low', 'medium', 'high', 'xhigh', 'max', 'ultra']);
 const CLAUDE_EFFORTS = Object.freeze(['low', 'medium', 'high', 'xhigh', 'max']);
 const FIRST_PARTY_CODEX_MODEL_IDS = Object.freeze([
+  'astra',
   'sol',
   'terra',
   'luna',
@@ -44,7 +45,8 @@ const FIRST_PARTY_CODEX_MODEL_IDS = Object.freeze([
   'spark',
 ]);
 const CODEX_EFFORTS = Object.freeze({
-  sol: Object.freeze(['low', 'medium', 'high', 'xhigh', 'max', 'ultra']),
+  astra: Object.freeze(['low', 'medium', 'high', 'xhigh', 'max']),
+  sol: Object.freeze(['low', 'medium', 'high', 'xhigh', 'max']),
   terra: Object.freeze(['low', 'medium', 'high', 'xhigh', 'max', 'ultra']),
   luna: Object.freeze(['low', 'medium', 'high', 'xhigh', 'max']),
   'auto-review': Object.freeze(['low', 'medium', 'high', 'xhigh', 'max', 'ultra']),
@@ -126,9 +128,14 @@ const CODEX_ENV_PASSTHROUGH = Object.freeze({
 // settings remain optional overrides for compatible custom backends.
 const MODEL_SPECS = Object.freeze([
   {
-    id: 'opus', label: 'Opus 5', backend: 'claude', binEnv: 'MAESTRO_CLAUDE_BIN', binDefault: 'claude',
-    baseArgs: () => claudeArgs('claude-opus-5'), promptVia: 'stdin', webTools: false, output: 'stdout', parse: 'claude-json',
+    id: 'opus', label: 'Opus 5.5', backend: 'claude', binEnv: 'MAESTRO_CLAUDE_BIN', binDefault: 'claude',
+    baseArgs: () => claudeArgs('claude-opus-5-5'), promptVia: 'stdin', webTools: false, output: 'stdout', parse: 'claude-json',
+    minClaudeCodeVersion: '2.1.280',
     efforts: CLAUDE_EFFORTS,
+  },
+  {
+    id: 'haiku', label: 'Haiku 4.5', backend: 'claude', binEnv: 'MAESTRO_CLAUDE_BIN', binDefault: 'claude',
+    baseArgs: () => claudeArgs('claude-haiku-4-5-20251001'), promptVia: 'stdin', webTools: false, output: 'stdout', parse: 'claude-json',
   },
   {
     id: 'gpt-5.5', label: 'GPT-5.5', backend: 'codex', binEnv: 'MAESTRO_CODEX_BIN', binDefault: 'codex',
@@ -142,9 +149,9 @@ const MODEL_SPECS = Object.freeze([
     promptVia: 'arg', promptFlag: '-p', webTools: false, output: 'stdout', parse: 'gemini-json',
   },
   {
-    id: 'fable', label: 'Fable 5', backend: 'claude', binEnv: 'MAESTRO_CLAUDE_BIN', binDefault: 'claude',
-    baseArgs: () => claudeArgs('claude-fable-5'), promptVia: 'stdin', webTools: false, output: 'stdout', parse: 'claude-json',
-    costTier: 'subscription-until', freeUntil: '2026-07-07', efforts: CLAUDE_EFFORTS,
+    id: 'fable', label: 'Fable 5.1', backend: 'claude', binEnv: 'MAESTRO_CLAUDE_BIN', binDefault: 'claude',
+    baseArgs: () => claudeArgs('claude-fable-5-1'), promptVia: 'stdin', webTools: false, output: 'stdout', parse: 'claude-json',
+    minClaudeCodeVersion: '2.1.257', costTier: 'plan-dependent', efforts: CLAUDE_EFFORTS,
   },
   {
     id: 'sonnet-5', label: 'Sonnet 5', backend: 'claude', binEnv: 'MAESTRO_CLAUDE_BIN', binDefault: 'claude',
@@ -199,19 +206,26 @@ const MODEL_SPECS = Object.freeze([
     smoke: CODEX_SMOKE,
   },
   {
-    id: 'luna', label: 'GPT-5.6 Luna', backend: 'codex', binEnv: 'MAESTRO_CODEX_BIN', binDefault: 'codex',
+    id: 'luna', label: 'GPT-6 Luna', backend: 'codex', binEnv: 'MAESTRO_CODEX_BIN', binDefault: 'codex',
     modelEnv: OPTIONAL_CODEX_MODEL_ENV.luna,
-    modelDefault: 'gpt-5.6-luna',
+    modelDefault: 'gpt-6-luna',
     baseArgs: modelId => codexArgs(modelId), promptVia: 'stdin', webTools: true, output: 'last-message-file', parse: 'text',
     envPassthrough: CODEX_ENV_PASSTHROUGH, efforts: CODEX_EFFORTS.luna,
     smoke: CODEX_SMOKE,
   },
   {
-    id: 'sol', label: 'GPT-5.6 Sol', backend: 'codex', binEnv: 'MAESTRO_CODEX_BIN', binDefault: 'codex',
+    id: 'sol', label: 'GPT-6 Sol', backend: 'codex', binEnv: 'MAESTRO_CODEX_BIN', binDefault: 'codex',
     modelEnv: OPTIONAL_CODEX_MODEL_ENV.sol,
-    modelDefault: 'gpt-5.6-sol',
+    modelDefault: 'gpt-6-sol',
     baseArgs: modelId => codexArgs(modelId), promptVia: 'stdin', webTools: true, output: 'last-message-file', parse: 'text',
     envPassthrough: CODEX_ENV_PASSTHROUGH, efforts: CODEX_EFFORTS.sol,
+    smoke: CODEX_SMOKE,
+  },
+  {
+    id: 'astra', label: 'GPT-6 Astra', backend: 'codex', binEnv: 'MAESTRO_CODEX_BIN', binDefault: 'codex',
+    modelDefault: 'gpt-6-astra',
+    baseArgs: () => codexArgs('gpt-6-astra'), promptVia: 'stdin', webTools: true, output: 'last-message-file', parse: 'text',
+    envPassthrough: CODEX_ENV_PASSTHROUGH, efforts: CODEX_EFFORTS.astra,
     smoke: CODEX_SMOKE,
   },
   {
@@ -242,19 +256,19 @@ const MODEL_SPECS = Object.freeze([
 
 const BUILTIN_PRESETS = Object.freeze([
   { id: 'opus-duo', models: ['opus', 'opus'] },
-  { id: 'opus-gpt', models: ['opus', 'gpt-5.5'] },
-  { id: 'gpt-duo', models: ['gpt-5.5', 'gpt-5.5'], judge: 'gpt-5.5', synth: 'gpt-5.5' },
-  { id: 'frontier-trio', models: ['opus', 'gpt-5.5', 'gemini'] },
+  { id: 'opus-gpt', models: ['opus', 'sol'] },
+  { id: 'gpt-duo', models: ['sol', 'sol'], judge: 'sol', synth: 'sol' },
+  { id: 'frontier-trio', models: ['opus', 'sol', 'gemini'] },
   { id: 'fable-duo', models: ['fable', 'fable'], judge: 'fable', synth: 'fable' },
-  { id: 'fable-gpt', models: ['fable', 'gpt-5.5'], judge: 'fable', synth: 'fable' },
-  { id: 'fable-trio', models: ['fable', 'gpt-5.5', 'gemini'], judge: 'fable', synth: 'fable' },
+  { id: 'fable-gpt', models: ['fable', 'sol'], judge: 'fable', synth: 'fable' },
+  { id: 'fable-trio', models: ['fable', 'sol', 'gemini'], judge: 'fable', synth: 'fable' },
   { id: 'sonnet-duo', models: ['sonnet-5', 'sonnet-5'], judge: 'sonnet-5', synth: 'sonnet-5' },
-  { id: 'sonnet-gpt', models: ['sonnet-5', 'gpt-5.5'], judge: 'sonnet-5', synth: 'sonnet-5' },
-  { id: 'sonnet-trio', models: ['sonnet-5', 'gpt-5.5', 'gemini'], judge: 'sonnet-5', synth: 'sonnet-5' },
-  { id: 'frontier-quad', models: ['fable', 'opus', 'gpt-5.5', 'gemini'] },
-  { id: 'frontier-quint', models: ['fable', 'opus', 'sonnet-5', 'gpt-5.5', 'gemini'] },
+  { id: 'sonnet-gpt', models: ['sonnet-5', 'sol'], judge: 'sonnet-5', synth: 'sonnet-5' },
+  { id: 'sonnet-trio', models: ['sonnet-5', 'sol', 'gemini'], judge: 'sonnet-5', synth: 'sonnet-5' },
+  { id: 'frontier-quad', models: ['fable', 'opus', 'sol', 'gemini'] },
+  { id: 'frontier-quint', models: ['fable', 'opus', 'sonnet-5', 'sol', 'gemini'] },
   { id: 'budget-trio', models: ['kimi', 'deepseek', 'glm'], judge: 'deepseek', synth: 'deepseek' },
-  { id: 'east-west', models: ['deepseek', 'gpt-5.5'] },
+  { id: 'east-west', models: ['deepseek', 'sol'] },
 ]);
 
 /** @param {*} model @returns {*} */
@@ -389,6 +403,7 @@ function modelMetadata(spec, env, values) {
     id: spec.id,
     label: spec.label,
     backend: spec.backend,
+    ...(spec.minClaudeCodeVersion ? { minClaudeCodeVersion: spec.minClaudeCodeVersion } : {}),
     bin: effectiveBin(spec, env),
     readOnly: true,
     selectable,
@@ -520,6 +535,7 @@ function listCatalogModels(catalog) {
     id: model.id,
     label: model.label,
     backend: model.backend,
+    ...(model.minClaudeCodeVersion ? { minClaudeCodeVersion: model.minClaudeCodeVersion } : {}),
     bin: model.bin,
     readOnly: model.readOnly,
     selectable: model.selectable,

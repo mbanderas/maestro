@@ -83,9 +83,9 @@ frontier_progress() {
 
 # Frontier badge. Reads frontier-state.<scope>.json (configDir = $XDG_CONFIG_HOME/maestro
 # else ~/.config/maestro), written by frontier/config.cjs. Same hardening as the
-# terse badge: refuse symlinks, size cap, and only ever emit letters from the
-# whitelist below or an integer count -- never raw bytes from the file. Letter
-# tables mirror frontier/config.cjs DEFAULTS; keep in sync if models/presets
+# terse badge: refuse symlinks, size cap, and only ever emit labels from the
+# whitelist below or an integer count -- never raw bytes from the file. Labels
+# mirror frontier/config.cjs DEFAULTS; keep in sync if models/presets
 # change. Needs jq. Output: presence = on, absence = off (no ON/OFF text).
 frontier_badge() {
   [ "$have_jq" -eq 1 ] || return
@@ -105,7 +105,9 @@ frontier_badge() {
   case "$mode" in
     single)
       case "$(jq -r '.model // empty' "$f" 2>/dev/null)" in
-        opus) panel='O' ;; sol) panel='S' ;; terra) panel='T' ;; luna) panel='L' ;;
+        opus) panel='O' ;; haiku) panel='H' ;; fable) panel='F' ;; sonnet-5) panel='N' ;;
+        sol) panel='S' ;; terra) panel='T' ;; luna) panel='L' ;; astra) panel='AS' ;;
+        gpt-5.6-sol) panel='S' ;; gpt-5.6-luna) panel='L' ;;
         auto-review) panel='A' ;; gpt-5.5) panel='C' ;; gpt-5.4) panel='5' ;;
         gpt-5.4-mini) panel='M' ;; spark) panel='R' ;; gemini) panel='G' ;;
         kimi) panel='K' ;; deepseek) panel='D' ;; glm) panel='Z' ;; *) panel='' ;;
@@ -114,11 +116,11 @@ frontier_badge() {
     fusion)
       case "$(jq -r '.preset // empty' "$f" 2>/dev/null)" in
         opus-duo) panel='O+O' ;;
-        opus-gpt) panel='O+C' ;;
-        gpt-duo) panel='C+C' ;;
-        frontier-trio) panel='O+C+G' ;;
+        opus-gpt) panel='O+S' ;;
+        gpt-duo) panel='S+S' ;;
+        frontier-trio) panel='O+S+G' ;;
         budget-trio) panel='K+D+Z' ;;
-        east-west) panel='D+C' ;;
+        east-west) panel='D+S' ;;
         custom)
           n=$(jq -r '(.models | length) // 0' "$f" 2>/dev/null)
           [[ "$n" =~ ^[0-9]+$ ]] || n=0

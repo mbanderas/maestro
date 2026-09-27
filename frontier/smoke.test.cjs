@@ -39,9 +39,9 @@ const missingEnvFile = path.join(tmp, 'missing.env');
     const noneReport = await smokeCurrentCodexModels(none, {
       spawnOne: async () => { noneCalls++; return { ok: true, content: SMOKE_SUCCESS }; },
     });
-    check('all current Codex selectors are smoked through the injected dispatcher', noneCalls === 8);
+    check('all current Codex selectors are smoked through the injected dispatcher', noneCalls === 9);
     check('current aliases pass when every exact response is OK',
-      noneReport.releaseReady === true && noneReport.configuredCount === 8 &&
+      noneReport.releaseReady === true && noneReport.configuredCount === 9 &&
       noneReport.models.every(model => model.configured && model.attempted && model.available));
     const noneText = formatSmokeReport(noneReport);
     check('current report needs no model-id configuration remediation',
@@ -61,10 +61,10 @@ const missingEnvFile = path.join(tmp, 'missing.env');
       },
     });
     check('current smoke invokes every declared Codex selector',
-      calls.length === 8 &&
+      calls.length === 9 &&
       calls.map(call => call.adapter.model).join(',') === SMOKE_CODEX_MODEL_IDS.join(','));
     check('configured smoke uses the minimal smoke prompt and guarded depth',
-      calls.length === 8 && calls.every(call => call.prompt === SMOKE_PROMPT && call.opts.fusionDepth === 3));
+      calls.length === 9 && calls.every(call => call.prompt === SMOKE_PROMPT && call.opts.fusionDepth === 3));
     const terraCall = calls.find(call => call.adapter.model === 'terra');
     check('configured smoke retains the exact configured Codex model argv',
       terraCall && terraCall.adapter.baseArgs.join('\u0000') === [
@@ -72,7 +72,7 @@ const missingEnvFile = path.join(tmp, 'missing.env');
         '-m', configuredId, '--color', 'never',
       ].join('\u0000'));
     check('successful current smoke qualifies all selectors as available',
-      oneReport.releaseReady === true && oneReport.configuredCount === 8 &&
+      oneReport.releaseReady === true && oneReport.configuredCount === 9 &&
       oneReport.models.find(model => model.id === 'terra').available === true &&
       oneReport.models.every(model => model.attempted && model.available));
 
@@ -95,7 +95,7 @@ const missingEnvFile = path.join(tmp, 'missing.env');
       !noneText.includes(configuredId));
     check('smoked selectors are the fixed first-party Codex set',
       SMOKE_CODEX_MODEL_IDS.join(',') ===
-      'sol,terra,luna,auto-review,gpt-5.5,gpt-5.4,gpt-5.4-mini,spark');
+      'astra,sol,terra,luna,auto-review,gpt-5.5,gpt-5.4,gpt-5.4-mini,spark');
     check('legacy smoke exports remain compatible',
       OPTIONAL_CODEX_MODEL_IDS === SMOKE_CODEX_MODEL_IDS &&
       smokeConfiguredOptionalCodexModels === smokeCurrentCodexModels);

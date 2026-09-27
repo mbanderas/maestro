@@ -6,6 +6,12 @@ All notable changes to Maestro are documented here. The format follows
 
 ## [Unreleased]
 
+- **Refresh the Frontier first-party model roster.** Claude now includes Opus
+  5.5, Fable 5.1, unchanged Sonnet 5, and Haiku 4.5. Codex adds Astra and
+  updates stable Sol/Luna to GPT-6 while Terra remains GPT-5.6. Built-in mixed
+  presets now use stable `sol`; Fable’s billing advisory follows the active plan
+  rather than a fixed cutoff date.
+
 ## [1.15.0] - 2026-07-27
 
 ### Changed

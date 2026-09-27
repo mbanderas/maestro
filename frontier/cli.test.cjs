@@ -293,7 +293,7 @@ function runTests() {
     const r = run(['roster'], dir);
     check('(l) roster exit 0', r.code === 0, 'exit ' + r.code + ' stderr: ' + r.stderr.trim());
     for (const id of [
-      'opus', 'sol', 'terra', 'luna', 'auto-review', 'gpt-5.5', 'gpt-5.4',
+      'opus', 'haiku', 'sol', 'astra', 'terra', 'luna', 'auto-review', 'gpt-5.5', 'gpt-5.4',
       'gpt-5.4-mini', 'spark', 'gemini', 'fable', 'sonnet-5', 'glm', 'kimi', 'deepseek',
     ]) {
       check('(l) roster lists ' + id, r.stdout.includes(id), 'stdout: ' + r.stdout.trim());

@@ -44,9 +44,9 @@ The CLI takes one frontier value with a colon (`single:opus`,
 - `frontier off` → `SCLI set frontier off`
 - `frontier single opus` → `SCLI set frontier single:opus`
 - `frontier fusion opus-gpt` → `SCLI set frontier fusion:opus-gpt`
-- `frontier fusion custom --models opus,gpt-5.5,gemini`
-  → `SCLI set frontier fusion:custom --models opus,gpt-5.5,gemini`
-- `frontier fusion opus-gpt --judge opus --synth gpt-5.5` → pass the flags through
+- `frontier fusion custom --models opus,sol,gemini`
+  → `SCLI set frontier fusion:custom --models opus,sol,gemini`
+- `frontier fusion opus-gpt --judge opus --synth sol` → pass the flags through
 - already-coloned (`frontier fusion:opus-gpt`) → pass as-is
 - `terse ultra`, `context-bar off`, `discipline off`, `verify block` → `SCLI set terse ultra`, `SCLI set context-bar off`, `SCLI set discipline off`, `SCLI set verify block`
 
@@ -90,7 +90,7 @@ show `SCLI help` so the user sees the valid values.
      - After any fusion preset, offer **override judge/synth?** (`No` uses
        `list.frontier.presetStages[preset]` if present else
        `list.frontier.defaults`; `Yes` → two questions, `judge` and `synth`,
-       each `list.frontier.stageModels`). On Windows prefer `opus`/`gpt-5.5`;
+       each `list.frontier.stageModels`). On Windows prefer `opus`/`sol`;
        `gemini` degrades as judge/synth (see `commands/frontier.md`).
 
 4. Write each change with `SCLI set ...` (as in the routing section), report
@@ -105,8 +105,8 @@ writer this command calls:
 node settings/cli.cjs help               # usage grammar + every value
 node settings/cli.cjs status             # current values
 node settings/cli.cjs set frontier fusion:frontier-trio
-node settings/cli.cjs set frontier fusion:custom --models opus,gpt-5.5,gemini
-node settings/cli.cjs set frontier fusion:opus-gpt --judge opus --synth gpt-5.5
+node settings/cli.cjs set frontier fusion:custom --models opus,sol,gemini
+node settings/cli.cjs set frontier fusion:opus-gpt --judge opus --synth sol
 ```
 
 See [`docs/settings.md`](../docs/settings.md) for the full reference.

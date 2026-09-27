@@ -105,10 +105,15 @@ async function main() {
     try { fs.unlinkSync(statePath()); } catch {}
   }
 
-  // (d) resolvePanel for 'opus-gpt' -> ['opus','gpt-5.5']
+  // (d) resolvePanel for 'opus-gpt' -> ['opus','sol']
   {
     const models = resolvePanel({ preset: 'opus-gpt' }, DEFAULTS);
-    check('opus-gpt resolves correctly', JSON.stringify(models) === JSON.stringify(['opus', 'gpt-5.5']));
+    check('opus-gpt resolves correctly', JSON.stringify(models) === JSON.stringify(['opus', 'sol']));
+    check('all built-in preset members and stage mappings use stable Sol over GPT-5.5',
+      Object.values(DEFAULTS.presets).flat().includes('sol') &&
+      !Object.values(DEFAULTS.presets).flat().includes('gpt-5.5') &&
+      !Object.values(DEFAULTS.presetStages).some(stages =>
+        stages.judge === 'gpt-5.5' || stages.synth === 'gpt-5.5'));
   }
 
   // (e) resolvePanel custom with 9 models throws
@@ -142,16 +147,16 @@ async function main() {
     check('validatePreset bogus false', validatePreset('bogus', DEFAULTS) === false);
   }
 
-  // (h) gpt-duo preset resolves to two GPT-5.5 panel members
+  // (h) gpt-duo preset resolves to two stable Sol members
   {
     const models = resolvePanel({ preset: 'gpt-duo' }, DEFAULTS);
-    check('gpt-duo panel', JSON.stringify(models) === JSON.stringify(['gpt-5.5', 'gpt-5.5']));
+    check('gpt-duo panel', JSON.stringify(models) === JSON.stringify(['sol', 'sol']));
   }
 
-  // (i) gpt-duo judge+synth resolve to gpt-5.5 (Codex-only fusion)
+  // (i) gpt-duo judge+synth resolve to stable Sol (Codex-only fusion)
   {
-    check('gpt-duo judge -> gpt-5.5', resolveJudgeModel({ preset: 'gpt-duo' }, DEFAULTS) === 'gpt-5.5');
-    check('gpt-duo synth -> gpt-5.5', resolveSynthModel({ preset: 'gpt-duo' }, DEFAULTS) === 'gpt-5.5');
+    check('gpt-duo judge -> sol', resolveJudgeModel({ preset: 'gpt-duo' }, DEFAULTS) === 'sol');
+    check('gpt-duo synth -> sol', resolveSynthModel({ preset: 'gpt-duo' }, DEFAULTS) === 'sol');
   }
 
   // (j) presets without a stage override fall back to the global Opus default
@@ -184,7 +189,7 @@ async function main() {
       resolveSynthModel({ preset: 'opus-gpt', synthModel: 'gemini' }, onCfg, hinted) === 'gemini');
     check('preset stage override beats analysis hint',
       resolveSynthModel({ preset: 'gpt-duo' }, onCfg,
-        { ...hinted, synth_hint: 'gemini' }) === 'gpt-5.5');
+        { ...hinted, synth_hint: 'gemini' }) === 'sol');
     check('judge ignores analysis param',
       resolveJudgeModel({ preset: 'opus-gpt' }, onCfg) === 'opus');
   }
@@ -208,7 +213,7 @@ async function main() {
     check('explicit beats affinity',
       resolveSynthModel({ preset: 'opus-gpt', synthModel: 'opus' }, aff) === 'opus');
     check('preset override beats affinity',
-      resolveJudgeModel({ preset: 'gpt-duo' }, aff) === 'gpt-5.5');
+      resolveJudgeModel({ preset: 'gpt-duo' }, aff) === 'sol');
     {
       const both = { ...aff, analysisSynthSelect: true };
       const an = { consensus: [], contradictions: [], partial_coverage: [],
@@ -221,30 +226,23 @@ async function main() {
         { ...DEFAULTS, perStepRouting: true, stageAffinity: { judge: 'no-such' } }) === 'opus');
   }
 
-  // (n) costAdvisory — Fable subscription->Usage-Credits cutoff (2026-07-07).
-  //     Dormant before freeUntil, fires on/after for fable-bearing panels,
-  //     silent for non-fable panels. Deterministic via an injected clock.
+  // (n) Fable billing is plan-dependent; its advisory must not invent a fixed
+  //     cutoff date or imply that every plan incurs Usage Credits.
   {
-    const before = new Date('2026-07-06T23:59:59Z');
-    const atCut  = new Date('2026-07-07T00:00:00Z');
-    const after  = new Date('2026-08-01T12:00:00Z');
-    check('costAdvisory: fable panel before cutoff -> null',
-      costAdvisory(['fable', 'gpt-5.5'], DEFAULTS, before) === null);
-    check('costAdvisory: fable panel at cutoff boundary -> non-null',
-      typeof costAdvisory(['fable'], DEFAULTS, atCut) === 'string');
-    const msg = costAdvisory(['fable', 'gpt-5.5'], DEFAULTS, after);
-    check('costAdvisory: fable panel after cutoff -> advisory string', typeof msg === 'string');
-    check('costAdvisory: advisory names the cutoff date',
-      typeof msg === 'string' && msg.includes('2026-07-07'));
+    const before = costAdvisory(['fable', 'sol'], DEFAULTS, new Date('2026-07-01T00:00:00Z'));
+    const after = costAdvisory(['fable', 'sol'], DEFAULTS, new Date('2027-01-01T00:00:00Z'));
+    const msg = after;
+    check('costAdvisory: Fable receives a plan-dependent advisory',
+      typeof before === 'string' && /depends on your Claude plan/i.test(before));
+    check('costAdvisory: advisory is stable across dates and has no stale cutoff',
+      before === after && !/2026-07-07|Usage Credits after|subscription no longer covers/i.test(msg || ''));
     check('costAdvisory: advisory is [frontier]-prefixed',
       typeof msg === 'string' && msg.startsWith('[frontier]'));
-    check('costAdvisory: non-fable panel after cutoff -> null',
-      costAdvisory(['opus', 'gpt-5.5', 'gemini'], DEFAULTS, after) === null);
-    check('costAdvisory: sonnet-5 (no costTier) after cutoff -> null',
-      costAdvisory(['sonnet-5', 'opus'], DEFAULTS, after) === null);
-    const dup = costAdvisory(['fable', 'fable', 'fable'], DEFAULTS, after);
+    check('costAdvisory: non-Fable panel -> null',
+      costAdvisory(['opus', 'sol', 'gemini'], DEFAULTS, new Date()) === null);
+    const dup = costAdvisory(['fable', 'fable', 'fable'], DEFAULTS, new Date());
     check('costAdvisory: repeated fable deduped to a single mention',
-      typeof dup === 'string' && dup.indexOf('fable') === dup.lastIndexOf('fable'));
+      typeof dup === 'string' && dup.indexOf('Fable 5.1') === dup.lastIndexOf('Fable 5.1'));
     check('costAdvisory: empty panel -> null',
       costAdvisory([], DEFAULTS, after) === null);
   }
@@ -255,7 +253,7 @@ async function main() {
     check('fable-duo panel',
       JSON.stringify(resolvePanel({ preset: 'fable-duo' }, DEFAULTS)) === JSON.stringify(['fable', 'fable']));
     check('sonnet-gpt panel',
-      JSON.stringify(resolvePanel({ preset: 'sonnet-gpt' }, DEFAULTS)) === JSON.stringify(['sonnet-5', 'gpt-5.5']));
+      JSON.stringify(resolvePanel({ preset: 'sonnet-gpt' }, DEFAULTS)) === JSON.stringify(['sonnet-5', 'sol']));
     check('frontier-quint has 5 members',
       resolvePanel({ preset: 'frontier-quint' }, DEFAULTS).length === 5);
     check('fable-trio self-judges on fable',
@@ -280,7 +278,7 @@ async function main() {
       JSON.stringify(['kimi', 'deepseek', 'glm']));
     check('east-west panel',
       JSON.stringify(resolvePanel({ preset: 'east-west' }, DEFAULTS)) ===
-      JSON.stringify(['deepseek', 'gpt-5.5']));
+      JSON.stringify(['deepseek', 'sol']));
     check('budget-trio self-judges on deepseek',
       resolveJudgeModel({ preset: 'budget-trio' }, DEFAULTS) === 'deepseek');
     check('budget-trio self-synths on deepseek',
